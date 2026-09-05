@@ -148,6 +148,10 @@ try {
       && layer.classList.contains("is-open");
   }, null, { timeout: 75000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
+  await page.waitForFunction(() => {
+    const image = document.querySelector(".sound-character-scene");
+    return image?.complete && image.naturalWidth > 0;
+  });
   const desktopVisualizer = await page.locator("#sound-visualizer").evaluate((canvas) => {
     const characterScene = document.querySelector(".sound-character-scene");
     const close = document.querySelector("#sound-close");
@@ -377,6 +381,10 @@ try {
       && layer.classList.contains("is-open");
   }, null, { timeout: 75000 });
   await mobile.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
+  await mobile.waitForFunction(() => {
+    const image = document.querySelector(".sound-character-scene");
+    return image?.complete && image.naturalWidth > 0;
+  });
   const mobileGeometry = await mobile.evaluate(() => ({
     count: document.querySelectorAll("[data-sound-track]").length,
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,

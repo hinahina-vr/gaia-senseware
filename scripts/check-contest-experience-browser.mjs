@@ -547,14 +547,12 @@ try {
       );
       await directPage.locator("#japan-data-close").click();
     }
-    assert.equal(await directPage.locator("[data-live-light-touch]").evaluate((node) => node instanceof HTMLButtonElement), true, `${number}: light interaction is not a real button`);
+    assert.equal(await directPage.locator("[data-live-light-touch]").count(), 0, `${number}: retired light-touch button remains`);
+    assert.deepEqual(await directPage.locator(".gaia-live-deck-actions strong").allTextContents(), ["データの出典", "統計分析"]);
     assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined", `${number}: retired generated sound runtime was loaded`);
     assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 1, `${number}: map BGM was altered by the retired exhibit sound path`);
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
-    const lightTouchesBeforeButton = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
-    await directPage.locator("[data-live-light-touch]").click();
-    await directPage.waitForFunction((previousTouchCount) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previousTouchCount, lightTouchesBeforeButton);
-    const buttonTouchCount = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
+    const beforeSurfaceTouch = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
     await directPage.waitForTimeout(120);
     const liveMapPoint = await directPage.evaluate(() => {
       const map = document.querySelector("#japan-map");
@@ -569,13 +567,13 @@ try {
     });
     assert(liveMapPoint, `${number}: live map has no unobstructed hit target`);
     await directPage.mouse.click(liveMapPoint.x, liveMapPoint.y);
-    await directPage.waitForFunction((previousTouchCount) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previousTouchCount, buttonTouchCount);
+    await directPage.waitForFunction((previousTouchCount) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previousTouchCount, beforeSurfaceTouch);
     assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
     const lightTouchesAfterMap = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
     report.entry.liveVisual ??= [];
     report.entry.liveVisual.push({
       number,
-      buttonTouchCount,
+      beforeSurfaceTouch,
       lightTouchesAfterMap,
       longitude: liveGeography.anchorLongitude,
       latitude: liveGeography.anchorLatitude,

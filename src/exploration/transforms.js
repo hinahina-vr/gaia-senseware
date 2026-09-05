@@ -24,7 +24,7 @@ export const collectMeasurements = (events = []) => {
   const result = {};
   for (const event of events) {
     for (const measurement of event?.measurements || []) {
-      if (measurement?.quality === "missing" || !Number.isFinite(Number(measurement?.value))) continue;
+      if (measurement?.value == null || measurement?.quality === "missing" || !Number.isFinite(Number(measurement?.value))) continue;
       result[measurement.key] = {
         ...measurement,
         provider: event.provider,

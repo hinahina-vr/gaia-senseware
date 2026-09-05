@@ -45,8 +45,8 @@
       cover.className = "sound-cover-art";
       cover.setAttribute("aria-hidden", "true");
       const coverImage = document.createElement("img");
-      coverImage.src = "./assets/visuals-07/sound-archive-bg-v2.png?v=gaia-sound-linked-ink-1";
       coverImage.alt = "";
+      coverImage.decoding = "async";
       cover.append(coverImage);
       nowPlaying.prepend(cover);
     }
@@ -173,44 +173,56 @@
     opening: {
       number: "TRACK 01 / OPENING THEME",
       title: "Planet Forecast - Hope",
-      description: "惑星の放課後のオープニングで、三人と地球の物語への入口をひらく音楽。",
+      description: "『惑星の放課後』オープニングテーマ。地球と生命、そして私たちの物語への入口をひらく。",
       planet: "PLANET 01",
       signal: "FORECAST SIGNAL",
+      cover: "./assets/visuals-07/opening-keyvisual-v2-834.webp",
+      coverPosition: "72% 44%",
     },
     story: {
       number: "TRACK 02 / STORY THEME",
       title: "Planet Forecast — Windowlight",
-      description: "三人の記録を読み、残された言葉へ近づいていく場面の音楽。",
+      description: "ディスプレイの青白い光の向こう、幾重にも連なるチャットの記録をたどり、残された想いへ一歩ずつ近づいていく。",
       planet: "PLANET 02",
       signal: "STORY RESONANCE",
+      cover: "./assets/visuals-07/sound-archive-bg-v2.png",
+      coverPosition: "68% 48%",
     },
     windowlight: {
       number: "TRACK 03 / OBSERVATION ROOM",
       title: "Planet Forecast — Calm",
-      description: "制作室の窓へ午後の光が差し、三人の観測が静かに重なり始める場面の音楽。",
+      description: "机に散らばる基板とケーブル、画面を走る淡い波形。午後の光に包まれながら、世界の鼓動を確かめる穏やかな時間。",
       planet: "PLANET 03",
       signal: "WINDOWLIGHT TRACE",
+      cover: "./assets/visuals-07/novel-bg-workroom-v2.png",
+      coverPosition: "42% 50%",
     },
     firstlight: {
       number: "TRACK 04 / DAWN THEME",
       title: "Planet Forecast — First Light",
-      description: "夜明け前の海が黒から青へほどけ、未完の観測が次へ続いていく場面の音楽。",
+      description: "水平線がかすかに白み、闇が碧へと溶けていく。机に残された小さな基板が、まだ誰も知らない地球の朝を捉え始める。",
       planet: "PLANET 04",
       signal: "FIRST LIGHT TRACE",
+      cover: "./assets/visuals-07/novel-bg-mizuha-room-morning-v1.png",
+      coverPosition: "60% 44%",
     },
     foldedwind: {
       number: "TRACK 05 / UNSENT RECORD",
       title: "折り目の向こうの風",
-      description: "折り畳まれた記録が風にほどけ、次の読み手へ渡っていく情景の音楽。",
+      description: "折り畳まれたままの記録が、そっと吹き抜ける潮風にほどけていく。誰にも送れなかった言葉が、まだ見ぬ次の読み手の手元へ舞い降りる瞬間。",
       planet: "PLANET 05",
       signal: "FOLDED WIND TRACE",
+      cover: "./assets/visuals-07/novel-bg-production-return-train-v1.png",
+      coverPosition: "54% 48%",
     },
     snowfire: {
       number: "TRACK 06 / UNKNOWN SIGNAL",
       title: "雪火の観測信号",
-      description: "冷たい記録と消えない熱が、同じ信号の中で揺れる場面の音楽。",
+      description: "冷徹な数字の奥に宿る、消えない熱のゆらぎ。暗闇を切り裂いて届く微弱なシグナルに、息を詰めて耳を澄ます情景。",
       planet: "PLANET 06",
       signal: "SNOWFIRE SIGNAL",
+      cover: "./assets/visuals-07/novel-bg-production-night-v2.png",
+      coverPosition: "52% 55%",
     },
     snowafter: {
       number: "TRACK 07 / BRANCHING LIGHT",
@@ -218,6 +230,8 @@
       description: "既存の軌道から分かれた光が、まだ名のない外側へ開いていく場面の音楽。",
       planet: "PLANET 07",
       signal: "SNOWFIRE AFTERIMAGE",
+      cover: "./assets/true-end/true-end-bg-pregeometry-loom-v1.webp",
+      coverPosition: "64% 40%",
     },
     moonbook: {
       number: "TRACK 08 / NIGHT NOTE",
@@ -225,6 +239,8 @@
       description: "SOURCEと解釈を分けながら、夜の机で記録を読み直す場面の音楽。",
       planet: "PLANET 08",
       signal: "MOONLIT NOTE",
+      cover: "./assets/visuals-07/novel-bg-sakuya-room-night-v1.png",
+      coverPosition: "54% 50%",
     },
     senseware: {
       number: "TRACK 09 / SYSTEM THEME",
@@ -232,6 +248,8 @@
       description: "ハープとフェルトピアノ、海と大気の低い呼吸が、地図に記録された地球の感覚を静かに包む音楽。",
       planet: "PLANET 09",
       signal: "SOURCE SAVE",
+      cover: "./assets/visuals-07/open-data-archive-bg-v1-834.webp",
+      coverPosition: "44% 46%",
     },
     moonreopen: {
       number: "TRACK 10 / BLUE GLASS TIDE",
@@ -239,6 +257,8 @@
       description: "青いガラスのような潮の揺らぎが、夜の観測記録を静かにひらく音楽。",
       planet: "PLANET 10",
       signal: "BLUE GLASS TIDE",
+      cover: "./assets/visuals-07/novel-bg-zushi-coast-night-v2.png",
+      coverPosition: "38% 48%",
     },
     ending: {
       number: "TRACK 11 / ENDING THEME",
@@ -246,6 +266,8 @@
       description: "スタッフロールとともに、物語の余韻を次の観測へつなぐエンディングテーマ。",
       planet: "PLANET 11",
       signal: "AFTERGLOW SIGNAL",
+      cover: "./assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
+      coverPosition: "66% 46%",
     },
     trueend: {
       number: "TRACK 12 / Beyond",
@@ -253,6 +275,8 @@
       description: "二百七十万年後、星々へ広がった感覚の系譜をたどるBeyond専用曲。",
       planet: "PLANET 12",
       signal: "SENSORY HORIZON",
+      cover: "./assets/true-end/true-end-bg-galactic-senses-v1.webp",
+      coverPosition: "56% 44%",
     },
   });
   const trackKeys = Object.freeze(Object.keys(tracks));
@@ -282,6 +306,139 @@
   };
 
   const getAudio = () => window.GaiaOpeningAudio;
+
+  const nowPlaying = layer.querySelector(".sound-now-playing");
+  const playerPanel = layer.querySelector(".sound-player");
+  const coverImage = nowPlaying?.querySelector(".sound-cover-art img");
+  const presentationMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const coverCache = new Map();
+  let requestedPresentation = "";
+  let presentedTrack = "";
+  let presentationGeneration = 0;
+  let presentationEcho = null;
+  let presentationTimer = 0;
+  let presentationMeasureFrame = 0;
+  let presentationWidth = 0;
+
+  const prepareCover = (track) => {
+    if (!tracks[track]) return Promise.resolve(null);
+    if (coverCache.has(track)) return coverCache.get(track);
+    const artwork = new Image();
+    artwork.decoding = "async";
+    artwork.src = tracks[track].cover;
+    const ready = artwork.decode().then(() => artwork, () => artwork.naturalWidth ? artwork : null);
+    coverCache.set(track, ready);
+    return ready;
+  };
+
+  const clearPresentationMotion = () => {
+    window.clearTimeout(presentationTimer);
+    presentationTimer = 0;
+    presentationEcho?.remove();
+    presentationEcho = null;
+    nowPlaying?.classList.remove("is-track-changing");
+    playerPanel?.classList.remove("is-track-changing");
+  };
+
+  const makePresentationCopy = () => {
+    const copy = nowPlaying.cloneNode(true);
+    copy.removeAttribute("id");
+    copy.removeAttribute("aria-live");
+    copy.removeAttribute("aria-busy");
+    copy.setAttribute("aria-hidden", "true");
+    copy.inert = true;
+    copy.classList.remove("is-track-changing");
+    copy.querySelectorAll("[id]").forEach(node => node.removeAttribute("id"));
+    return copy;
+  };
+
+  // Reserve the tallest recording's copy at this width. Changing from a long
+  // English title to a short Japanese one must not move the seek/volume controls.
+  const measurePresentation = () => {
+    presentationMeasureFrame = 0;
+    if (!isOpen || !nowPlaying || !playerPanel) return;
+    const width = nowPlaying.offsetWidth;
+    if (!width) return;
+    presentationWidth = width;
+    const probe = makePresentationCopy();
+    probe.classList.add("sound-player-measure");
+    probe.style.width = `${width}px`;
+    playerPanel.append(probe);
+    let height = 0;
+    for (const metadata of Object.values(tracks)) {
+      probe.querySelector("p:first-of-type").textContent = metadata.number;
+      probe.querySelector("h3").textContent = metadata.title;
+      probe.querySelector("p:last-child").textContent = metadata.description;
+      height = Math.max(height, probe.offsetHeight);
+    }
+    probe.remove();
+    nowPlaying.style.minHeight = `${Math.ceil(height)}px`;
+    measureSignalLayout();
+  };
+
+  const requestPresentationMeasure = () => {
+    cancelAnimationFrame(presentationMeasureFrame);
+    presentationMeasureFrame = requestAnimationFrame(measurePresentation);
+  };
+  const presentationResizeObserver = new ResizeObserver(() => {
+    if (!isOpen || !nowPlaying) return;
+    if (nowPlaying.offsetWidth === presentationWidth) return;
+    clearPresentationMotion();
+    requestPresentationMeasure();
+  });
+  if (nowPlaying) presentationResizeObserver.observe(nowPlaying);
+  document.fonts?.ready.then(requestPresentationMeasure);
+  presentationMotion.addEventListener("change", () => {
+    if (presentationMotion.matches) clearPresentationMotion();
+  });
+
+  const presentTrack = (track) => {
+    if (!nowPlaying || !coverImage || requestedPresentation === track) return;
+    requestedPresentation = track;
+    const generation = ++presentationGeneration;
+    const animate = Boolean(isOpen && presentedTrack && layer.classList.contains("is-open"));
+    nowPlaying.setAttribute("aria-busy", "true");
+    void prepareCover(track).then(artwork => {
+      // A late image decode must never restore an older selection or reopen a
+      // closed player. Only the latest audible track owns this presentation.
+      if (generation !== presentationGeneration || !isOpen) return;
+      let echo = null;
+      if (animate && !presentationMotion.matches) {
+        echo = makePresentationCopy();
+        echo.classList.add("sound-player-echo");
+        echo.style.left = `${nowPlaying.offsetLeft}px`;
+        echo.style.top = `${nowPlaying.offsetTop}px`;
+        echo.style.width = `${nowPlaying.offsetWidth}px`;
+        echo.style.height = `${nowPlaying.offsetHeight}px`;
+        // Capture a partially revealed recording when selections come quickly.
+        [".sound-cover-art img", "p:first-of-type", "h3", "p:last-child"].forEach(selector => {
+          const live = nowPlaying.querySelector(selector);
+          echo.querySelector(selector)?.style.setProperty("--sound-release-opacity", getComputedStyle(live).opacity);
+        });
+      }
+      clearPresentationMotion();
+      const metadata = tracks[track];
+      trackNumber.textContent = metadata.number;
+      trackTitle.textContent = metadata.title;
+      description.textContent = metadata.description;
+      coverImage.hidden = !artwork;
+      if (artwork) coverImage.src = artwork.src;
+      else coverImage.removeAttribute("src");
+      coverImage.style.objectPosition = metadata.coverPosition;
+      nowPlaying.dataset.track = track;
+      nowPlaying.setAttribute("aria-busy", "false");
+      presentedTrack = track;
+      if (!echo) return;
+      presentationEcho = echo;
+      playerPanel.append(echo);
+      // Establish the incoming animation's first frame in the same task; the
+      // controls themselves never transform, disappear, or stop receiving input.
+      void nowPlaying.offsetWidth;
+      nowPlaying.classList.add("is-track-changing");
+      playerPanel.classList.add("is-track-changing");
+      presentationTimer = window.setTimeout(clearPresentationMotion, 1800);
+    });
+  };
 
   const createSoundVisualizer = (canvas) => {
     if (!(canvas instanceof HTMLCanvasElement)) return null;
@@ -1206,7 +1363,6 @@
 
   const render = (state = getAudio()?.getPlaybackState?.(), updateInterface = true) => {
     const activeTrack = tracks[state?.track] ? state.track : "opening";
-    const metadata = tracks[activeTrack];
     const volumePercent = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
     const trackDuration = state?.duration || 0;
     const elapsed = state?.currentTime || 0;
@@ -1238,9 +1394,7 @@
     setAttribute(layer, "data-track", activeTrack);
     setAttribute(playButton, "aria-pressed", String(isPlaying));
     setAttribute(playButton, "aria-label", isPlaying ? "一時停止する" : "再生する");
-    setText(trackNumber, metadata.number);
-    setText(trackTitle, metadata.title);
-    setText(description, metadata.description);
+    if (isOpen) presentTrack(activeTrack);
     setText(currentTime, formatTime(elapsed));
     setText(duration, trackDuration > 0 ? formatTime(trackDuration) : "—:—");
     if (volume instanceof HTMLInputElement) volume.value = String(volumePercent);
@@ -1277,6 +1431,7 @@
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("sound-mode-open");
     visualizerRuntime ||= createSoundVisualizer(visualizerCanvas);
+    measurePresentation();
     render();
     requestAnimationFrame(() => {
       layer.classList.add("is-open");
@@ -1289,6 +1444,13 @@
   const close = ({ updateHash = true } = {}) => {
     if (!isOpen) return;
     isOpen = false;
+    presentationGeneration += 1;
+    requestedPresentation = "";
+    presentedTrack = "";
+    clearPresentationMotion();
+    cancelAnimationFrame(presentationMeasureFrame);
+    presentationMeasureFrame = 0;
+    nowPlaying?.setAttribute("aria-busy", "false");
     layer.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("sound-mode-open");
@@ -1334,9 +1496,15 @@
   });
 
   trackButtons.forEach((button) => {
+    // Warm only the intended recording; keep twelve full-size backgrounds out
+    // of the initial sound-mode load and out of the animation's critical path.
+    const warmCover = () => { if (isOpen) void prepareCover(button.dataset.soundTrack); };
+    button.addEventListener("pointerenter", warmCover);
+    button.addEventListener("focus", warmCover);
     button.addEventListener("click", async () => {
       const track = button.dataset.soundTrack;
       if (!tracks[track]) return;
+      warmCover();
       const api = getAudio();
       const analysisReady = api?.enableAnalysis?.();
       await api?.switchTrack?.(track, 0.35);
@@ -1369,7 +1537,7 @@
     render();
   });
 
-  window.addEventListener("gaia:audio-state", (event) => render(event.detail));
+  window.addEventListener("gaia:audio-state", () => render());
   document.addEventListener("keydown", (event) => {
     if (!isOpen) return;
     if (event.key === "Escape") {

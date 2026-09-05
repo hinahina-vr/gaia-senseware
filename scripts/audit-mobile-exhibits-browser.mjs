@@ -245,13 +245,8 @@ try {
       scan.map.push({ screenshot, ...metrics });
       if (index >= 9) {
         const canvas = page.locator("#gaia-live-exhibit-canvas");
-        const touchButton = page.locator("[data-live-light-touch]");
-        const beforeButtonTouch = Number(await canvas.getAttribute("data-light-touch-count") || 0);
-        await touchButton.click();
-        await page.waitForFunction(
-          (previous) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previous,
-          beforeButtonTouch,
-        );
+        assert.equal(await page.locator("[data-live-light-touch]").count(), 0, "Retired light-touch button remains");
+        assert.deepEqual(await page.locator(".gaia-live-deck-actions strong").allTextContents(), ["データの出典", "統計分析"]);
         const beforeSurfaceTouch = Number(await canvas.getAttribute("data-light-touch-count") || 0);
         const openSurfacePoint = await page.evaluate(() => {
           const map = document.querySelector("#japan-map");
@@ -276,7 +271,7 @@ try {
         }
         scan.liveInteractions.push({
           number,
-          buttonTouchCount: Number(await canvas.getAttribute("data-light-touch-count") || 0),
+          surfaceTouchCount: Number(await canvas.getAttribute("data-light-touch-count") || 0),
           surfacePoint: openSurfacePoint,
           generatedSound: "removed",
         });

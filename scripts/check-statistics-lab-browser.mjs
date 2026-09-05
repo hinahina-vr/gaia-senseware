@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { METHOD_GROUPS } from "../statistics-methods.js";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4173"] = process.argv.slice(2);
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
@@ -104,7 +105,7 @@ try {
       assert.equal(fixedFrame.layout.controlsPosition, "fixed", "mobile: analysis conditions are not mounted in the settings drawer");
     }
     await setDatasetForTest("co2-trend");
-    await setControlValue("#gaia-statistics-lectures", "01");
+    await setControlValue("#gaia-statistics-lectures", "descriptive");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中"
       && document.querySelector("#gaia-statistics-canvas")?.dataset.axisX === "CO₂ (ppm)");
     const co2Chart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
@@ -194,7 +195,7 @@ try {
     await setDatasetForTest("rainfall");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");
-    assert.equal(await page.locator("#gaia-statistics-lectures option").count(), 15);
+    assert.deepEqual(await page.locator("#gaia-statistics-lectures option").allTextContents(), METHOD_GROUPS.map(group => group.name));
     assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
     assert.match(await page.locator(".gaia-statistics-insight").nth(0).textContent(), /この図が示すこと/u);
     assert.match(await page.locator(".gaia-statistics-insight").nth(1).textContent(), /データから見えたこと/u);
@@ -239,12 +240,12 @@ try {
     assert.equal(specialized.pollination.kind, "not-applicable");
     assert.match(specialized.pollination.insight.interpretation, /23相互作用.*62標本/u);
 
-    for (let lecture = 0; lecture < 15; lecture += 1) {
-      await setControlValue("#gaia-statistics-lectures", String(lecture + 1).padStart(2, "0"));
+    for (const lecture of METHOD_GROUPS) {
+      await setControlValue("#gaia-statistics-lectures", lecture.id);
       await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
-      assert.equal(await page.locator(".gaia-statistics-insight").count(), 4, `${viewport.name}: lecture ${lecture + 1} insight cards`);
+      assert.equal(await page.locator(".gaia-statistics-insight").count(), 4, `${viewport.name}: category ${lecture.id} insight cards`);
       const cards = await page.locator(".gaia-statistics-insight").allTextContents();
-      cards.forEach((text, index) => assert.ok(text.trim().length > 18, `${viewport.name}: lecture ${lecture + 1}, card ${index + 1} empty`));
+      cards.forEach((text, index) => assert.ok(text.trim().length > 18, `${viewport.name}: category ${lecture.id}, card ${index + 1} empty`));
       const methodButtons = page.locator("#gaia-statistics-methods button");
       for (let method = 1; method < await methodButtons.count(); method += 1) {
         await methodButtons.nth(method).evaluate((element) => element.click());
@@ -254,7 +255,7 @@ try {
     }
 
     await setDatasetForTest("waste");
-    await setControlValue("#gaia-statistics-lectures", "01");
+    await setControlValue("#gaia-statistics-lectures", "descriptive");
     await page.waitForFunction(() => document.querySelectorAll("#gaia-statistics-metrics tr").length >= 6
       && document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     const readMean = () => page.evaluate(() => [...document.querySelectorAll("#gaia-statistics-metrics tr")]
@@ -335,7 +336,7 @@ try {
         && Number(document.querySelector("#gaia-statistics-kpis")?.dataset.usedRows) === 1;
     });
     const restoredViewState = await page.evaluate(() => window.GaiaStatisticsLab.getState());
-    assert.equal(restoredViewState.lectureId, "01", `${viewport.name}: saved lecture was not restored`);
+    assert.equal(restoredViewState.lectureId, "descriptive", `${viewport.name}: saved category was not restored`);
     assert.equal(restoredViewState.methodId, "summary", `${viewport.name}: saved method was not restored`);
     assert.equal(restoredViewState.recordSortKey, "label", `${viewport.name}: saved sort key was not restored`);
     assert.equal(restoredViewState.recordSortDirection, "descending", `${viewport.name}: saved sort direction was not restored`);

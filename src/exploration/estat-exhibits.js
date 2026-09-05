@@ -1,4 +1,5 @@
-import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-live-next-16-1";
+import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-weather-credit-2";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
 
@@ -1678,7 +1679,7 @@ const setMonth = setPeriod;
 const stepExhibit = (direction) => {
   const step = Math.sign(Number(direction) || 0);
   if (!step || activeIndex < 0) return;
-  const earthButtons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
+  const earthButtons = globalThis.GaiaMapCategories.buttons().filter((button) => Number(button.textContent.trim()) <= 15);
   if (step > 0 && activeIndex === EXHIBITS.length - 1) {
     document.querySelector(".map-mode-bank .map-mode-button[data-firms-exhibit]")?.click();
     return;
@@ -1875,10 +1876,11 @@ const mount = () => {
     <div class="gaia-estat-comparison"><span>都道府県順位<strong data-estat-rank>—</strong></span><span data-estat-delta-label>前月差<strong data-estat-delta>—</strong></span></div>
     <div class="gaia-estat-copy"><p data-estat-caption></p><small data-estat-guide></small></div>
     <div class="gaia-estat-actions" aria-label="元データと統計分析">
-      <a class="gaia-estat-action gaia-estat-action--source" data-estat-source-action href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer"><span><small>SOURCE</small><strong>元データを確認</strong></span><i aria-hidden="true">↗</i></a>
-      <button class="gaia-estat-action gaia-estat-action--analysis" type="button" data-estat-analysis><span><small>ANALYSIS</small><strong>統計分析</strong></span><i aria-hidden="true">＋</i></button>
+      <a data-estat-source-action href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer"></a>
+      <button type="button" data-estat-analysis></button>
     </div>
   `;
+  decorateMapActions(readout.querySelector(".gaia-estat-actions"), readout.querySelector("[data-estat-source-action]"), readout.querySelector("[data-estat-analysis]"));
   layer.append(readout);
 
   // Reuse the canonical 01–30 picker, including its descriptions and routing.

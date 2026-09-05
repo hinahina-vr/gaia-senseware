@@ -31,6 +31,8 @@ import {
   studentTCdf,
   varianceConfidenceInterval,
 } from "./statistics-lab-core.js";
+import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-statistical-categories-1";
+import { createStatisticsAi } from "./statistics-ai.js?v=gaia-statistics-byok-1";
 
 const q = (selector) => document.querySelector(selector);
 const lab = q("#gaia-statistics-lab");
@@ -104,6 +106,75 @@ if (!lab || !openButton) {
   chartTooltip.hidden = true;
   ui.visual.append(chartTooltip);
   ui.tooltip = chartTooltip;
+  const methodReason = document.createElement("div");
+  methodReason.id = "gaia-statistics-method-reason";
+  methodReason.className = "gaia-statistics-method-reason";
+  methodReason.setAttribute("role", "tooltip");
+  methodReason.hidden = true;
+  lab.append(methodReason);
+  const methodStatus = document.createElement("p");
+  methodStatus.className = "gaia-statistics-method-status";
+  methodStatus.setAttribute("role", "status");
+  methodStatus.hidden = true;
+  ui.methods.after(methodStatus);
+  let reasonTarget = null;
+  let reasonHideTimer = 0;
+  const hideMethodReason = () => {
+    clearTimeout(reasonHideTimer);
+    reasonTarget?.removeAttribute("aria-describedby");
+    reasonTarget = null;
+    methodReason.hidden = true;
+    methodReason.classList.remove("is-inline");
+    lab.append(methodReason);
+  };
+  const showMethodReason = (button, { reveal = false } = {}) => {
+    if (!button.dataset.unavailableReason) return;
+    hideMethodReason();
+    reasonTarget = button;
+    methodReason.textContent = button.dataset.unavailableReason;
+    methodReason.hidden = false;
+    button.setAttribute("aria-describedby", methodReason.id);
+    const anchor = button.getBoundingClientRect();
+    const tip = methodReason.getBoundingClientRect();
+    const fitsLeft = anchor.left - tip.width - 10 >= 8;
+    // A narrow menu has no side gutter. Reserve space below the trigger so
+    // its explanation never covers another method's hit area.
+    if (!fitsLeft && ui.methods.contains(button)) {
+      methodReason.classList.add("is-inline");
+      button.after(methodReason);
+      if (reveal) requestAnimationFrame(() => {
+        if (reasonTarget === button && !methodReason.hidden) methodReason.scrollIntoView({ block: "nearest", behavior: "instant" });
+      });
+      return;
+    }
+    const left = fitsLeft ? anchor.left - tip.width - 10 : anchor.left;
+    const top = fitsLeft ? anchor.top : anchor.top - tip.height - 8 >= 8 ? anchor.top - tip.height - 8 : anchor.bottom + 8;
+    methodReason.style.left = `${Math.max(8, Math.min(innerWidth - tip.width - 8, left))}px`;
+    methodReason.style.top = `${Math.max(8, Math.min(innerHeight - tip.height - 8, top))}px`;
+  };
+  const scheduleReasonHide = () => {
+    clearTimeout(reasonHideTimer);
+    reasonHideTimer = window.setTimeout(() => {
+      if (reasonTarget && document.activeElement !== reasonTarget && !reasonTarget.matches(":hover") && !methodReason.matches(":hover")) hideMethodReason();
+    }, 160);
+  };
+  methodReason.addEventListener("pointerenter", () => clearTimeout(reasonHideTimer));
+  methodReason.addEventListener("pointerleave", scheduleReasonHide);
+  ui.controls.addEventListener("scroll", () => {
+    if (!methodReason.classList.contains("is-inline")) hideMethodReason();
+  }, true);
+  window.addEventListener("resize", hideMethodReason);
+  lab.addEventListener("pointerdown", event => {
+    // Let another method receive its full click before collapsing inline text.
+    if (methodReason.classList.contains("is-inline") && event.target.closest("button[data-method]")) return;
+    if (reasonTarget && !reasonTarget.contains(event.target) && !methodReason.contains(event.target)) hideMethodReason();
+  });
+  const attachReasonEvents = (button) => {
+    button.addEventListener("pointerenter", event => { if (event.pointerType !== "touch") showMethodReason(button); });
+    button.addEventListener("pointerleave", scheduleReasonHide);
+    button.addEventListener("focus", () => showMethodReason(button, { reveal: button.matches(":focus-visible") }));
+    button.addEventListener("blur", scheduleReasonHide);
+  };
 
   const MODE_TITLES = {
     "breathing-earth": "Breathing Earth / 地球の一呼吸",
@@ -119,65 +190,6 @@ if (!lab || !openButton) {
     "nasa-firms": "燃える惑星 / NASA FIRMS",
   };
 
-  const METHOD_GROUPS = [
-    { id: "01", name: "記述統計", methods: [
-      ["summary", "値の分布を見る", "値がどこに集まり、どこから外れているかを見る。"],
-      ["scatter", "散布図・共分散・Pearson相関", "2変数の方向と強さを、点の配置から確認します。"],
-    ] },
-    { id: "02", name: "確率分布", methods: [
-      ["moments", "PMF・PDF・CDF・モーメント", "分布の形を期待値、分散、歪度、尖度で要約します。"],
-    ] },
-    { id: "03", name: "離散分布", methods: [
-      ["discrete", "二項・ポアソン・幾何分布", "件数と発生間隔を離散確率モデルと照合します。"],
-    ] },
-    { id: "04", name: "連続分布", methods: [
-      ["continuous", "一様・指数・正規・標準化", "観測値をz得点と理論確率面積へ変換します。"],
-    ] },
-    { id: "05", name: "標本と推定", methods: [
-      ["sampling", "チェビチェフ・大数・CLT", "標本平均が安定していく過程と境界を可視化します。"],
-      ["unbiased", "不偏分散", "nではなくn−1で割る意味を標本から確認します。"],
-    ] },
-    { id: "06", name: "区間推定", methods: [
-      ["interval", "平均・分散・比率の信頼区間", "点推定だけでなく推定の幅を表示します。"],
-      ["difference-ci", "2群差・分散比の区間", "前半と後半など、2群の差と不確実性を比較します。"],
-    ] },
-    { id: "07", name: "仮説検定", methods: [
-      ["hypothesis", "p値・片側/両側・検出力", "帰無仮説と効果量を並べ、p値だけで判断しません。"],
-      ["binomial", "正確二項検定", "成功数を二項分布の仮説と比較します。"],
-    ] },
-    { id: "08", name: "平均の検定", methods: [
-      ["welch", "z/t/χ²・等分散t・Welch", "2群平均を分散が異なる可能性も含めて比較します。"],
-      ["paired", "対応ありt検定", "同じ対象を対応させ、対象内の差を検定します。"],
-    ] },
-    { id: "09", name: "質的変数", methods: [
-      ["categorical", "クロス集計・χ²独立性", "カテゴリの組み合わせに偏りがあるか確認します。"],
-      ["fisher", "Fisher正確検定", "小標本の2×2表を近似なしで評価します。"],
-    ] },
-    { id: "10", name: "分散分析", methods: [
-      ["anova", "1元・2元配置ANOVA", "群間・群内のばらつきと交互作用の可否を確認します。"],
-      ["bh", "BH多重比較補正", "複数のp値を同時に扱うときの偽発見を抑えます。"],
-    ] },
-    { id: "11", name: "回帰分析", methods: [
-      ["regression", "単回帰・多項式・最小二乗", "説明変数1単位あたりの変化を直線として推定します。"],
-      ["multiple", "重回帰", "複数の自然条件を同時に入れ、係数を比較します。"],
-    ] },
-    { id: "12", name: "回帰診断", methods: [
-      ["diagnostics", "R²・係数t・モデルF・残差", "当てはまりと残差を分けてモデルを診断します。"],
-      ["prediction", "予測区間・多重共線性", "予測の幅と説明変数同士の重なりを表示します。"],
-    ] },
-    { id: "13", name: "ロジスティック", methods: [
-      ["logistic", "ロジスティック回帰・最尤推定", "二値結果の確率をオッズ比で説明します。"],
-    ] },
-    { id: "14", name: "ベイズ", methods: [
-      ["bayes", "Beta–Binomial・HDI", "事前分布が観測によってどう更新されたか示します。"],
-      ["mcmc", "MCMC診断", "決定的なチェーンで収束指標と有効標本を確認します。"],
-    ] },
-    { id: "15", name: "総合演習", methods: [
-      ["exercise", "GAIA 6段階総合演習", "問い、整形、可視化、推定、限界、次の分析を一続きにします。"],
-    ] },
-  ];
-
-  const METHOD_LOOKUP = new Map(METHOD_GROUPS.flatMap((group) => group.methods.map((method) => [method[0], { group, id: method[0], label: method[1], copy: method[2] }])));
   const DEFAULT_METHOD = {
     "breathing-earth": "regression",
     "blue-circulation": "summary",
@@ -199,7 +211,7 @@ if (!lab || !openButton) {
     datasets: [],
     datasetId: "",
     modeId: "breathing-earth",
-    lectureId: "01",
+    lectureId: "descriptive",
     methodId: "summary",
     includeDerived: false,
     recordQuery: "",
@@ -317,6 +329,11 @@ if (!lab || !openButton) {
     });
   };
   const valuesFor = (dataset) => rowsFor(dataset).map((row) => row.value).filter(Number.isFinite);
+  const aiButton = q("#gaia-statistics-ai-open");
+  const statisticsAi = createStatisticsAi({ lab, button: aiButton, getContext: () => ({
+    dataset: currentDataset(), rows: rowsFor(currentDataset()), method: METHOD_LOOKUP.get(state.methodId), result: state.result,
+    includeDerived: state.includeDerived, recordQuery: state.recordQuery,
+  }) });
   const splitValues = (values) => [values.slice(0, Math.floor(values.length / 2)), values.slice(Math.ceil(values.length / 2))];
   const customInsight = ({ headline, meaning, evidence = [], interpretation, limitations, nextActions, provenance }) => ({ headline, meaning, evidence, interpretation, limitations, nextActions, provenance });
   const customResult = ({ kind = "custom", metrics = [], chart = { type: "summary" }, insight, formula = "" }) => ({ kind, metrics, chart, insight, formula });
@@ -443,7 +460,7 @@ if (!lab || !openButton) {
     if (!dataset || !method) return false;
     const snapshot = {
       id: globalThis.crypto?.randomUUID?.() || `view-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: `${dataset.title.replace(/（.*$/u, "").trim()} · ${method.group.id} ${method.label.split("・")[0]}${state.recordQuery ? ` · ${state.recordQuery}` : ""}`,
+      name: `${dataset.title.replace(/（.*$/u, "").trim()} · ${method.label.split("・")[0]}${state.recordQuery ? ` · ${state.recordQuery}` : ""}`,
       datasetId: dataset.id,
       methodId: state.methodId,
       lectureId: method.group.id,
@@ -536,6 +553,7 @@ if (!lab || !openButton) {
     if (dataset.id !== "earthquakes") return notApplicable("この手法は0,1,2…の件数または待ち回数に適用します。現在のデータは離散発生件数として設計されていません。", ["01 要約統計", "04 連続分布"]);
     const values = valuesFor(dataset);
     const stats = descriptive(values);
+    if (!stats) return notApplicable("現在の絞り込み条件に合う年別件数がありません。", ["01 要約統計"]);
     const ratio = stats.populationVariance / stats.mean;
     const maximum = Math.max(...values);
     const threshold = Math.ceil(stats.mean);
@@ -560,7 +578,9 @@ if (!lab || !openButton) {
   };
 
   const analyzeContinuous = (dataset) => {
-    const target = dataset.id === "earthquakes" && state.includeDerived ? dataset.gaps.map((row) => row.value) : valuesFor(dataset);
+    const selectedYears = new Set(rowsFor(dataset).map(row => row.id));
+    const target = dataset.id === "earthquakes" && state.includeDerived
+      ? dataset.gaps.filter(row => selectedYears.has(row.label.slice(0, 4))).map(row => row.value) : valuesFor(dataset);
     const family = dataset.id === "earthquakes" && state.includeDerived ? "exponential" : "normal";
     const result = analyzeDistribution({ values: target, label: family === "exponential" ? "地震発生間隔" : dataset.title, unit: family === "exponential" ? "日" : dataset.unit, family, provenance: family === "exponential" ? ["DERIVED"] : dataset.provenance });
     const stats = descriptive(target);
@@ -590,9 +610,10 @@ if (!lab || !openButton) {
     let left;
     let right;
     if (dataset.id === "waste") {
-      left = dataset.rows.filter((row) => row.provenance === "SOURCE").map((row) => row.value);
-      right = dataset.rows.filter((row) => row.provenance === "IMPUTED").map((row) => row.value);
-      result = analyzeWelch({ left, right, leftLabel: "実測17か国", rightLabel: "補完14か国", unit: "%", provenance: ["SOURCE", "IMPUTED"], diagnosticOnly: true });
+      if (!state.includeDerived) return notApplicable("実測値と補完値の2群を比較する手法です。「補完・派生値も含める」を有効にしてください。", ["01 要約統計"]);
+      left = rowsFor(dataset).filter((row) => row.provenance === "SOURCE").map((row) => row.value);
+      right = rowsFor(dataset).filter((row) => row.provenance === "IMPUTED").map((row) => row.value);
+      result = analyzeWelch({ left, right, leftLabel: `実測${left.length}か国`, rightLabel: `補完${right.length}か国`, unit: "%", provenance: ["SOURCE", "IMPUTED"], diagnosticOnly: true });
     } else {
       [left, right] = splitValues(valuesFor(dataset));
       result = analyzeWelch({ left, right, leftLabel: "前半", rightLabel: "後半", unit: dataset.unit, provenance: dataset.provenance, diagnosticOnly: true });
@@ -615,7 +636,7 @@ if (!lab || !openButton) {
   const analyzeIntervals = (dataset) => {
     const values = valuesFor(dataset);
     const result = analyzeInterval({ values, label: dataset.title, unit: dataset.unit, provenance: dataset.provenance });
-    if (!result.metrics) return result;
+    if (result.kind === "not-applicable") return result;
     const varianceInterval = varianceConfidenceInterval(values);
     const stats = descriptive(values);
     const successes = values.filter((value) => value > stats.median).length;
@@ -692,13 +713,14 @@ if (!lab || !openButton) {
   };
 
   const categoricalRows = (dataset) => {
-    if (dataset.id === "culture") return [dataset.rows.map((row) => row.category), dataset.rows.map((row) => row.group), "カテゴリ", "地域"];
+    if (dataset.id === "culture") return [rowsFor(dataset).map((row) => row.category), rowsFor(dataset).map((row) => row.group), "カテゴリ", "地域"];
     if (dataset.id === "pollination") {
-      const interactions = dataset.categoricalSets[0];
+      const selectedIds = new Set(rowsFor(dataset).map(row => row.id));
+      const interactions = dataset.categoricalSets[0].filter(row => selectedIds.has(row.id));
       return [interactions.map((row) => row.category), interactions.map((row) => row.group), "相互作用", "送粉者"];
     }
     const rows = rowsFor(dataset);
-    if (rows.every((row) => Number.isFinite(row.x) && Number.isFinite(row.y))) {
+    if (rows.length && rows.every((row) => Number.isFinite(row.x) && Number.isFinite(row.y))) {
       const mx = descriptive(rows.map((row) => row.x)).median;
       const my = descriptive(rows.map((row) => row.y)).median;
       return [rows.map((row) => row.y > my ? "高" : "低"), rows.map((row) => row.x > mx ? "高" : "低"), dataset.yLabel, dataset.xLabel];
@@ -719,7 +741,7 @@ if (!lab || !openButton) {
     if (dataset.id === "pollination") return notApplicable("23相互作用はすべてpollinates、62標本はすべてHUMAN_OBSERVATIONかつ同じ記録方式です。比較カテゴリの変動がないため、独立性検定は成立しません。", ["01 件数を確認する", "比較カテゴリを含むデータを設計する"]);
     const [categories, groups, categoryLabel, groupLabel] = categoricalRows(dataset);
     const result = analyzeCategorical({ categories, groups, categoryLabel, groupLabel, provenance: dataset.provenance });
-    if (dataset.id === "culture" && result.metrics) {
+    if (dataset.id === "culture" && result.kind !== "not-applicable") {
       const levels = [...new Set(categories)];
       const observed = levels.map((level) => categories.filter((value) => value === level).length);
       const goodness = chiSquareGoodnessOfFit(observed, observed.map(() => categories.length / levels.length));
@@ -754,6 +776,7 @@ if (!lab || !openButton) {
       return result;
     }
     const rows = rowsFor(dataset).filter((row) => [row.renewablePercent, row.solarKwhM2Day, row.windSpeedMs].every(Number.isFinite));
+    if (!rows.length) return notApplicable("2つの要因と目的変数が揃った観測値がありません。", ["01 要約統計"]);
     const solarMedian = descriptive(rows.map((row) => row.solarKwhM2Day)).median;
     const windMedian = descriptive(rows.map((row) => row.windSpeedMs)).median;
     const encoded = rows.map((row) => ({ ...row, solarGroup: row.solarKwhM2Day > solarMedian ? 1 : 0, windGroup: row.windSpeedMs > windMedian ? 1 : 0 }));
@@ -785,6 +808,7 @@ if (!lab || !openButton) {
   const analyzeRegression = (dataset, detail = "base") => {
     const rows = rowsFor(dataset).filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
     if (rows.length < 3) return notApplicable("回帰には2変数の有限な組が3件以上必要です。", ["01 散布図"]);
+    if (!Number.isFinite(pearson(rows.map(row => row.x), rows.map(row => row.y)))) return notApplicable("一方または両方の変数が同じ値のため、相関・回帰の評価を計算できません。", ["01 要約統計"]);
     const base = analyzeCorrelation({ x: rows.map((row) => row.x), y: rows.map((row) => row.y), xLabel: dataset.xLabel, yLabel: dataset.yLabel, xUnit: dataset.xUnit || "", yUnit: dataset.unit, provenance: dataset.provenance, extraLimitations: detail !== "base" ? ["残差の独立性と等分散性をグラフで追加確認してください。"] : [] });
     if (base.model) {
       const polynomial = ordinaryLeastSquares(rows.map((row) => [row.x, row.x ** 2]), rows.map((row) => row.y));
@@ -958,9 +982,14 @@ if (!lab || !openButton) {
     const rows = rowsFor(dataset);
     const values = valuesFor(dataset);
     const pairRows = rows.filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
+    if (!rows.length) return notApplicable("現在のデータ区分・絞り込み条件に合う観測値がありません。条件を変更してください。", ["01 要約統計"]);
     switch (methodId) {
       case "summary": return analyzeSummary({ values, label: dataset.valueLabel || dataset.yLabel || dataset.title, unit: dataset.unit, provenance: dataset.provenance });
-      case "scatter": return pairRows.length >= 3 ? analyzeCorrelation({ x: pairRows.map((row) => row.x), y: pairRows.map((row) => row.y), xLabel: dataset.xLabel, yLabel: dataset.yLabel, xUnit: dataset.xUnit || "", yUnit: dataset.unit, provenance: dataset.provenance }) : notApplicable("2変数の対応した有限値が3組以上必要です。", ["01 要約統計"]);
+      case "scatter": {
+        if (pairRows.length < 3) return notApplicable("2変数の対応した有限値が3組以上必要です。", ["01 要約統計"]);
+        if (!Number.isFinite(pearson(pairRows.map(row => row.x), pairRows.map(row => row.y)))) return notApplicable("一方または両方の変数が同じ値のため、相関係数を計算できません。", ["01 要約統計"]);
+        return analyzeCorrelation({ x: pairRows.map((row) => row.x), y: pairRows.map((row) => row.y), xLabel: dataset.xLabel, yLabel: dataset.yLabel, xUnit: dataset.xUnit || "", yUnit: dataset.unit, provenance: dataset.provenance });
+      }
       case "moments": return analyzeMoments(dataset);
       case "discrete": return analyzeDiscrete(dataset);
       case "continuous": return analyzeContinuous(dataset);
@@ -986,6 +1015,53 @@ if (!lab || !openButton) {
       case "exercise": return analyzeExercise(dataset);
       default: return notApplicable("選択した分析を実行できません。", ["01 要約統計"]);
     }
+  };
+
+  let availabilityContext = null;
+  const methodAvailability = (methodId, dataset = currentDataset()) => {
+    if (!dataset) return { available: false, reason: "データの準備中です。" };
+    if (!availabilityContext || availabilityContext.dataset !== dataset
+      || availabilityContext.includeDerived !== state.includeDerived || availabilityContext.query !== state.recordQuery) {
+      availabilityContext = { dataset, includeDerived: state.includeDerived, query: state.recordQuery, methods: new Map() };
+    }
+    if (!availabilityContext.methods.has(methodId)) {
+      let eligibility;
+      try {
+        // Reuse calculation guards. MCMC uses Bayes input validation without
+        // starting any worker merely to display the analysis menu.
+        const result = runAnalysis(methodId === "mcmc" ? "bayes" : methodId, dataset);
+        eligibility = result.kind === "not-applicable"
+          ? { available: false, reason: result.insight.interpretation }
+          : { available: true, reason: "" };
+      } catch {
+        eligibility = { available: false, reason: "この条件では必要な観測値・変数を揃えられず、分析を計算できません。データや絞り込み条件を変更してください。" };
+      }
+      availabilityContext.methods.set(methodId, eligibility);
+    }
+    return availabilityContext.methods.get(methodId);
+  };
+  const applyAvailability = (button, availability) => {
+    button.setAttribute("aria-disabled", String(!availability.available));
+    if (availability.available) {
+      delete button.dataset.unavailableReason;
+      button.removeAttribute("aria-description");
+      if (reasonTarget === button) hideMethodReason();
+    } else {
+      button.dataset.unavailableReason = availability.reason;
+      button.setAttribute("aria-description", availability.reason);
+      if (reasonTarget === button) showMethodReason(button);
+    }
+  };
+  const syncMethodAvailability = () => {
+    let availableCount = 0;
+    ui.methods.querySelectorAll("button[data-method]").forEach(button => {
+      const availability = methodAvailability(button.dataset.method);
+      if (availability.available) availableCount += 1;
+      applyAvailability(button, availability);
+      button.setAttribute("aria-pressed", String(button.dataset.method === state.methodId));
+    });
+    methodStatus.hidden = availableCount > 0 || !ui.methods.childElementCount;
+    methodStatus.textContent = methodStatus.hidden ? "" : "この分類には、現在の条件で使える手法がありません。各項目から理由を確認できます。";
   };
 
   const metricText = ([label, value, unit]) => `${label}: ${format(value)}${unit || ""}`;
@@ -1128,6 +1204,7 @@ if (!lab || !openButton) {
   };
 
   const renderInsights = (result) => {
+    if (reasonTarget?.classList.contains("gaia-statistics-next-button")) hideMethodReason();
     const insight = result.insight;
     ui.insights.replaceChildren();
     if (!insight) return;
@@ -1148,15 +1225,21 @@ if (!lab || !openButton) {
     );
     const next = createInsightCard("next", 4, "次に確かめる", "関連する分析へ進む", "");
     (insight.nextActions || ["01 要約統計"]).forEach((action) => {
-      const button = document.createElement("button"); button.type = "button"; button.className = "gaia-statistics-next-button"; button.textContent = `→ ${action}`;
-      button.addEventListener("click", () => selectAction(action)); next.append(button);
+      const button = document.createElement("button"); button.type = "button"; button.className = "gaia-statistics-next-button"; button.textContent = `→ ${actionLabel(action)}`;
+      const method = resolveLegacyAction(action);
+      if (method) applyAvailability(button, methodAvailability(method.id));
+      attachReasonEvents(button);
+      button.addEventListener("click", () => {
+        if (method && !methodAvailability(method.id).available) { showMethodReason(button); return; }
+        selectAction(action);
+      }); next.append(button);
     });
     ui.insights.append(next);
   };
 
   const selectAction = (action) => {
-    const lecture = METHOD_GROUPS.find((group) => action.includes(group.id));
-    if (lecture) selectLecture(lecture.id);
+    const method = resolveLegacyAction(action);
+    if (method) selectLecture(method.group.id, method.id);
   };
 
   const chartPoints = (result, dataset) => {
@@ -1491,13 +1574,19 @@ if (!lab || !openButton) {
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
-    ui.number.textContent = `${method.group.id} / ${method.group.name}`; ui.title.textContent = method.id === "summary" ? `${dataset.valueLabel || dataset.yLabel || "観測値"}の分布` : method.label; ui.copy.textContent = method.copy; ui.status.textContent = "計算中";
+    aiButton.disabled = true;
+    aiButton.title = "分析データを準備しています。";
+    syncMethodAvailability();
+    ui.number.textContent = method.group.name; ui.title.textContent = method.id === "summary" ? `${dataset.valueLabel || dataset.yLabel || "観測値"}の分布` : method.label; ui.copy.textContent = method.copy; ui.status.textContent = "計算中";
     const token = ++state.renderToken;
     requestAnimationFrame(async () => {
       if (token !== state.renderToken) return;
       try {
-        const result = await runAnalysis(method.id, dataset);
+        const availability = methodAvailability(method.id, dataset);
+        const result = availability.available ? await runAnalysis(method.id, dataset) : notApplicable(availability.reason, ["01 要約統計"]);
         if (token !== state.renderToken) return;
+        aiButton.disabled = rowsFor(dataset).length === 0;
+        aiButton.title = aiButton.disabled ? "現在の条件に合う観測値がありません。" : "表示中の観測データを、ご自身のAPIで分析します。";
         state.result = result;
         renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset);
         ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : "解析済み";
@@ -1510,17 +1599,39 @@ if (!lab || !openButton) {
 
   const renderMethods = () => {
     const group = METHOD_GROUPS.find((candidate) => candidate.id === state.lectureId) || METHOD_GROUPS[0];
+    hideMethodReason();
     ui.methods.replaceChildren();
-    group.methods.forEach(([id, label]) => { const button = document.createElement("button"); button.type = "button"; button.role = "listitem"; button.dataset.method = id; button.setAttribute("aria-pressed", id === state.methodId ? "true" : "false"); button.textContent = label; button.addEventListener("click", () => { state.methodId = id; renderMethods(); render(); }); ui.methods.append(button); });
+    group.methods.forEach(([id, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.method = id;
+      button.textContent = label;
+      attachReasonEvents(button);
+      button.addEventListener("click", () => {
+        const availability = methodAvailability(id);
+        applyAvailability(button, availability);
+        if (!availability.available) { showMethodReason(button, { reveal: true }); return; }
+        hideMethodReason();
+        state.methodId = id;
+        render();
+      });
+      ui.methods.append(button);
+    });
+    syncMethodAvailability();
   };
 
   const selectLecture = (id, preferredMethod) => {
-    const group = METHOD_GROUPS.find((candidate) => candidate.id === id) || METHOD_GROUPS[0]; state.lectureId = group.id; state.methodId = group.methods.some((method) => method[0] === preferredMethod) ? preferredMethod : group.methods[0][0];
+    const group = METHOD_GROUPS.find((candidate) => candidate.id === id) || METHOD_GROUPS[0];
+    state.lectureId = group.id;
+    const selected = group.methods.find(([method]) => method === preferredMethod && methodAvailability(method).available)
+      || group.methods.find(([method]) => methodAvailability(method).available);
+    // Browsing an unavailable category must not replace the current analysis.
+    if (selected) state.methodId = selected[0];
     ui.lectures.value = state.lectureId; renderMethods(); render();
   };
 
   const renderLectures = () => {
-    ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const option = document.createElement("option"); option.value = group.id; option.textContent = `${group.id}　${group.name}`; ui.lectures.append(option); }); ui.lectures.value = state.lectureId;
+    ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const option = document.createElement("option"); option.value = group.id; option.textContent = group.name; ui.lectures.append(option); }); ui.lectures.value = state.lectureId;
   };
 
   const setDataset = (id, chooseDefault = false) => {
@@ -1535,6 +1646,7 @@ if (!lab || !openButton) {
   };
 
   const setMenuOpen = (open, { restoreFocus = false } = {}) => {
+    hideMethodReason();
     const shouldOpen = Boolean(open);
     lab.classList.toggle("is-menu-open", shouldOpen);
     ui.menuToggle.setAttribute("aria-expanded", String(shouldOpen));
@@ -1548,7 +1660,26 @@ if (!lab || !openButton) {
 
   const focusables = () => [...lab.querySelectorAll("button:not([disabled]), select:not([disabled]), input:not([disabled]), details > summary, [tabindex]:not([tabindex='-1'])")]
     .filter((element) => !element.hidden && !element.closest("[inert]") && element.getClientRects().length);
-  const trapFocus = (event) => { if (!state.open) return; if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); if (lab.classList.contains("is-menu-open")) setMenuOpen(false, { restoreFocus: true }); else close(); return; } if (event.key !== "Tab") return; const list = focusables(); if (!list.length) return; const first = list[0]; const last = list.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } };
+  const trapFocus = (event) => {
+    if (!state.open) return;
+    if (statisticsAi.isOpen) {
+      // A disabled submit button may release focus to body while awaiting AI.
+      if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); statisticsAi.close(); }
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (!methodReason.hidden) hideMethodReason();
+      else if (lab.classList.contains("is-menu-open")) setMenuOpen(false, { restoreFocus: true });
+      else close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const list = focusables(); if (!list.length) return;
+    const first = list[0]; const last = list.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
 
   const ensureReady = async () => {
     if (state.snapshot) return;
@@ -1591,14 +1722,15 @@ if (!lab || !openButton) {
       const externalDataset = installExternalDataset(dataset);
       const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.(); const inferredMode = modeId || externalDataset?.modeId || state.snapshot?.modes?.[adapterState?.modeIndex]?.id || state.modeId;
       const preferred = externalDataset?.id || datasetId || state.datasets.find((candidate) => candidate.modeId === inferredMode)?.id || state.datasets[0]?.id;
-      setDataset(preferred, true); ui.close.focus(); window.dispatchEvent(new CustomEvent("gaia:statistics-open", { detail: { modeId: inferredMode, datasetId: preferred } }));
+      setDataset(preferred, true); ui.close.focus({ preventScroll: true }); window.dispatchEvent(new CustomEvent("gaia:statistics-open", { detail: { modeId: inferredMode, datasetId: preferred } }));
     } catch (error) {
       console.error(error); ui.status.textContent = "DATA UNAVAILABLE"; ui.context.textContent = "保存スナップショットを読み込めませんでした。地図を開き直して再試行してください。";
     }
   };
 
   const close = () => {
-    if (!state.open) return; cancelAnimationFrame(state.animation); state.open = false; setMenuOpen(false); lab.hidden = true; lab.setAttribute("aria-hidden", "true"); document.body.classList.remove("gaia-statistics-open"); document.removeEventListener("keydown", trapFocus, true); state.returnFocus?.focus?.(); window.dispatchEvent(new CustomEvent("gaia:statistics-close", { detail: { modeId: state.modeId, datasetId: state.datasetId } }));
+    statisticsAi.close();
+    if (!state.open) return; cancelAnimationFrame(state.animation); state.open = false; setMenuOpen(false); lab.hidden = true; lab.setAttribute("aria-hidden", "true"); document.body.classList.remove("gaia-statistics-open"); document.removeEventListener("keydown", trapFocus, true); state.returnFocus?.focus?.({ preventScroll: true }); window.dispatchEvent(new CustomEvent("gaia:statistics-close", { detail: { modeId: state.modeId, datasetId: state.datasetId } }));
   };
 
   [openButton, ...document.querySelectorAll("[data-gaia-statistics-open]")].forEach((button) => button.addEventListener("click", () => void open()));

@@ -1,4 +1,5 @@
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { FIRE_REVEAL_EDGE, FIRE_COLUMN_LIFETIME, FIRE_COLUMN_LIMIT, FIRE_COLUMN_MOBILE_LIMIT,
   fireSequence, inverseFireEase, FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT } from "./fire-ignition.js?v=gaia-fire-columns-1";
 
@@ -658,7 +659,7 @@ const deactivate = () => {
 
 const stepOutsideExhibit = (direction) => {
   const step = Math.sign(Number(direction) || 0);
-  const exhibits = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
+  const exhibits = globalThis.GaiaMapCategories.buttons();
   const index = exhibits.indexOf(button);
   if (!step || index < 0) return;
   exhibits[(index + step + exhibits.length) % exhibits.length]?.click();
@@ -724,10 +725,11 @@ const mount = () => {
     <div class="gaia-firms-quality"><span>夜間検知<strong data-firms-night-share>—</strong></span><span>信頼度80以上<strong data-firms-confidence-share>—</strong></span></div>
     <div class="gaia-firms-copy"><p>${DEFINITION.caption}</p><small>光点は火災の範囲ではなく、衛星が検知した熱異常の代表点です。火柱・火の粉は出現時の演出で、実際の炎の高さではありません。信頼度60未満は除外し、FRPを粒径へ変換しています。</small></div>
     <div class="gaia-firms-actions" aria-label="元データと統計分析">
-      <a href="${SOURCE_PAGE}" target="_blank" rel="noopener noreferrer"><span><small>SOURCE</small><strong>NASA FIRMSを確認</strong></span><i aria-hidden="true">↗</i></a>
-      <button type="button" data-firms-analysis><span><small>ANALYSIS</small><strong>火点を分析</strong></span><i aria-hidden="true">＋</i></button>
+      <a href="${SOURCE_PAGE}" target="_blank" rel="noopener noreferrer" aria-label="NASA FIRMSのデータ出典を確認する（新しいタブ）"></a>
+      <button type="button" data-firms-analysis></button>
     </div>
   `;
+  decorateMapActions(readout.querySelector(".gaia-firms-actions"), readout.querySelector(".gaia-firms-actions a"), readout.querySelector("[data-firms-analysis]"));
   layer.append(readout);
 
   button = document.createElement("button");

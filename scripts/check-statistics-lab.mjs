@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "./check-statistics-methods.mjs";
 import { readFile } from "node:fs/promises";
 import {
   analyzeAnova,

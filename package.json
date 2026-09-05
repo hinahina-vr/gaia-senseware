@@ -6,6 +6,8 @@
   "description": "惑星の放課後 — GAIA SENSATION — pure HTML/CSS/JavaScript installation",
   "scripts": {
     "data:build": "node scripts/build-gaia-data.mjs",
+    "data:population": "node scripts/build-population-data.mjs",
+    "check:population": "node scripts/check-population-data.mjs",
     "data:space": "node scripts/build-space-data.mjs",
     "data:statistics": "node scripts/enrich-gaia-statistics.mjs",
     "data:jma": "node scripts/build-jma-history.mjs",

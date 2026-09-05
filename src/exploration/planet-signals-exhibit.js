@@ -1,4 +1,6 @@
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
+import { buildPlanetStatistics } from "./planet-statistics.js?v=gaia-unified-actions-1";
 import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-satellite-clouds-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
 
@@ -747,10 +749,13 @@ const renderReadout = (definition, data) => {
   readout.querySelector("[data-planet-caption]").textContent = definition.caption;
   readout.querySelector("[data-planet-state]").textContent = data.sourceState;
   readout.querySelector("[data-planet-time]").textContent = formatJst(data.observedAt);
-  readout.querySelector("[data-planet-source]").textContent = definition.sourceName;
   const source = readout.querySelector("[data-planet-source-link]");
   source.href = definition.sourcePage;
-  source.querySelector("strong").textContent = definition.sourceLabel;
+  source.title = definition.sourceName;
+  source.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
+  const analysis = readout.querySelector("[data-planet-analysis]");
+  analysis.disabled = !data.points.length || data.sourceState === "SAVED VALUES";
+  analysis.title = analysis.disabled ? "実データの取得後に分析できます（現在は表示用の参考値）" : "表示中の地点データを統計分析する";
   legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
   const scaleLabels = { wind: ["弱い風", "強い風"], air: ["透明", "濃い霞"], cloud: ["切れ間", "濃い雲"], quake: ["小規模", "大規模"] };
@@ -765,6 +770,15 @@ const renderReadout = (definition, data) => {
   canvas.dataset.planetSourceState = data.sourceState;
   canvas.dataset.planetPointCount = String(data.points.length);
   canvas.dataset.planetEncoding = definition.visualLabel.toLowerCase().replaceAll(" ", "-");
+};
+
+const openStatistics = () => {
+  if (activeIndex < 0 || readout.dataset.loading === "true") return;
+  const dataset = buildPlanetStatistics(DEFINITIONS[activeIndex], currentData);
+  if (!dataset) return;
+  const open = () => void globalThis.GaiaStatisticsLab?.open?.({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
+  if (globalThis.GaiaStatisticsLab?.open) open();
+  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
 };
 
 const select = async (index) => {
@@ -804,6 +818,11 @@ const select = async (index) => {
   document.querySelectorAll(".map-mode-button:not([data-planet-exhibit])").forEach((item) => item.setAttribute("aria-current", "false"));
   applyHeading(definition);
   readout.dataset.loading = "true";
+  readout.querySelector("[data-planet-analysis]").disabled = true;
+  const sourceLink = readout.querySelector("[data-planet-source-link]");
+  sourceLink.href = definition.sourcePage;
+  sourceLink.title = definition.sourceName;
+  sourceLink.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
   readout.querySelector("[data-planet-kicker]").textContent = `${definition.number} / CONNECTING`;
   readout.querySelector("[data-planet-title]").textContent = definition.shortTitle;
   readout.querySelector("[data-planet-primary]").textContent = "—";
@@ -869,8 +888,8 @@ const deactivate = () => {
 
 const step = (direction) => {
   const next = activeIndex + Number(direction);
-  if (next < 0) document.querySelector("#japan-firms-mode-list [data-firms-exhibit]")?.click();
-  else if (next >= DEFINITIONS.length) document.querySelector("#japan-mode-list .map-mode-button")?.click();
+  if (next < 0) document.querySelector(".map-mode-bank [data-firms-exhibit]")?.click();
+  else if (next >= DEFINITIONS.length) globalThis.GaiaMapCategories.standardButtons()[0]?.click();
   else void select(next);
 };
 
@@ -946,8 +965,9 @@ const mount = () => {
       <span><small data-planet-secondary-b-label>—</small><strong data-planet-secondary-b>—</strong></span>
     </div>
     <div class="gaia-planet-copy"><p data-planet-caption></p><small><b data-planet-state>FETCHING</b> · <time data-planet-time>—</time></small></div>
-    <div class="gaia-planet-source"><span data-planet-source></span><a data-planet-source-link target="_blank" rel="noopener noreferrer"><strong>元データを見る</strong><i aria-hidden="true">↗</i></a></div>
+    <div class="gaia-planet-source"><a data-planet-source-link target="_blank" rel="noopener noreferrer"></a><button type="button" data-planet-analysis disabled></button></div>
   `;
+  decorateMapActions(readout.querySelector(".gaia-planet-source"), readout.querySelector("[data-planet-source-link]"), readout.querySelector("[data-planet-analysis]"));
   layer.append(readout);
 
   buttons = DEFINITIONS.map((definition, index) => {
@@ -972,6 +992,7 @@ const mount = () => {
     deactivate();
   }, { capture: true });
   readout.querySelectorAll("[data-planet-step]").forEach((item) => item.addEventListener("click", () => step(item.dataset.planetStep)));
+  readout.querySelector("[data-planet-analysis]").addEventListener("click", openStatistics);
   addEventListener("resize", () => { if (activeIndex >= 0) lastRenderedAt = 0; }, { passive: true });
   addEventListener("gaia:japan-close", pauseDrawing);
   addEventListener("gaia:japan-open", resumeDrawing);

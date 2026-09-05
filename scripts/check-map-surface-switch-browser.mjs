@@ -30,6 +30,7 @@ const expectedLiveCopies = [
 
 const focusModeButton = async (page, locator, expectedCopy = null) => {
   await page.keyboard.press("Tab");
+  await locator.scrollIntoViewIfNeeded();
   await locator.focus();
   await page.waitForFunction(() => document.activeElement?.matches?.(".map-mode-button:focus-visible"));
   await page.waitForFunction(() => document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
@@ -72,12 +73,12 @@ try {
     await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
     await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-    await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 15);
+    await page.waitForFunction(() => document.querySelectorAll(".map-mode-bank .map-mode-button").length === 30);
     await page.evaluate(() => window.GaiaMapObservationAdapter.openMap());
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
 
     assert.equal(await page.locator(".map-surface-switch").count(), 0, `${viewport.name}: obsolete MAP/LIGHT toggle remains`);
-    assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15, `${viewport.name}: MAP button count`);
+    assert.equal(await page.locator(".map-mode-bank .map-mode-button").count(), 30, `${viewport.name}: MAP button count`);
     assert.equal(await page.locator("#abstract-mode-list").count(), 0, `${viewport.name}: duplicate LIGHT bank remains`);
     assert.equal(await page.locator("#map-light-overlay").count(), 0, `${viewport.name}: independent light overlay remains`);
 
@@ -97,7 +98,7 @@ try {
       const mobileBankTrigger = page.locator("#map-mobile-bank-toggle");
       if (await mobileBankTrigger.isVisible()) await mobileBankTrigger.evaluate((button) => button.click());
       else if (await dockBankTrigger.isVisible()) await dockBankTrigger.evaluate((button) => button.click());
-      await page.waitForFunction(() => [...document.querySelectorAll("#japan-mode-list .map-mode-button")]
+      await page.waitForFunction(() => [...document.querySelectorAll(".map-mode-bank .map-mode-button")]
         .every((button) => button.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })));
     }
     await page.locator("#japan-close").focus();
@@ -107,11 +108,11 @@ try {
     const scan = await page.evaluate(() => {
       const bank = document.querySelector(".map-mode-bank");
       const bankRect = bank.getBoundingClientRect();
-      const buttons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
+      const buttons = GaiaMapCategories.buttons();
       const buttonRects = buttons.map((button) => button.getBoundingClientRect());
       return {
         bank: bankRect.toJSON(),
-        groupLabels: [...document.querySelectorAll(".map-mode-group-label")].map((label) => label.textContent.trim()),
+        groupLabels: [...document.querySelectorAll(".map-category-group .map-mode-group-label strong")].map((label) => label.textContent.trim()),
         visibleButtons: buttons.filter((button) => button.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })).length,
         buttonHeights: buttonRects.map((rect) => rect.height),
         horizontalOverflow: Math.max(
@@ -121,9 +122,9 @@ try {
       };
     });
     const modeLabelTypography = [];
-    assert.deepEqual(scan.groupLabels, ["MAP地図"], `${viewport.name}: the main bank must contain only map choices`);
+    assert.deepEqual(scan.groupLabels, ["気候と炭素", "空と天気", "水と森", "人口と暮らし", "資源とエネルギー", "大地の活動"], `${viewport.name}: the main bank uses one subject taxonomy`);
     if (!integrationOnly) {
-      assert.equal(scan.visibleButtons, 15, `${viewport.name}: not all map buttons are visible together`);
+      assert.equal(scan.visibleButtons, 30, `${viewport.name}: all map buttons must remain in the scrollable picker`);
       assert.ok(scan.buttonHeights.every((height) => height >= (viewport.isMobile ? 44 : 30)), `${viewport.name}: button target is too short`);
       assert.ok(scan.horizontalOverflow <= 1, `${viewport.name}: bank overflows horizontally by ${scan.horizontalOverflow}px`);
     }
@@ -145,7 +146,7 @@ try {
 
     if (!integrationOnly) {
     for (const index of expectedCopies.keys()) {
-      await focusModeButton(page, page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index), expectedCopies[index]);
+      await focusModeButton(page, page.locator(`.map-mode-bank [data-map-standard-index="${index}"]`), expectedCopies[index]);
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), expectedCopies[index], `${viewport.name}: MAP ${index + 1} copy`);
       assert.equal(await page.locator("#map-mode-preview-number").textContent(), `${String(index + 1).padStart(2, "0")} / ${expectedCodes[index]}`);
     }
@@ -153,7 +154,7 @@ try {
 
     const previewScan = await page.locator("#map-mode-preview").evaluate((node) => ({
       rect: node.getBoundingClientRect().toJSON(),
-      anchorRect: [...document.querySelectorAll("#japan-mode-list .map-mode-button")]
+      anchorRect: GaiaMapCategories.buttons()
         .find((button) => button.textContent?.trim() === node.querySelector("span")?.textContent?.trim().slice(0, 2))
         ?.getBoundingClientRect().toJSON() || null,
       numberSize: parseFloat(getComputedStyle(node.querySelector("span")).fontSize),
@@ -178,10 +179,10 @@ try {
       continue;
     }
 
-    const mouseSelection = page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(1);
+    const mouseSelection = page.locator('.map-mode-bank [data-map-standard-index="1"]');
     if (viewport.isMobile) await mouseSelection.tap();
     else await mouseSelection.click();
-    await page.waitForFunction(() => document.querySelector("#japan-mode-list .map-mode-button:nth-child(2)")?.getAttribute("aria-current") === "true");
+    await page.waitForFunction(() => document.querySelector('.map-mode-bank [data-map-standard-index="1"]')?.getAttribute("aria-current") === "true");
     const buttonTransition = await mouseSelection.evaluate((button) => ({
       animationName: getComputedStyle(button).animationName,
       transitionDuration: getComputedStyle(button).transitionDuration,
@@ -222,13 +223,13 @@ try {
 
     for (const [index, copy] of expectedLiveCopies.entries()) {
       try {
-        await focusModeButton(page, page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(index), copy);
+        await focusModeButton(page, page.locator(".map-mode-bank .map-mode-button[data-live-exhibit]").filter({ hasText: new RegExp(`^${index + 10}$`) }), copy);
       } catch (error) {
         const state = await page.evaluate(() => ({
           expanded: document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"),
           toggleExpanded: document.querySelector("#map-mobile-bank-toggle")?.getAttribute("aria-expanded"),
           activeText: document.activeElement?.textContent?.trim() || "",
-          liveRects: [...document.querySelectorAll("#japan-mode-list .map-mode-button[data-live-exhibit]")].map((button) => button.getBoundingClientRect().toJSON()),
+          liveRects: [...document.querySelectorAll(".map-mode-bank .map-mode-button[data-live-exhibit]")].map((button) => button.getBoundingClientRect().toJSON()),
           previewOpen: document.querySelector("#map-mode-preview")?.classList.contains("is-open"),
         }));
         throw new Error(`${viewport.name}: LIVE ${index + 9} focus failed: ${JSON.stringify(state)}`, { cause: error });
@@ -237,7 +238,7 @@ try {
     }
     }
 
-    await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").first().evaluate((button) => button.click());
+    await page.locator('.map-mode-bank [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
       && !document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
       && document.querySelector("#gaia-canvas")?.parentElement?.id !== "japan-map");
@@ -254,16 +255,16 @@ try {
       assert.equal(await page.locator(".gaia-live-deck-modes button").count(), 15, "pc: live selector must expose every map chapter");
       await page.waitForTimeout(700);
       await page.screenshot({ path: path.join(outputDir, "pc-live-chapter-selector-open.png"), fullPage: false });
-      await page.locator(".gaia-live-deck-modes button").nth(13).click();
+      await page.locator('.gaia-live-deck-modes button[data-live-deck-kind="live"][data-live-deck-index="4"]').click();
       await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "14"
         && document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
         && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
       await liveSelectorToggle.click();
-      await page.locator(".gaia-live-deck-modes button").nth(1).click();
+      await page.locator('.gaia-live-deck-modes button[data-live-deck-kind="standard"][data-live-deck-index="1"]').click();
       await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "02"
         && !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
         && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
-      await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").first().evaluate((button) => button.click());
+      await page.locator('.map-mode-bank [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
       const liveChapterSteps = page.locator(".gaia-live-deck-chapter [data-live-deck-step]");
       await liveChapterSteps.first().click();
       await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "09"
@@ -278,7 +279,7 @@ try {
         await page.locator("#map-mobile-bank-toggle").click();
       }
       const expected = String(index + 1).padStart(2, "0");
-      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index).evaluate((button) => button.click());
+      await page.locator(`.map-mode-bank [data-map-standard-index="${index}"]`).evaluate((button) => button.click());
       await page.waitForFunction((number) => document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
         && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-map"
         && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === number
@@ -292,6 +293,7 @@ try {
         // outside a narrow viewport, so validate it whenever it is actually drawn.
         if (index >= 2) {
           const labelTypography = await page.locator("#japan-overlay").evaluate((element) => ({
+            shape: element.dataset.selectionLabelShape,
             width: Number(element.dataset.selectionLabelWidthPx),
             height: Number(element.dataset.selectionLabelHeightPx),
             primaryFont: Number(element.dataset.selectionLabelPrimaryFontPx),
@@ -300,10 +302,19 @@ try {
           if (labelTypography.primaryFont > 0) {
             const compact = viewport.width < 600;
             const expansive = viewport.width >= 2400;
-            assert.ok(labelTypography.width >= Math.min(expansive ? 520 : 340, viewport.width - 24), `${viewport.name} MAP ${expected}: selection label remains too narrow: ${JSON.stringify(labelTypography)}`);
-            assert.ok(labelTypography.height >= (compact ? 68 : (expansive ? 106 : 72)), `${viewport.name} MAP ${expected}: selection label remains too short: ${JSON.stringify(labelTypography)}`);
-            assert.ok(labelTypography.primaryFont >= (compact ? 16 : (expansive ? 30 : 18)), `${viewport.name} MAP ${expected}: primary label remains too small: ${JSON.stringify(labelTypography)}`);
-            assert.ok(labelTypography.secondaryFont >= (compact ? 12 : (expansive ? 20 : 13)), `${viewport.name} MAP ${expected}: secondary label remains too small: ${JSON.stringify(labelTypography)}`);
+            if (expected === "03") {
+              const shortLandscape = viewport.width < 900 && viewport.height < 420;
+              assert.equal(labelTypography.shape, "inline-readout");
+              assert.ok(labelTypography.width <= viewport.width - 24);
+              assert.equal(labelTypography.height, shortLandscape ? 36 : compact ? 42 : expansive ? 68 : 48);
+              assert.equal(labelTypography.primaryFont, shortLandscape ? 12 : compact ? 14 : expansive ? 26 : 17);
+              assert.equal(labelTypography.secondaryFont, shortLandscape ? 10 : compact ? 11 : expansive ? 17 : 12);
+            } else {
+              assert.ok(labelTypography.width >= Math.min(expansive ? 520 : 340, viewport.width - 24), `${viewport.name} MAP ${expected}: selection label remains too narrow: ${JSON.stringify(labelTypography)}`);
+              assert.ok(labelTypography.height >= (compact ? 68 : (expansive ? 106 : 72)), `${viewport.name} MAP ${expected}: selection label remains too short: ${JSON.stringify(labelTypography)}`);
+              assert.ok(labelTypography.primaryFont >= (compact ? 16 : (expansive ? 30 : 18)), `${viewport.name} MAP ${expected}: primary label remains too small: ${JSON.stringify(labelTypography)}`);
+              assert.ok(labelTypography.secondaryFont >= (compact ? 12 : (expansive ? 20 : 13)), `${viewport.name} MAP ${expected}: secondary label remains too small: ${JSON.stringify(labelTypography)}`);
+            }
             modeLabelTypography.push({ mode: expected, ...labelTypography });
           }
         }
@@ -315,7 +326,7 @@ try {
       surface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
       lightIntegration: document.querySelector(".map-mode-bank")?.dataset.lightIntegration,
       overlayActive: document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light"),
-      currentMap: document.querySelector("#japan-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
+      currentMap: document.querySelector(".map-mode-bank .map-mode-button[aria-current='true']")?.textContent.trim(),
       integratedMode: document.querySelector("#gaia-canvas")?.dataset.integratedMapMode,
       mapVisible: document.querySelector("#japan-map")?.getClientRects().length > 0,
       canvasParent: document.querySelector("#gaia-canvas")?.parentElement?.id,
@@ -345,7 +356,7 @@ try {
   assert.deepEqual(report.responses404, [], `404 responses: ${report.responses404.join("\n")}`);
   report.status = "passed";
   fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
-  console.log(`GAIA integrated map-light browser checks passed: ${report.scans.length} viewports, 15 controls, restored focus copy.`);
+console.log(`GAIA integrated map-light browser checks passed: ${report.scans.length} viewports, 30 controls in 6 subject categories, restored focus copy.`);
 } finally {
   await browser.close();
 }

@@ -283,7 +283,7 @@
 }
 
 .character-book-selector [data-character-select="sakuya"] img {
-  top: -63%;
+  top: -51%;
   height: 840%;
 }
 
@@ -391,7 +391,16 @@
     0 0 36px rgba(0, 10, 28, 0.58);
 }
 
-#character-book-profile > span { display: block; }
+#character-book-profile > span {
+  display: block;
+  text-wrap: balance;
+  line-break: strict;
+}
+
+#character-book-profile .character-book-profile-phrase {
+  display: inline-block;
+  white-space: nowrap;
+}
 
 .character-book-expressions {
   display: flex;

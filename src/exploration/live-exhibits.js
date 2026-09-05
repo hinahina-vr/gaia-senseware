@@ -1,4 +1,6 @@
-import { STATUS_LABELS } from "./transforms.js";
+import { STATUS_LABELS } from "./transforms.js?v=gaia-live-loading-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
+import { buildLiveStatistics } from "./live-statistics.js?v=gaia-unified-actions-1";
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -13,7 +15,7 @@ const EXHIBITS = Object.freeze([
     caption: "Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。",
     signalLabel: "風速",
     scaleLabel: "0—15+ m/sを青—赤の筆触へ変換",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "風速筆",
     visualMap: "風速が高いほど筆触が太く、青緑から黄・橙・赤へ変わります。筆の向きは風向を示しません。",
     refreshCopy: "47地点をOpen-Meteoから一括取得し、Cloudflare Cache APIで5分キャッシュします。D1は使用しません。",
@@ -30,7 +32,7 @@ const EXHIBITS = Object.freeze([
     caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。",
     signalLabel: "CO₂濃度",
     scaleLabel: "280—650 ppmを0—100%へ正規化",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "CAMSモデル / 東京格子" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "光環",
     visualMap: "CO₂濃度が高いほど、光環の呼吸が速まり、余韻が広がります。",
     refreshCopy: "CO₂は実測点ではなくCAMS全球モデルの予測値です。最大3時間キャッシュします。",
@@ -47,7 +49,7 @@ const EXHIBITS = Object.freeze([
     caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。",
     signalLabel: "降水量",
     scaleLabel: "0—30 mm/hrを0—100%へ正規化",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "雨と波紋",
     visualMap: "降水量が多いほど、雨線と水面の波紋が密に発生します。",
     refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
@@ -64,7 +66,7 @@ const EXHIBITS = Object.freeze([
     caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。",
     signalLabel: "地上2m気温",
     scaleLabel: "−20—45 ℃を0—100%へ正規化",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "等温線",
     visualMap: "気温が高いほど、等温線が橙から白へ変わり、熱の揺らぎが強くなります。",
     refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
@@ -81,7 +83,7 @@ const EXHIBITS = Object.freeze([
     caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。",
     signalLabel: "総雲量",
     scaleLabel: "0—100%を光の遮蔽率へ変換",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "雲粒",
     visualMap: "雲量が多いほど、雲粒が厚く重なり、地図へ落ちる光が柔らかくなります。",
     refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
@@ -98,7 +100,7 @@ const EXHIBITS = Object.freeze([
     caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。",
     signalLabel: "PM2.5濃度",
     scaleLabel: "0—150 µg/m³を0—100%へ正規化",
-    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "CAMSモデル / 東京格子" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "東京" }),
     visualCue: "粒子と霞",
     visualMap: "PM2.5が高いほど粒子密度と霞の明度が増えます。値はCAMSモデル予測です。",
     refreshCopy: "PM2.5は実測点ではなくCAMS全球モデルの予測値です。最大3時間キャッシュします。",
@@ -228,7 +230,7 @@ const setChapterSelectorOpen = (open, { restoreFocus = false } = {}) => {
 };
 
 const formatValue = (measurement) => {
-  if (!measurement || !Number.isFinite(Number(measurement.value))) return "欠測";
+  if (measurement?.value == null || !Number.isFinite(Number(measurement.value))) return "—";
   const digits = measurement.key === "weatherPrecipitation" ? 2 : 1;
   const unit = measurement.unit || "";
   return `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: digits })} ${unit}`.trim();
@@ -250,9 +252,17 @@ const formatJptDateTime = (value) => {
   }).format(date)} JPT`;
 };
 
-const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "snapshot", connected: false };
+const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "loading", requestState: "loading", connected: false };
 const currentMeasurement = (exhibit) => currentState().measurements?.[exhibit.key] || null;
 const currentWindField = () => windFieldSnapshot;
+const statisticsDataset = () => activeIndex < 0 ? null : buildLiveStatistics(EXHIBITS[activeIndex], currentState(), currentWindField());
+const openStatistics = () => {
+  const dataset = statisticsDataset();
+  if (!dataset) return;
+  const open = () => void globalThis.GaiaStatisticsLab?.open?.({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
+  if (globalThis.GaiaStatisticsLab?.open) open();
+  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
+};
 const profile = () => globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { dprCap: 1, particleRatio: 0.65, level: "medium" };
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const WIND_FIELD_REFERENCE_MS = 15;
@@ -299,11 +309,15 @@ const observationLocation = (exhibit, measurement) => {
   const lon = Number(location?.lon);
   const lat = Number(location?.lat);
   const fallbackCity = selectedCity();
-  const isAirModel = ["forecastCo2", "pm25"].includes(exhibit.key);
+  // Provider attribution belongs in the edge credit and source ledger, not place names.
+  // Normalize display text only; keep the API/snapshot provenance unchanged.
+  const placeLabel = String(location?.label || "")
+    .replace(/^(?:Open-Meteo|CAMS(?:モデル)?)\s*\/\s*/iu, "")
+    .replace(/[\s　]*格子$/u, "").trim();
   return {
     lon: Number.isFinite(lon) ? lon : fallbackCity.lon,
     lat: Number.isFinite(lat) ? lat : fallbackCity.lat,
-    label: location?.label || (isAirModel ? `CAMSモデル / ${fallbackCity.label}格子` : `Open-Meteo / ${fallbackCity.label}`),
+    label: placeLabel || fallbackCity.label,
   };
 };
 
@@ -1197,19 +1211,32 @@ const renderReadout = () => {
   const state = currentState();
   const measurement = currentMeasurement(exhibit);
   const missing = !measurement || !Number.isFinite(Number(measurement.value));
+  const pending = state.requestState === "loading" || state.source === "loading";
+  const retained = !missing && state.requestState === "unavailable";
   const strength = missing ? exhibit.fallback : clamp01(measurement.normalized);
   const location = observationLocation(exhibit, measurement);
   const locationCity = cityForLocation(location);
-  const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
+  const status = pending ? missing ? "LOADING" : "UPDATING"
+    : missing ? "UNAVAILABLE" : retained ? "CACHED"
+      : STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
   const savedMeasurement = measurement?.status === "snapshot";
   const modelMeasurement = measurement?.sourceKind === "MODEL";
-  const feedState = state.connected && !savedMeasurement
+  const feedState = pending ? missing ? "CONNECTING / データを取得中" : "UPDATING / 前回値を表示して更新中"
+    : retained ? "CACHED VALUE / 前回取得値を表示中"
+    : missing ? state.source === "snapshot" ? "NOT IN SNAPSHOT / この地点の保存値は未収録" : "UNAVAILABLE / データを取得できませんでした"
+    : state.connected && !savedMeasurement
     ? modelMeasurement ? "LATEST MODEL / 5分ごとに再確認" : "NEAR REAL TIME / 5分ごとに再確認"
     : state.source === "live"
       ? "LATEST API SNAPSHOT / 再接続中"
       : "SAVED SNAPSHOT / 保存データを再現中";
   const observedAt = formatJptDateTime(measurement?.observedAt);
   readout.dataset.missing = String(missing);
+  readout.dataset.requestState = state.requestState || "ready";
+  const analysis = readout.querySelector("[data-live-deck-analysis]");
+  analysis.disabled = !statisticsDataset();
+  analysis.title = analysis.disabled
+    ? pending ? "データの取得後に分析できます" : "この地点のデータは未取得です。データのある地点を選ぶと分析できます"
+    : "表示中のモデル値を統計分析する";
   readout.dataset.exhibit = exhibit.id;
   readout.style.setProperty("--live-signal-level", String(strength));
   readout.querySelector("[data-live-exhibit-kicker]").textContent = `${exhibit.number} / ${status}`;
@@ -1218,35 +1245,40 @@ const renderReadout = () => {
   exhibitTitle.setAttribute("aria-label", exhibit.title);
   exhibitTitle.querySelector("[data-live-exhibit-title-ja]").textContent = titleJa;
   exhibitTitle.querySelector("[data-live-exhibit-title-en]").textContent = titleEn;
-  readout.querySelector("[data-live-exhibit-value]").textContent = formatValue(measurement);
+  readout.querySelector("[data-live-exhibit-value]").textContent = missing && pending ? "取得中" : formatValue(measurement);
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption.replaceAll("東京", locationCity.city);
   readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
-  readout.querySelector("[data-live-exhibit-feed-time]").textContent = `データ時刻 ${observedAt}`;
-  readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected && !savedMeasurement
+  readout.querySelector("[data-live-exhibit-feed-time]").textContent = missing ? "データ時刻 —" : `データ時刻 ${observedAt}`;
+  readout.querySelector("[data-live-exhibit-feed-copy]").textContent = pending
+    ? missing ? "選択した地点のデータを取得しています。別の地点の値で補わず、到着した値から表示します。"
+      : "同じ地点の前回取得値を表示しながら更新しています。データ時刻は前回取得値のものです。"
+    : retained ? "再取得できなかったため、同じ地点の前回取得値とそのデータ時刻を表示しています。"
+    : missing ? state.source === "snapshot" ? "この地点の値は保存データに収録されていません。保存値のある地点を選ぶか、ライブ接続で確認してください。"
+      : "選択した地点のデータを取得できませんでした。別の地点の値で置き換えず、次の更新を待ちます。"
+    : state.connected && !savedMeasurement
     ? exhibit.refreshCopy
     : state.source === "live"
       ? `この項目は保存済み${modelMeasurement ? "モデル" : "観測"}値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。`
       : `現在は保存済み${modelMeasurement ? "モデル" : "観測"}データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。`;
-  readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
+  readout.querySelector("[data-live-exhibit-level]").textContent = missing ? pending ? "取得中 / LOADING" : "未取得 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
-  readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
+  readout.querySelector("[data-live-stage-signal]").textContent = missing ? pending ? "LOADING" : "STANDBY" : formatValue(measurement);
   readout.querySelector("[data-live-stage-location]").textContent = `${locationCity.code} ${locationCity.prefecture}`;
   readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
   readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
   readout.querySelector("[data-live-exhibit-input]").textContent = missing
-    ? `${exhibit.signalLabel}は欠測。値を捏造せず待機演出へ切り替えます。`
+    ? pending ? `${exhibit.signalLabel}を取得中です。値が届くまで待機演出を表示します。` : `${exhibit.signalLabel}は未取得です。待機演出を表示しています。`
     : `${exhibit.signalLabel} ${formatValue(measurement)}を変換の起点にします。`;
   readout.querySelector("[data-live-exhibit-location]").textContent = `${location.label}（${location.lat.toFixed(3)}°, ${location.lon.toFixed(3)}°）を地図上の発生点として表示します。`;
   readout.querySelector("[data-live-exhibit-visual-map]").textContent = exhibit.visualMap;
   readout.querySelector("[data-live-exhibit-source]").textContent = measurement
     ? `${measurement.provider?.toUpperCase() || "SOURCE"} · ${measurement.datasetId || "PUBLIC DATA"}`
-    : "SOURCE DATA MISSING · VISUAL SCAN STANDBY";
+    : pending ? "SOURCE DATA LOADING · VISUAL SCAN STANDBY" : "SOURCE DATA UNAVAILABLE · VISUAL SCAN STANDBY";
   readout.querySelector("[data-live-exhibit-time]").textContent = observedAt;
   readout.querySelector("[data-live-deck-number]").textContent = exhibit.number;
   readout.querySelector("[data-live-deck-title]").textContent = exhibit.shortTitle;
   readout.querySelector("[data-live-deck-location]").textContent = location.label;
   readout.querySelector("[data-live-deck-coordinates]").textContent = `${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
-  readout.querySelector("[data-live-deck-source-name]").textContent = measurement?.provider?.toUpperCase() || "SOURCE";
   const cityIndex = Math.max(0, OBSERVATION_CITIES.findIndex((city) => city.id === selectedCityId));
   readout.querySelectorAll("[data-live-poi-step]").forEach((button) => {
     const direction = Number(button.dataset.livePoiStep) || 0;
@@ -1255,6 +1287,7 @@ const renderReadout = () => {
   });
   if (cityPicker) {
     cityPicker.dataset.city = selectedCityId;
+    cityPicker.querySelector("[data-live-cams-credit]").hidden = !["forecastCo2", "pm25"].includes(exhibit.key);
     cityPicker.dataset.windFieldActive = String(activeIndex === 0);
     cityPicker.querySelector("select").value = selectedCityId;
     cityPicker.querySelector("[data-live-city-caption]").textContent = `${locationCity.code} ${locationCity.name} · ${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
@@ -1283,8 +1316,8 @@ const applyHeading = () => {
     button.dataset.liveDeckKind === "live"
     && Number(button.dataset.liveDeckIndex) === activeIndex
   )));
-  document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
-  const modeButtons = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
+  globalThis.GaiaMapCategories.buttons().filter((button) => !button.dataset.liveExhibit).forEach((button) => button.setAttribute("aria-current", "false"));
+  const modeButtons = globalThis.GaiaMapCategories.buttons();
   const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
   readout?.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     if (activeButtonIndex < 0 || modeButtons.length < 2) return;
@@ -1461,7 +1494,7 @@ const select = (index) => {
       number: document.querySelector("#japan-mode-number")?.textContent || "01",
       title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
     };
-    selectedCityId = OBSERVATION_CITIES[0].id;
+    selectedCityId = globalThis.GaiaLiveData?.getCity?.() || selectedCityId;
     poiAutoplayEnabled = !reducedMotion;
   }
   activeIndex = index;
@@ -1478,7 +1511,7 @@ const select = (index) => {
   setMobileReadoutExpanded(false);
   applyHeading();
   if (enteringLiveDeck) {
-    selectObservationCity(OBSERVATION_CITIES[0].id, {
+    selectObservationCity(selectedCityId, {
       source: "entry",
       animate: false,
       resetZoom: true,
@@ -1596,6 +1629,13 @@ const mount = () => {
       <small data-live-city-caption>01 北海道 / 札幌 · 43.062°N / 141.355°E</small>
       <span class="gaia-live-wind-scale" aria-label="風速の色。弱い風は青、強い風は赤"><b>0</b><i aria-hidden="true"></i><b>15+ m/s</b></span>
     </label>
+    <div class="gaia-live-data-credit" aria-label="気象データのクレジット">
+      <a data-live-cams-credit href="https://ads.atmosphere.copernicus.eu/" target="_blank" rel="noopener noreferrer" aria-label="Copernicus Atmosphere Monitoring Service (CAMS)" hidden>CAMS</a>
+      <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+      <span>／加工表示</span>
+    </div>
   `;
   cityPicker.querySelector("select").value = selectedCityId;
   layer.append(cityPicker);
@@ -1641,7 +1681,6 @@ const mount = () => {
   readout.setAttribute("aria-live", "polite");
   const liveWaveBars = Array.from({ length: 34 }, (_, index) => `<i data-live-wave-bar style="--live-wave-index:${index}"></i>`).join("");
   readout.innerHTML = `
-    <button type="button" class="gaia-live-deck-return" data-live-deck-standard><span>MAP 01—09</span><strong>通常展示へ戻る</strong></button>
     <div class="gaia-live-deck-chapter">
       <p>CHAPTER / LIVE MAP</p>
       <div>
@@ -1657,7 +1696,7 @@ const mount = () => {
       <p>MODEL / JAPAN · 47 PREFECTURES</p>
       <div class="gaia-live-deck-location-control">
         <button type="button" data-live-poi-step="-1" aria-label="前の観測地点へ">←</button>
-        <strong data-live-deck-location>Open-Meteo / 東京</strong>
+        <strong data-live-deck-location>東京</strong>
         <button type="button" data-live-poi-step="1" aria-label="次の観測地点へ">→</button>
       </div>
       <small data-live-deck-coordinates>35.6762°N / 139.6503°E</small>
@@ -1679,9 +1718,8 @@ const mount = () => {
     </section>
     <nav class="gaia-live-deck-modes" id="gaia-live-deck-modes" aria-label="すべての地図展示から選ぶ"></nav>
     <div class="gaia-live-deck-actions gaia-live-exhibit-actions">
-      <button type="button" class="gaia-live-deck-action" data-live-deck-source aria-label="データの出典を表示する"><span>SOURCE</span><strong data-live-deck-source-name>OPEN-METEO</strong><i aria-hidden="true">↗</i></button>
-      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れる"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
-      <button type="button" class="gaia-live-deck-action" data-live-deck-analysis aria-label="現在の展示データを統計分析する"><span>ANALYSIS</span><strong>統計分析</strong><i aria-hidden="true">＋</i></button>
+      <button type="button" data-live-deck-source aria-label="データの出典を表示する"></button>
+      <button type="button" data-live-deck-analysis></button>
     </div>
     <button class="gaia-live-mobile-toggle" id="gaia-live-mobile-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-exhibit-details">
       <span>DETAIL</span><strong>詳細</strong><i aria-hidden="true"></i>
@@ -1718,40 +1756,39 @@ const mount = () => {
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
     </div>
   `;
+  decorateMapActions(readout.querySelector(".gaia-live-deck-actions"), readout.querySelector("[data-live-deck-source]"), readout.querySelector("[data-live-deck-analysis]"));
   layer.append(readout);
   const deckModes = readout.querySelector(".gaia-live-deck-modes");
   chapterSelectorToggle = readout.querySelector(".gaia-live-deck-selector-toggle");
   const standardModes = globalThis.GaiaAppContent?.modes || [];
   const standardModeGlyphs = ["01", "02", "03", "04", "05", "06", "07", "08", "09"];
   const deckModeGlyphs = ["≋", "CO₂", "◇", "°", "☁", "⁙"];
-  const deckGroups = [
-    {
-      id: "archive",
-      label: `DATA MAP / 01—${String(standardModes.length).padStart(2, "0")}`,
-      chapters: standardModes.map((mode, index) => ({
-        kind: "standard",
-        index,
-        number: String(index + 1).padStart(2, "0"),
-        title: mode.titleJa,
-        glyph: standardModeGlyphs[index] || String(index + 1).padStart(2, "0"),
-      })),
-    },
-    {
-      id: "live",
-      label: `LIVE MAP / ${EXHIBITS[0]?.number || "—"}—${EXHIBITS.at(-1)?.number || "—"}`,
-      chapters: EXHIBITS.map((exhibit, index) => ({
-        kind: "live",
-        index,
-        number: exhibit.number,
-        title: exhibit.shortTitle,
-        glyph: deckModeGlyphs[index],
-      })),
-    },
+  const chapters = [
+    ...standardModes.map((mode, index) => ({
+      kind: "standard",
+      index,
+      number: String(index + 1).padStart(2, "0"),
+      title: mode.titleJa,
+      glyph: standardModeGlyphs[index] || String(index + 1).padStart(2, "0"),
+    })),
+    ...EXHIBITS.map((exhibit, index) => ({
+      kind: "live",
+      index,
+      number: exhibit.number,
+      title: exhibit.shortTitle,
+      glyph: deckModeGlyphs[index],
+    })),
   ];
+  const deckGroups = globalThis.GaiaMapCategories.definitions.map((category) => ({
+    id: category.id,
+    label: category.label,
+    chapters: chapters.filter((chapter) => category.numbers.includes(Number(chapter.number))),
+  })).filter((group) => group.chapters.length);
   deckModeButtons = deckGroups.flatMap((group) => {
     const section = document.createElement("section");
     section.className = "gaia-live-deck-mode-group";
     section.dataset.liveDeckGroup = group.id;
+    section.style.setProperty("--map-category-color", globalThis.GaiaMapCategories.definitions.find(category => category.id === group.id).color);
     section.innerHTML = `<p>${group.label}</p><div></div>`;
     const grid = section.querySelector("div");
     const groupButtons = group.chapters.map((chapter) => {
@@ -1766,7 +1803,7 @@ const mount = () => {
         if (chapter.kind === "live") {
           select(chapter.index);
         } else {
-          list.querySelectorAll(".map-mode-button:not([data-live-exhibit]):not([data-estat-exhibit])")[chapter.index]?.click();
+          globalThis.GaiaMapCategories.standardButtons()[chapter.index]?.click();
         }
         setChapterSelectorOpen(false, { restoreFocus: chapter.kind === "live" });
       });
@@ -1779,7 +1816,7 @@ const mount = () => {
   readout.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     button.addEventListener("click", () => {
       setChapterSelectorOpen(false);
-      const modeButtons = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
+      const modeButtons = globalThis.GaiaMapCategories.buttons();
       const activeButtonIndex = modeButtons.findIndex((candidate) => candidate.getAttribute("aria-current") === "true");
       if (activeButtonIndex < 0 || !modeButtons.length) return;
       modeButtons[(activeButtonIndex + Number(button.dataset.liveDeckStep) + modeButtons.length) % modeButtons.length]?.click();
@@ -1798,13 +1835,8 @@ const mount = () => {
     event.preventDefault();
     setChapterSelectorOpen(false, { restoreFocus: true });
   });
-  readout.querySelector("[data-live-deck-standard]")?.addEventListener("click", () => {
-    const modeIndex = globalThis.GaiaMapObservationAdapter?.getState?.().modeIndex ?? 0;
-    deactivate();
-    globalThis.GaiaMapObservationAdapter?.selectMode?.(modeIndex);
-  });
   readout.querySelector("[data-live-deck-source]")?.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
-  readout.querySelector("[data-live-deck-analysis]")?.addEventListener("click", () => document.querySelector("#gaia-statistics-button")?.click());
+  readout.querySelector("[data-live-deck-analysis]")?.addEventListener("click", openStatistics);
   mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
   mobileReadoutToggle?.addEventListener("click", () => {
     setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");
@@ -1825,20 +1857,6 @@ const mount = () => {
         selectObservationCity(target.id, { source: "manual" });
       });
     });
-  });
-
-  readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const touchStep = lightTouches.length % 3;
-    const [x, y] = [[0.36, 0.43], [0.52, 0.34], [0.68, 0.54]][touchStep];
-    lightPointer.x = x;
-    lightPointer.y = y;
-    lightPointer.active = 1;
-    lightPointer.energy = 1.2;
-    addLightTouch(x, y, 1.35);
-    lastRenderedAt = 0;
-    draw(performance.now(), true);
   });
 
   map.addEventListener("pointerdown", (event) => {
@@ -1892,10 +1910,10 @@ const mount = () => {
     return button;
   });
 
-  list.addEventListener("click", (event) => {
-    const button = event.target instanceof Element ? event.target.closest(".map-mode-button:not([data-live-exhibit]):not([data-estat-exhibit])") : null;
+  document.querySelector(".map-mode-bank").addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest(".map-mode-button[data-map-standard-index]") : null;
     if (!(button instanceof HTMLButtonElement) || activeIndex < 0) return;
-    const standards = [...list.querySelectorAll(".map-mode-button:not([data-live-exhibit]):not([data-estat-exhibit])")];
+    const standards = globalThis.GaiaMapCategories.standardButtons();
     const index = standards.indexOf(button);
     const mode = globalThis.GaiaAppContent?.modes?.[index];
     deactivate({ number: String(index + 1).padStart(2, "0"), title: mode?.titleJa || button.getAttribute("aria-label") || "展示" });

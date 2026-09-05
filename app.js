@@ -519,7 +519,7 @@
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-human-history-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-ecologies-reading-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -565,10 +565,10 @@
       action: "2000〜2026年を約4.6秒ずつ自動再生します。スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。輪は推定可感半径で、実際の震度分布・被害範囲・津波範囲ではありません。日本の実測震度は別層です。",
     },
     {
-      title: "都市化が進むほど、森林は減るのか？",
-      subject: "同じ31か国の森林面積率と都市人口率を一組にして、地図の二重円と散布図で同時に比べます。",
-      reading: "内側の緑が森林率、外側の青が都市人口率です。右上の散布図と回帰線が全31か国の関係を示し、相関係数rを直接表示します。紫の菱形は世界遺産例で、計算には含めません。",
-      action: "スライダーで都市人口率が低い国から高い国へ移動し、黄色い散布点と地図上の二重円を追います。円を押すと、全体傾向から何ポイント外れる国か読めます。",
+      title: "都市人口率が高い国は、森が少ない？",
+      subject: "まず都市人口率が最も近い二国を比べ、31か国の傾向、文化・記憶の順に見ていきます。",
+      reading: "緑の棒は陸地に占める森林率、青の棒は人口に占める都市居住者の割合です。散布図・回帰線・相関係数rは「関係を見る」へ。文化・記憶は別タブです。",
+      action: "地図の棒か国の選択欄で比較し、散布図の点からも選べます。国は自動では切り替わりません。自動で比べる場合は再生ボタンを押します。",
     },
     {
       title: "再生可能電力は、どの国で多く使われているか？",
@@ -578,7 +578,7 @@
     },
     {
       title: "人口の重心は、1960年からどこへ動いたのか？",
-      subject: "世界銀行の国別人口を1960〜2025年で送り、同じ31か国を毎年同じ尺度で比べます。",
+      subject: "世界銀行の217の国・地域を対象に、1960〜2025年の人口を全年共通の面積尺度で比べます。欠測年は表示しません。",
       reading: "琥珀色の円は選択年の国別人口です。円の面積が人口に比例します。国の代表位置に置いた比較円で、都市位置や人口密度ではありません。",
       action: "スライダーで年を動かし、円を押して選んだ国の人口を年ごとに追えます。人口の多さを豊かさや環境負荷へは変換しません。",
     },
@@ -1087,6 +1087,7 @@
   const introRevealTimers = new Set();
   let japanIsOpen = false;
   let japanDataIsOpen = false;
+  let japanDataReturnFocus = null;
   let japanRestoreFocus = true;
   let japanCloseTimer = 0;
   let japanTilesDirty = true;
@@ -1094,6 +1095,7 @@
   let mapPlotRevealBlockedUntil = 0;
   let mapPlotRevealGeneration = 0;
   let mapPlotRevealReason = "initial";
+  const forestRasterReveal = { generation: -1, startedAt: null };
   const ecologiesSelectionTransition = {
     generation: -1,
     currentIso3: "",
@@ -1185,6 +1187,9 @@
   let anthropocenePeelUntil = 0;
   let anthropoceneSelectedIso3 = "JPN";
   let populationSelectedIso3 = "JPN";
+  let ecologiesView = "compare";
+  let ecologiesPlaying = false;
+  let ecologiesCultureIndex = 0;
   let wasteSelectedIndex = 0;
   let timelineDisplayTransitionKey = "";
   let japanPoiRevealTimer = 0;
@@ -1501,6 +1506,7 @@
   const MAP_PLOT_REVEAL_LEAD_MS = 110;
   const MAP_PLOT_REVEAL_SPREAD_MS = 980;
   const MAP_PLOT_REVEAL_DURATION_MS = 520;
+  const FOREST_RASTER_REVEAL_DURATION_MS = 1000;
   const getMapPlotRevealTotalMs = () => reducedMotion
     ? 0
     : MAP_PLOT_REVEAL_LEAD_MS + MAP_PLOT_REVEAL_SPREAD_MS + MAP_PLOT_REVEAL_DURATION_MS;
@@ -1544,6 +1550,30 @@
       alpha: clamp(progress * 2.4, 0, 1),
       scale: 0.14 + eased * 0.86 + bounce,
     };
+  };
+  const getForestRasterRevealAlpha = (now, rasterReady) => {
+    if (forestRasterReveal.generation !== mapPlotRevealGeneration) {
+      forestRasterReveal.generation = mapPlotRevealGeneration;
+      forestRasterReveal.startedAt = null;
+      delete japanOverlay.dataset.forestRevealStartedAt;
+    }
+    const waitingForSeparator = now < mapPlotRevealStartedAt
+      || japanLayer.classList.contains("is-map-title-transitioning");
+    let progress = 0;
+    if (!waitingForSeparator && rasterReady) {
+      // Start on the first drawable frame, including a late image load. Using
+      // the separator's scheduled end alone would let a cold raster pop in.
+      forestRasterReveal.startedAt ??= now;
+      progress = reducedMotion ? 1
+        : clamp((now - forestRasterReveal.startedAt) / FOREST_RASTER_REVEAL_DURATION_MS, 0, 1);
+      japanOverlay.dataset.forestRevealStartedAt = forestRasterReveal.startedAt.toFixed(1);
+    }
+    const alpha = progress * progress * (3 - 2 * progress);
+    japanOverlay.dataset.forestRevealState = waitingForSeparator ? "waiting-for-separator"
+      : !rasterReady ? "waiting-for-raster" : progress < 1 ? "running" : "complete";
+    japanOverlay.dataset.forestRevealProgress = progress.toFixed(3);
+    japanOverlay.dataset.forestRevealAlpha = alpha.toFixed(3);
+    return alpha;
   };
   const applyMapPlotReveal = (ctx, point, reveal) => {
     ctx.globalAlpha *= reveal.alpha;
@@ -1785,6 +1815,12 @@
   }));
 
   const getEarthViewTarget = (index, rect) => {
+    if (modes[index]?.id === "three-ecologies" && rect.width < 680) {
+      const zoom = 1.35;
+      const scale = Math.max(rect.width / 360, rect.height / 180) * zoom;
+      return { focus: "ecologies-japan", zoom, offsetX: 0,
+        offsetY: rect.height * .18 - ((rect.height - 180 * scale) / 2 + (90 - 36) * scale) };
+    }
     const focusJapan = modes[index]?.id === "blue-circulation";
     const zoom = focusJapan ? (rect.width <= 720 ? 3.35 : 4.15) : 1;
     if (!focusJapan) return { focus: "global", zoom, offsetX: 0, offsetY: 0 };
@@ -2146,7 +2182,7 @@
     japanTilesDirty = true;
   };
 
-  const getActiveMapNodes = () => EARTH_NODES;
+  const getActiveMapNodes = () => modes[modeToIndex]?.id === "three-ecologies" ? [] : EARTH_NODES;
 
   const getJapanViewport = () => {
     const rect = japanMap.getBoundingClientRect();
@@ -3769,6 +3805,21 @@
     };
   };
 
+  const populationYearCache = new WeakMap();
+  const POPULATION_AREA_REFERENCE = 1_500_000_000;
+  const getPopulationRadius = (population, rect) =>
+    clamp(rect.width * 0.065, 86, 240) * Math.sqrt(Math.max(0, population) / POPULATION_AREA_REFERENCE);
+  const getPopulationYearIndex = (rows) => {
+    if (populationYearCache.has(rows)) return populationYearCache.get(rows);
+    const byYear = new Map();
+    for (const row of rows) {
+      if (!byYear.has(row.year)) byYear.set(row.year, []);
+      byYear.get(row.year).push(row);
+    }
+    const index = { byYear, years: [...byYear.keys()].sort((a, b) => a - b) };
+    populationYearCache.set(rows, index);
+    return index;
+  };
   const getMapSequenceState = (signalMode) => {
     if (!signalMode) return null;
     const { signals } = signalMode;
@@ -3980,10 +4031,10 @@
         slope: comparison.slope,
         intercept: comparison.intercept,
         legend: [
-          "緑の内円 / 森林",
-          "青の外円 / 都市",
-          "散布図 / 31か国",
-          "紫の菱形 / 記憶",
+          "緑の棒 / 森林率（陸地）",
+          "青の棒 / 都市人口率（人）",
+          "2つの割合 / 足して100%ではない",
+          "31か国 / 展示用の選択標本",
         ],
       };
     }
@@ -4020,11 +4071,10 @@
 
     if (signalMode.id === "population-tide") {
       const rows = signals.population || [];
-      const years = [...new Set(rows.map((row) => Number(row.year)).filter(Number.isFinite))]
-        .sort((a, b) => a - b);
+      const { years, byYear } = getPopulationYearIndex(rows);
       const yearIndex = getSequenceIndex(years.length);
       const selectedYear = years[yearIndex];
-      const yearRows = rows.filter((row) => Number(row.year) === selectedYear);
+      const yearRows = byYear.get(selectedYear) || [];
       const selected = yearRows.find((row) => row.iso3 === populationSelectedIso3)
         || yearRows.find((row) => row.iso3 === "JPN")
         || yearRows[0];
@@ -4036,7 +4086,7 @@
         phaseLabel: `人口の推移 / ${String(yearIndex + 1).padStart(2, "0")} / ${String(years.length).padStart(2, "0")}`,
         yearLabel: String(selectedYear),
         valueLabel: `${getCountryNameJa(selected)} · ${formatObservationNumber(selected.population, 0)} 人`,
-        methodLabel: `世界銀行 / ${yearRows.length}か国 · 円の面積＝人口`,
+        methodLabel: `世界銀行 / ${yearRows.length}国・地域 · 全年共通の面積尺度`,
         timeLabel: `年 / ${years[0]} → ${years.at(-1)}`,
         selectedIndex,
         selected,
@@ -4047,7 +4097,7 @@
         totalPopulation,
         legend: [
           "琥珀円 / 国別人口",
-          "面積 / 人口に比例",
+          "面積 / 人口に比例・全年共通",
           "中心点 / 国の代表位置",
           "重要 / 人口密度ではない",
         ],
@@ -4350,20 +4400,19 @@
     }
     if (signalMode.id === "three-ecologies") {
       const state = getMapSequenceState(signalMode);
-      return [
-        ...(state?.rows || []).map((row) => ({
+      return ecologiesView !== "culture"
+        ? (state?.rows || []).map((row) => ({
           ...row,
           countryJa: getCountryNameJa(row),
           kind: "sequence-poi",
           meta: `森林率 ${row.forestPercent.toFixed(1)}% / 都市人口率 ${row.urbanPercent.toFixed(1)}%`,
-        })),
-        ...(signals.culture || []).map((row) => ({
+        }))
+        : (signals.culture || []).map((row) => ({
           ...row,
           nameJa: getCultureSiteNameJa(row),
           kind: "sequence-poi",
           meta: `世界遺産の例 / ${CULTURE_CATEGORY_NAMES_JA[row.category] || row.category} / ${CULTURE_REGION_NAMES_JA[row.region] || row.region}`,
-        })),
-      ];
+        }));
     }
     if (signalMode.id === "earth-organ") {
       const state = getMapSequenceState(signalMode);
@@ -4400,6 +4449,142 @@
     const stroke = (alpha) => `rgba(${rgb}, ${alpha})`;
     const pointFor = (row) => japanWorldToScreen(row.lon, row.lat, left, top);
     const visible = (point, margin = 45) => point.x > -margin && point.x < rect.width + margin && point.y > -margin && point.y < rect.height + margin;
+    const drawRainSelectionLabel = (point, row, radius) => {
+      if (!isMapPlotRevealComplete(now)) return;
+      const compact = rect.width < 600;
+      const expansive = rect.width >= 2400;
+      const shortLandscape = rect.width < 900 && rect.height < 420;
+      const primaryFontPx = shortLandscape ? 12 : compact ? 14 : expansive ? 26 : 17;
+      const valueFontPx = shortLandscape ? 16 : compact ? 17 : expansive ? 29 : 20;
+      const unitFontPx = shortLandscape ? 10 : compact ? 11 : expansive ? 17 : 12;
+      const sourceFontPx = compact ? 9 : expansive ? 15 : 10;
+      const padding = shortLandscape ? 8 : compact ? 12 : expansive ? 24 : 16;
+      const gap = shortLandscape ? 4 : compact ? 10 : expansive ? 22 : 16;
+      const unitGap = compact ? 4 : 6;
+      const height = shortLandscape ? 36 : compact ? 42 : expansive ? 68 : 48;
+      const margin = 12;
+      const primary = getForestRainSiteName(row);
+      const value = row.precipitationMmDay?.toFixed(2) || "—";
+      const unit = "mm/日";
+      const source = "NASA POWER";
+      const primaryFont = `500 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      const valueFont = `500 ${valueFontPx}px Consolas, "Courier New", monospace`;
+      const unitFont = `400 ${unitFontPx}px "Noto Sans JP", sans-serif`;
+      const sourceFont = `500 ${sourceFontPx}px "Noto Sans JP", sans-serif`;
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.font = valueFont;
+      const valueWidth = ctx.measureText(value).width;
+      ctx.font = unitFont;
+      const unitWidth = ctx.measureText(unit).width;
+      ctx.font = sourceFont;
+      const sourceWidth = ctx.measureText(source).width;
+      const fixedWidth = padding * 2 + gap * 4 + valueWidth + unitGap + unitWidth + sourceWidth;
+      ctx.font = primaryFont;
+      const maximumWidth = shortLandscape ? Math.min(rect.width - margin * 2, Math.max(210, rect.width - 358)) : rect.width - margin * 2;
+      const availableNameWidth = Math.max(0, maximumWidth - fixedWidth);
+      let displayName = primary;
+      // Keep the measurement and provenance intact; only ellipsize a long site
+      // name on narrow screens. Never squeeze Japanese glyphs with maxWidth.
+      if (ctx.measureText(displayName).width > availableNameWidth) {
+        const characters = Array.from(primary);
+        while (characters.length && ctx.measureText(`${characters.join("")}…`).width > availableNameWidth) characters.pop();
+        displayName = `${characters.join("")}…`;
+      }
+      const nameWidth = ctx.measureText(displayName).width;
+      const width = nameWidth + fixedWidth;
+      const clearance = radius + 20;
+      const obstacles = [];
+      for (const element of document.querySelectorAll(
+        ".japan-heading, .signal-console-map, .map-command-dock, .map-mode-bank, #map-reading-guide, .signal-encoding-legend-dock, #gaia-map-zoom-controls, #co2-timeline-display, .japan-map-actions, .gaia-mode-entry-guide-replay, #gaia-audio-toggle",
+      )) {
+        const bounds = element.getBoundingClientRect();
+        if (bounds.width < 2 || bounds.height < 2) continue;
+        const style = getComputedStyle(element);
+        if (style.visibility === "hidden" || Number(style.opacity) === 0) continue;
+        obstacles.push({ left: bounds.left - rect.left, top: bounds.top - rect.top,
+          right: bounds.right - rect.left, bottom: bounds.bottom - rect.top });
+      }
+      if (japanOverlay.dataset.auxiliaryPanelId === "quantitative-precipitation") {
+        obstacles.push({ left: Number(japanOverlay.dataset.auxiliaryPanelScreenLeft) - rect.left,
+          top: Number(japanOverlay.dataset.auxiliaryPanelScreenTop) - rect.top,
+          right: Number(japanOverlay.dataset.auxiliaryPanelScreenRight) - rect.left,
+          bottom: Number(japanOverlay.dataset.auxiliaryPanelScreenBottom) - rect.top });
+      }
+      const candidatesX = [point.x + clearance, point.x - clearance - width, point.x - width / 2, margin, rect.width - width - margin];
+      const candidatesY = [point.y - height / 2, point.y - clearance - height, point.y + clearance, margin, rect.height - height - margin];
+      for (const obstacle of obstacles) {
+        candidatesX.push(obstacle.left - width - 8, obstacle.right + 8);
+        candidatesY.push(obstacle.top - height - 8, obstacle.bottom + 8);
+      }
+      const positionsX = [...new Set(candidatesX.map(value => clamp(value, margin, rect.width - width - margin)))];
+      const positionsY = [...new Set(candidatesY.map(value => clamp(value, margin, rect.height - height - margin)))];
+      let best = { score: Infinity, x: margin, y: margin };
+      for (const x of positionsX) for (const y of positionsY) {
+        const distance = Math.hypot(clamp(point.x, x, x + width) - point.x, clamp(point.y, y, y + height) - point.y);
+        const overlap = obstacles.reduce((area, obstacle) => area
+          + Math.max(0, Math.min(x + width, obstacle.right + 6) - Math.max(x, obstacle.left - 6))
+          * Math.max(0, Math.min(y + height, obstacle.bottom + 6) - Math.max(y, obstacle.top - 6)), 0);
+        const score = overlap * 100000 + Math.max(0, clearance - distance) * 10000
+          + distance + Math.hypot(x + width / 2 - point.x, y + height / 2 - point.y) * .1;
+        if (score < best.score) best = { score, x, y };
+      }
+      const { x, y } = best;
+      const placement = x > point.x ? "right" : x + width < point.x ? "left" : y < point.y ? "above" : "below";
+      // A quiet hairline identifies the observation without a glowing bubble tail.
+      const connector = { x: clamp(point.x, x, x + width), y: clamp(point.y, y, y + height) };
+      const distance = Math.hypot(connector.x - point.x, connector.y - point.y);
+      if (distance > radius + 14) {
+        const start = (radius + 14) / distance;
+        ctx.beginPath();
+        ctx.moveTo(point.x + (connector.x - point.x) * start, point.y + (connector.y - point.y) * start);
+        ctx.lineTo(connector.x, connector.y);
+        ctx.strokeStyle = "rgba(179,213,223,.38)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 4);
+      ctx.fillStyle = "rgba(5,17,23,.92)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(198,224,229,.18)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      const baseline = y + height / 2;
+      const firstDivider = x + padding + nameWidth + gap;
+      const valueX = firstDivider + gap;
+      const secondDivider = valueX + valueWidth + unitGap + unitWidth + gap;
+      ctx.beginPath();
+      for (const divider of [firstDivider, secondDivider]) {
+        ctx.moveTo(divider, baseline - (expansive ? 11 : 8));
+        ctx.lineTo(divider, baseline + (expansive ? 11 : 8));
+      }
+      ctx.strokeStyle = "rgba(198,224,229,.2)";
+      ctx.stroke();
+      for (const [text, font, color, textX] of [
+        [displayName, primaryFont, "rgba(232,241,242,.96)", x + padding],
+        [value, valueFont, "rgba(168,225,248,.98)", valueX],
+        [unit, unitFont, "rgba(205,222,226,.8)", valueX + valueWidth + unitGap],
+        [source, sourceFont, "rgba(181,205,212,.72)", secondDivider + gap],
+      ]) {
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.fillText(text, textX, baseline);
+      }
+      ctx.restore();
+      Object.assign(japanOverlay.dataset, {
+        selectionLabelShape: "inline-readout", selectionLabelVisible: "true",
+        selectionLabelWidthPx: width.toFixed(1), selectionLabelHeightPx: String(height),
+        selectionLabelPrimaryFontPx: String(primaryFontPx), selectionLabelSecondaryFontPx: String(unitFontPx),
+        selectionLabelLeftPx: x.toFixed(1), selectionLabelTopPx: y.toFixed(1),
+        selectionLabelPlacement: placement, selectionLabelFullName: primary,
+        selectionLabelDisplayName: displayName,
+      });
+    };
     const drawSelectionLabel = (
       point,
       primary,
@@ -4591,6 +4776,11 @@
     delete japanOverlay.dataset.selectionLabelTailSide;
     delete japanOverlay.dataset.selectionLabelTailLengthPx;
     delete japanOverlay.dataset.selectionLabelCornerRadiusPx;
+    delete japanOverlay.dataset.selectionLabelLeftPx;
+    delete japanOverlay.dataset.selectionLabelTopPx;
+    delete japanOverlay.dataset.selectionLabelPlacement;
+    delete japanOverlay.dataset.selectionLabelFullName;
+    delete japanOverlay.dataset.selectionLabelDisplayName;
     japanOverlay.dataset.selectionLabelVisible = "false";
     delete japanOverlay.dataset.earthquakeSelectionLabelWidthPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelHeightPx;
@@ -4599,6 +4789,7 @@
     delete japanOverlay.dataset.earthquakeYearSummary;
     delete japanOverlay.dataset.earthquakeActiveLabelPrimary;
     delete japanOverlay.dataset.earthquakeMagnitudeLabelMaxFontPx;
+    delete japanOverlay.dataset.earthquakeMagnitudeLabelCount;
     delete japanOverlay.dataset.earthquakeActiveMagnitudeLabel;
     delete japanOverlay.dataset.earthquakeMarkerStyle;
     delete japanOverlay.dataset.earthquakeMarkerColor;
@@ -4615,6 +4806,10 @@
     delete japanOverlay.dataset.quantitativeLegendMinimum;
     delete japanOverlay.dataset.quantitativeLegendMaximum;
     delete japanOverlay.dataset.quantitativeLegendProgress;
+    ecologiesExhibit?.setActive(signalMode.id === "three-ecologies" && now >= mapPlotRevealStartedAt);
+    for (const key of Object.keys(japanOverlay.dataset)) {
+      if (key.startsWith("population") || key.startsWith("ecologies")) delete japanOverlay.dataset[key];
+    }
     const getLegendSafePanelY = (panelX, panelWidth, defaultY, clearance = 12) => {
       const legendDock = mapSignalEncodingLegend?.closest(".signal-encoding-legend-dock");
       if (!legendDock?.getClientRects().length) return defaultY;
@@ -4731,35 +4926,41 @@
       ctx.restore();
       return { id, progress, panelX, panelY, panelWidth, panelHeight };
     };
-    const drawGlobalRaster = (image, alpha, { forestOnly = false } = {}) => {
+    const drawGlobalRaster = (image, alpha, { forestOnly = false, fadeAfterSeparator = false } = {}) => {
+      const rasterAlpha = (ready) => fadeAfterSeparator
+        ? alpha * getForestRasterRevealAlpha(now, ready) : alpha;
       const source = getRasterDimensions(image);
-      if (!source.width || !source.height) return;
+      if (!source.width || !source.height) { rasterAlpha(false); return; }
       if (mapScope === "earth") {
         if (
           forestOnly &&
           japanOverlay.dataset.viewAnimation === "running" &&
           !forestRasterCache.has(image)
-        ) return;
+        ) { rasterAlpha(false); return; }
         const projection = japanView.earthProjection || getEarthProjection(rect);
         const geographicRaster = forestOnly
           ? getForestGeographicRaster(image)
           : getGeographicRaster(image);
-        if (!geographicRaster) return;
+        if (!geographicRaster) { rasterAlpha(false); return; }
+        const drawAlpha = rasterAlpha(true);
+        if (drawAlpha <= 0) return;
         const worldCopies = getEarthWorldCopies(projection);
         japanOverlay.dataset.rasterWorldCopies = worldCopies
           .map((copy) => copy.x.toFixed(2))
           .join(",");
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = drawAlpha;
         for (const copy of worldCopies) {
           ctx.drawImage(geographicRaster, copy.x, copy.y, copy.width, copy.height);
         }
         ctx.globalAlpha = 1;
         return;
       }
+      const drawAlpha = rasterAlpha(true);
+      if (drawAlpha <= 0) return;
       const northWest = pointFor({ lon: -180, lat: 85.0511 });
       const southEast = pointFor({ lon: 180, lat: -85.0511 });
       const worldWidth = southEast.x - northWest.x;
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha = drawAlpha;
       for (const offset of [-worldWidth, 0, worldWidth]) {
         ctx.drawImage(image, northWest.x + offset, northWest.y, worldWidth, southEast.y - northWest.y);
       }
@@ -5010,7 +5211,7 @@
       japanOverlay.dataset.forestRainBrazil = brazilRain
         ? `${brazilRain.precipitationMmDay.toFixed(2)} mm/日`
         : "missing";
-      drawGlobalRaster(landCoverImage, 0.5, { forestOnly: true });
+      drawGlobalRaster(landCoverImage, 0.5, { forestOnly: true, fadeAfterSeparator: true });
       const drawRainCircle = (row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
@@ -5076,14 +5277,6 @@
         }
         ctx.restore();
 
-        if (selected) {
-          drawSelectionLabel(
-            point,
-            getForestRainSiteName(row),
-            `${row.precipitationMmDay?.toFixed(2) || "—"} mm/日 · NASA POWER`,
-            "rgba(151,220,255,.96)",
-          );
-        }
       };
       precipitationRows.forEach((row, index) => {
         if (index !== sequence?.selectedIndex) drawRainCircle(row, index);
@@ -5100,6 +5293,11 @@
         maximumLabel: `${FOREST_RAIN_REFERENCE_MAX_MM_DAY.toFixed(1)} mm/日以上`,
         colors: ["rgb(25,125,255)", "rgb(91,218,255)", "rgb(226,252,255)"],
       });
+      if (sequence?.selected) {
+        const row = sequence.selected;
+        const point = pointFor(row);
+        if (visible(point)) drawRainSelectionLabel(point, row, getForestRainRadius(row.precipitationMmDay));
+      }
     } else if (signalMode.id === "pollination-protocol") {
       const sequence = getMapSequenceState(signalMode);
       const records = getModeDataPois();
@@ -5544,7 +5742,9 @@
           && activeCameraLabelPoint
           && visible(activeCameraLabelPoint, 110)
         );
-        japanOverlay.dataset.earthquakeActiveMagnitudeLabel = "callout-only";
+        japanOverlay.dataset.earthquakeActiveMagnitudeLabel = "below-marker";
+        japanOverlay.dataset.earthquakeMagnitudeLabelCount = "0";
+        const magnitudeLabels = [];
 
         const drawEarthquakeEvent = (event, {
           reveal = null,
@@ -5644,7 +5844,7 @@
             Math.max(Number(japanOverlay.dataset.earthquakeMarkerMaxLineWidthPx) || 0, markerLineWidth),
           );
 
-          // Magnitude appears with the delayed callout, never as a transient marker label.
+          magnitudeLabels.push({ event, point, appearance, scale, sourceRadius, markerLineWidth });
           ctx.restore();
         };
 
@@ -5676,6 +5876,33 @@
           ctx.restore();
         }
 
+        // Keep each M value with its cross throughout the reveal and overview.
+        // Draw above the delayed callout's tail so it cannot cover the digits.
+        magnitudeLabels.forEach(({ event, point, appearance, scale, sourceRadius, markerLineWidth }) => {
+          ctx.save();
+          ctx.globalAlpha *= clamp(appearance, 0, 1);
+          ctx.translate(point.x, point.y);
+          ctx.scale(scale, scale);
+          ctx.translate(-point.x, -point.y);
+          const magnitudeFontPx = rect.width >= 2400 ? 18 : rect.width < 600 ? 12 : 14;
+          const magnitudeY = point.y + sourceRadius + markerLineWidth / 2 + 3;
+          ctx.font = `700 ${magnitudeFontPx}px Consolas, "Courier New", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(8,16,22,.95)";
+          ctx.fillStyle = "rgba(255,218,211,.98)";
+          ctx.shadowBlur = 0;
+          ctx.strokeText(`M${event.magnitude.toFixed(1)}`, point.x, magnitudeY);
+          ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x, magnitudeY);
+          japanOverlay.dataset.earthquakeMagnitudeLabelMaxFontPx = String(magnitudeFontPx);
+          japanOverlay.dataset.earthquakeMagnitudeLabelCount = String(
+            Number(japanOverlay.dataset.earthquakeMagnitudeLabelCount) + 1,
+          );
+          ctx.restore();
+        });
+
         drawQuantitativeLegendPanel({
           id: "earthquake-magnitude",
           title: "マグニチュード / この年最大",
@@ -5696,171 +5923,85 @@
       const state = getMapSequenceState(signalMode);
       const rows = state?.rows || [];
       const selected = state?.selected;
+      const cultureRows = signalMode.signals.culture || [];
+      const cultureView = ecologiesView === "culture";
       const selectionTransition = getEcologiesSelectionTransition(rows, selected, now);
       const currentSelectionWeight = selectionTransition.previousIso3 ? selectionTransition.progress : 1;
       const previousSelectionWeight = selectionTransition.previousIso3 ? 1 - selectionTransition.progress : 0;
-      drawGlobalRaster(landCoverImage, 0.16, { forestOnly: true });
-      japanOverlay.dataset.ecologiesPlot = "paired-country-scatter";
+      const peer = selected && globalThis.GaiaEcologiesExhibit?.nearestUrban(rows, selected);
+      japanOverlay.dataset.ecologiesPlot = "paired-bars-with-linked-scatter";
+      japanOverlay.dataset.ecologiesView = ecologiesView;
       japanOverlay.dataset.ecologiesPairCount = String(rows.length);
-      japanOverlay.dataset.ecologiesCorrelation = Number.isFinite(state?.correlation)
-        ? state.correlation.toFixed(3)
-        : "";
+      japanOverlay.dataset.ecologiesCorrelation = Number.isFinite(state?.correlation) ? state.correlation.toFixed(3) : "";
       japanOverlay.dataset.ecologiesSelectedCountry = selected ? getCountryNameJa(selected) : "";
-      japanOverlay.dataset.ecologiesCultureCount = String(signalMode.signals.culture?.length || 0);
+      japanOverlay.dataset.ecologiesSelectedIso3 = selected?.iso3 || "";
+      japanOverlay.dataset.ecologiesCultureCount = String(cultureView ? cultureRows.length : 0);
       japanOverlay.dataset.ecologiesCountryDisplayMs = String(Math.round(ECOLOGIES_SEQUENCE_DURATION_MS / Math.max(1, rows.length)));
       japanOverlay.dataset.ecologiesSelectionTransitionMs = String(ECOLOGIES_SELECTION_TRANSITION_MS);
       japanOverlay.dataset.ecologiesSelectionTransitionProgress = selectionTransition.progress.toFixed(3);
-      const cultureRows = signalMode.signals.culture || [];
-      const ecologyPoiCount = Math.max(1, cultureRows.length + rows.length);
-
-      cultureRows.forEach((row, index) => {
+      japanOverlay.dataset.ecologiesPlaying = String(ecologiesPlaying);
+      // Keep the map quiet: no unrelated forest raster, residual colour, or cultural
+      // symbols until their view is explicitly selected.
+      const mapRows = cultureView ? cultureRows : rows;
+      const barWidth = clamp(rect.width * .025, 28, 82);
+      const barHeight = rect.width >= 2400 ? 6 : 4;
+      japanOverlay.dataset.ecologiesBarWidth = barWidth.toFixed(2);
+      mapRows.forEach((row, index) => {
         const point = pointFor(row);
-        if (!visible(point)) return;
-        const reveal = getMapPlotReveal(index, ecologyPoiCount, now);
+        if (!visible(point, barWidth)) return;
+        const reveal = getMapPlotReveal(index, mapRows.length, now);
         if (reveal.progress <= 0) return;
-        const pulse = reducedMotion ? 0 : Math.sin(time * 1.15 + index) * 1.5;
         ctx.save();
-        applyMapPlotReveal(ctx, point, reveal);
-        ctx.translate(point.x, point.y);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = "rgba(214,145,255,.74)";
-        ctx.fillRect(-3.5, -3.5, 7, 7);
-        ctx.strokeStyle = "rgba(231,190,255,.46)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(-8 - pulse, -8 - pulse, 16 + pulse * 2, 16 + pulse * 2);
-        ctx.restore();
-      });
-
-      rows.forEach((row, index) => {
-        const point = pointFor(row);
-        if (!visible(point)) return;
-        const reveal = getMapPlotReveal(cultureRows.length + index, ecologyPoiCount, now);
-        if (reveal.progress <= 0) return;
-        const selectionWeight = row.iso3 === selectionTransition.currentIso3
-          ? currentSelectionWeight
-          : row.iso3 === selectionTransition.previousIso3
-            ? previousSelectionWeight
-            : 0;
-        const outerRadius = 12 + selectionWeight * 10;
-        const innerRadius = 7 + selectionWeight * 8;
-        const start = -Math.PI / 2;
-        ctx.save();
-        applyMapPlotReveal(ctx, point, reveal);
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, outerRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(86,181,255,.12)";
-        ctx.lineWidth = 3 + selectionWeight * 2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, outerRadius, start, start + Math.PI * 2 * clamp(row.urbanPercent / 100, 0, 1));
-        ctx.strokeStyle = `rgba(92,203,255,${0.72 + selectionWeight * 0.26})`;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, innerRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(92,242,145,.12)";
-        ctx.lineWidth = 3 + selectionWeight * 2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, innerRadius, start, start + Math.PI * 2 * clamp(row.forestPercent / 100, 0, 1));
-        ctx.strokeStyle = `rgba(104,255,164,${0.72 + selectionWeight * 0.26})`;
-        ctx.stroke();
-        const residualStrength = clamp(Math.abs(row.residualPercent) / 35, 0.15, 1);
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 2.5 + selectionWeight * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = row.residualPercent >= 0
-          ? `rgba(122,255,174,${0.28 + residualStrength * 0.62})`
-          : `rgba(255,174,112,${0.28 + residualStrength * 0.62})`;
-        ctx.fill();
-        ctx.lineCap = "butt";
-        ctx.restore();
-      });
-
-      const drawEcologiesSelectionLabel = (row, alpha, outgoing = false) => {
-        if (!row || alpha <= 0.01) return;
-        const point = pointFor(row);
-        if (!visible(point)) return;
-        drawSelectionLabel(
-          { x: point.x + 26, y: point.y },
-          `${getCountryNameJa(row)} / 森林率 ${row.forestPercent.toFixed(1)}%`,
-          `都市人口率 ${row.urbanPercent.toFixed(1)}% · 傾向線との差 ${row.residualPercent >= 0 ? "+" : ""}${row.residualPercent.toFixed(1)}ポイント`,
-          "rgba(216,255,232,.98)",
-          {
-            alpha,
-            offsetY: outgoing ? -8 * (1 - alpha) : 10 * (1 - alpha),
-            scale: outgoing ? 0.98 + alpha * 0.02 : 0.97 + alpha * 0.03,
-            anchor: point,
-          },
-        );
-      };
-      drawEcologiesSelectionLabel(selectionTransition.previous, previousSelectionWeight, true);
-      drawEcologiesSelectionLabel(selectionTransition.current, currentSelectionWeight);
-
-      if (state && rows.length) {
-        const compact = rect.width < 680;
-        const chartWidth = Math.min(compact ? rect.width - 28 : 360, rect.width * 0.46);
-        const chartHeight = compact ? 190 : 250;
-        const chartX = compact ? 14 : rect.width - chartWidth - 30;
-        const chartBaseY = compact ? Math.max(150, rect.height - chartHeight - 112) : 56;
-        const chartY = getLegendSafePanelY(chartX, chartWidth, chartBaseY);
-        recordAuxiliaryPanel("three-ecologies-scatter", chartX, chartY, chartWidth, chartHeight);
-        const padding = { left: 42, right: 18, top: 48, bottom: 34 };
-        const plotLeft = chartX + padding.left;
-        const plotRight = chartX + chartWidth - padding.right;
-        const plotTop = chartY + padding.top;
-        const plotBottom = chartY + chartHeight - padding.bottom;
-        const plotX = (value) => plotLeft + clamp(value / 100, 0, 1) * (plotRight - plotLeft);
-        const plotY = (value) => plotBottom - clamp(value / 100, 0, 1) * (plotBottom - plotTop);
-        ctx.save();
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = "rgba(3,18,27,.88)";
-        ctx.strokeStyle = "rgba(174,224,221,.28)";
-        ctx.lineWidth = 1;
-        ctx.fillRect(chartX, chartY, chartWidth, chartHeight);
-        ctx.strokeRect(chartX + 0.5, chartY + 0.5, chartWidth - 1, chartHeight - 1);
-        ctx.strokeStyle = "rgba(174,224,221,.2)";
-        ctx.beginPath();
-        ctx.moveTo(plotLeft, plotTop);
-        ctx.lineTo(plotLeft, plotBottom);
-        ctx.lineTo(plotRight, plotBottom);
-        ctx.stroke();
-
-        const forestAtZero = state.intercept;
-        const forestAtHundred = state.intercept + state.slope * 100;
-        ctx.beginPath();
-        ctx.moveTo(plotX(0), plotY(forestAtZero));
-        ctx.lineTo(plotX(100), plotY(forestAtHundred));
-        ctx.strokeStyle = "rgba(241,245,212,.72)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        rows.forEach((row) => {
-          const isSelected = row.iso3 === selected?.iso3;
-          ctx.beginPath();
-          ctx.arc(plotX(row.urbanPercent), plotY(row.forestPercent), isSelected ? 5.5 : 2.7, 0, Math.PI * 2);
-          ctx.fillStyle = isSelected ? "rgba(255,238,155,.98)" : "rgba(145,233,211,.7)";
-          ctx.fill();
-          if (isSelected) {
-            ctx.fillStyle = "rgba(255,244,199,.95)";
-            ctx.font = '600 8px Consolas, "Courier New", monospace';
-            ctx.textAlign = "left";
-            ctx.fillText(getCountryNameJa(row), plotX(row.urbanPercent) + 8, plotY(row.forestPercent) - 7);
+        ctx.globalAlpha *= reveal.alpha;
+        if (cultureView) {
+          const isSelected = index === ecologiesCultureIndex;
+          const size = rect.width >= 2400 ? 9 : 6;
+          ctx.translate(point.x, point.y); ctx.rotate(Math.PI / 4);
+          ctx.fillStyle = isSelected ? "rgba(241,219,255,.98)" : "rgba(198,153,225,.7)";
+          ctx.strokeStyle = "rgba(223,184,244,.8)"; ctx.lineWidth = 1.2;
+          ctx.fillRect(-size, -size, size * 2, size * 2);
+          if (isSelected) ctx.strokeRect(-size - 6, -size - 6, size * 2 + 12, size * 2 + 12);
+        } else {
+          const selectionWeight = row.iso3 === selectionTransition.currentIso3 ? currentSelectionWeight
+            : row.iso3 === selectionTransition.previousIso3 ? previousSelectionWeight : 0;
+          const isPeer = row.iso3 === peer?.iso3;
+          const left = point.x - barWidth / 2, top = point.y - barHeight - 3;
+          if (row.iso3 === selected?.iso3) {
+            japanOverlay.dataset.ecologiesSelectedScreenX = point.x.toFixed(2);
+            japanOverlay.dataset.ecologiesSelectedScreenY = point.y.toFixed(2);
           }
-        });
-
-        ctx.fillStyle = "rgba(224,246,239,.96)";
-        ctx.font = '600 12px "Noto Sans JP", sans-serif';
-        ctx.textAlign = "left";
-        ctx.fillText("森林率 × 都市人口率", chartX + 16, chartY + 20);
-        ctx.fillStyle = "rgba(199,162,255,.96)";
-        ctx.font = '600 10px Consolas, "Courier New", monospace';
-        ctx.fillText(`r ${state.correlation.toFixed(2)} / ${state.correlationLabel}`, chartX + 16, chartY + 37);
-        ctx.fillStyle = "rgba(143,219,203,.76)";
-        ctx.font = '8px "Noto Sans JP", sans-serif';
-        ctx.fillText("森林率 %", chartX + 8, plotTop - 8);
-        ctx.textAlign = "right";
-        ctx.fillText("都市人口率 % →", plotRight, chartY + chartHeight - 11);
+          ctx.fillStyle = "rgba(3,18,25,.82)";
+          ctx.strokeStyle = selectionWeight > .01 ? `rgba(252,230,153,${.3 + selectionWeight * .65})`
+            : isPeer ? "rgba(193,218,210,.65)" : "rgba(112,152,152,.3)";
+          ctx.lineWidth = 1 + selectionWeight;
+          ctx.shadowColor = "rgba(213,226,146,.4)";
+          ctx.shadowBlur = reducedMotion ? 0 : selectionWeight * 12;
+          ctx.beginPath(); ctx.roundRect(left - 5, top - 5, barWidth + 10, barHeight * 2 + 14, 5); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          [[row.forestPercent, "rgba(145,229,177,.95)"], [row.urbanPercent, "rgba(131,213,245,.95)"]].forEach(([value, color], metric) => {
+            const y = top + metric * (barHeight + 4);
+            ctx.fillStyle = "rgba(171,204,196,.18)"; ctx.fillRect(left, y, barWidth, barHeight);
+            ctx.fillStyle = color; ctx.fillRect(left, y, barWidth * clamp(value / 100, 0, 1), barHeight);
+          });
+          if (selectionWeight > .5 || isPeer) {
+            ctx.font = `500 ${rect.width >= 2400 ? 22 : rect.width < 680 ? 12 : 14}px "Noto Sans JP", sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+            ctx.strokeStyle = "rgba(3,15,23,.95)"; ctx.lineWidth = 4;
+            const name = getCountryNameJa(row);
+            ctx.strokeText(name, point.x, top - 10);
+            ctx.fillStyle = selectionWeight > .5 ? "rgba(255,239,174,.98)" : "rgba(210,230,222,.92)";
+            ctx.fillText(name, point.x, top - 10);
+          }
+        }
         ctx.restore();
+      });
+      if (state && now >= mapPlotRevealStartedAt) {
+        const namedRows = rows.map(row => ({ ...row, nameJa: getCountryNameJa(row) }));
+        ecologiesExhibit?.update({ ...state, rows: namedRows,
+          selected: namedRows.find(row => row.iso3 === selected.iso3), playing: ecologiesPlaying,
+          culture: cultureRows.map(row => ({ ...row, nameJa: getCultureSiteNameJa(row),
+            categoryJa: CULTURE_CATEGORY_NAMES_JA[row.category] || row.category,
+            regionJa: CULTURE_REGION_NAMES_JA[row.region] || row.region })) });
       }
     } else if (signalMode.id === "earth-organ") {
       const state = getMapSequenceState(signalMode);
@@ -5987,13 +6128,19 @@
       japanOverlay.dataset.populationCircleCount = String(rows.length);
       japanOverlay.dataset.populationSelectedYear = String(state?.selectedYear || "");
       japanOverlay.dataset.populationEncoding = "circle-area-proportional-to-population";
+      japanOverlay.dataset.populationAreaReference = String(POPULATION_AREA_REFERENCE);
+      japanOverlay.dataset.populationReferenceRadius = getPopulationRadius(POPULATION_AREA_REFERENCE, rect).toFixed(2);
+      japanOverlay.dataset.populationSelectedIso3 = selected?.iso3 || "";
+      japanOverlay.dataset.populationSelectedRadius = getPopulationRadius(selected?.population || 0, rect).toFixed(2);
+      japanOverlay.dataset.populationMissingCount = String((signalMode.signals.populationCoverage?.countryCount || rows.length) - rows.length);
       japanOverlay.dataset.populationSampleTotal = String(state?.totalPopulation || 0);
       let visiblePopulationCircleCount = 0;
       ctx.save();
-      ctx.globalCompositeOperation = "screen";
+      ctx.globalCompositeOperation = "source-over";
       orderedRows.forEach((row, index) => {
         const point = pointFor(row);
-        if (!visible(point, 64)) return;
+        const radius = getPopulationRadius(row.population, rect);
+        if (!visible(point, radius + 12)) return;
         visiblePopulationCircleCount += 1;
         if (row.iso3 === selected?.iso3) {
           japanOverlay.dataset.populationSelectedScreenX = point.x.toFixed(2);
@@ -6002,49 +6149,77 @@
         const reveal = getMapPlotReveal(index, orderedRows.length, now);
         if (reveal.progress <= 0) return;
         const selectedRow = row.iso3 === selected?.iso3;
-        const radius = 5 + Math.sqrt(Math.max(0, row.population) / maximumPopulation) * 42;
-        const pulse = selectedRow && !reducedMotion ? 1 + Math.sin(time * 1.6) * 0.045 : 1;
         ctx.save();
-        applyMapPlotReveal(ctx, point, reveal);
+        // Light arrives in sequence; neither selection nor breathing changes the data area.
+        ctx.globalAlpha *= reveal.alpha;
         const gradient = ctx.createRadialGradient(
           point.x - radius * 0.28,
           point.y - radius * 0.32,
           0,
           point.x,
           point.y,
-          radius * pulse,
+          Math.max(0.01, radius),
         );
-        gradient.addColorStop(0, selectedRow ? "rgba(255,251,214,1)" : "rgba(255,230,154,.84)");
-        gradient.addColorStop(0.42, selectedRow ? "rgba(255,183,86,.68)" : "rgba(255,164,76,.38)");
-        gradient.addColorStop(1, selectedRow ? "rgba(255,128,70,.06)" : "rgba(255,128,70,.025)");
+        gradient.addColorStop(0, selectedRow ? "rgba(255,251,214,.9)" : "rgba(255,224,148,.48)");
+        gradient.addColorStop(0.5, selectedRow ? "rgba(255,183,86,.48)" : "rgba(255,164,76,.22)");
+        gradient.addColorStop(1, selectedRow ? "rgba(255,128,70,.18)" : "rgba(255,128,70,.08)");
         ctx.beginPath();
-        ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
         ctx.strokeStyle = selectedRow ? "rgba(255,238,183,.98)" : "rgba(255,194,111,.76)";
-        ctx.lineWidth = selectedRow ? 2.2 : 1;
+        ctx.lineWidth = selectedRow ? 2.2 : rect.width >= 2400 ? 1.5 : 1;
+        ctx.shadowColor = selectedRow ? "rgba(255,195,102,.75)" : "transparent";
+        ctx.shadowBlur = selectedRow ? 10 + (reducedMotion ? 0 : (1 + Math.sin(time * 1.6)) * 5) : 0;
         ctx.stroke();
+        ctx.shadowBlur = 0;
         ctx.beginPath();
         ctx.arc(point.x, point.y, selectedRow ? 4.8 : 2.6, 0, Math.PI * 2);
         ctx.fillStyle = selectedRow ? "rgba(255,255,224,.98)" : "rgba(255,210,128,.86)";
         ctx.fill();
         if (!selectedRow && rect.width >= 760 && row.population >= maximumPopulation * 0.12) {
           ctx.fillStyle = "rgba(255,246,209,.92)";
-          ctx.font = '700 9px Consolas, "Courier New", monospace';
+          ctx.font = `700 ${rect.width >= 2400 ? 18 : 11}px Consolas, "Courier New", monospace`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(formatPopulationCompact(row.population), point.x, point.y - radius * 0.24);
         }
         if (selectedRow) {
-          drawSelectionLabel(
-            { x: point.x + radius + 8, y: point.y },
-            `${getCountryNameJa(row)} / ${row.year}年`,
-            `${formatObservationNumber(row.population, 0)} 人 · 円の面積が人口に比例`,
-            "rgba(255,230,170,.98)",
-            { anchor: point },
-          );
+          if (rect.width < 680) {
+            // A compact readout occupies the free lane below the numeric legend,
+            // with room for the zoom controls; a full bubble obscures both here.
+            const labelX = 12, labelWidth = Math.min(286, rect.width - 104), labelHeight = 64;
+            const legendWidth = Math.min(216, rect.width - 28);
+            const labelY = getLegendSafePanelY(rect.width - legendWidth - 14, legendWidth, 228, 8) + 114;
+            ctx.fillStyle = "rgba(5,20,27,.94)";
+            ctx.strokeStyle = "rgba(255,214,140,.56)";
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 8); ctx.fill(); ctx.stroke();
+            ctx.textAlign = "left"; ctx.textBaseline = "middle";
+            ctx.fillStyle = "rgba(255,230,170,.98)";
+            ctx.font = '600 14px "Noto Sans JP", sans-serif';
+            ctx.fillText(`${getCountryNameJa(row)} / ${row.year}年`, labelX + 12, labelY + 19, labelWidth - 24);
+            ctx.fillStyle = "rgba(238,246,242,.98)";
+            ctx.font = '600 15px Consolas, "Courier New", monospace';
+            ctx.fillText(`${formatObservationNumber(row.population, 0)} 人`, labelX + 12, labelY + 43, labelWidth - 24);
+            Object.assign(japanOverlay.dataset, { selectionLabelLeftPx: String(labelX), selectionLabelTopPx: String(labelY),
+              selectionLabelWidthPx: String(labelWidth), selectionLabelHeightPx: String(labelHeight),
+              selectionLabelShape: "population-compact-readout", selectionLabelVisible: "true" });
+          } else {
+            const label = drawSelectionLabel(
+              { x: point.x + radius + 8, y: point.y },
+              `${getCountryNameJa(row)} / ${row.year}年`,
+              `${formatObservationNumber(row.population, 0)} 人 · 円の面積が人口に比例`,
+              "rgba(255,230,170,.98)",
+              { anchor: point },
+            );
+            if (label) {
+              japanOverlay.dataset.selectionLabelLeftPx = label.x.toFixed(1);
+              japanOverlay.dataset.selectionLabelTopPx = label.y.toFixed(1);
+            }
+          }
         }
         ctx.restore();
       });
@@ -6052,13 +6227,13 @@
       japanOverlay.dataset.populationVisibleCircleCount = String(visiblePopulationCircleCount);
       drawQuantitativeLegendPanel({
         id: "population",
-        title: "人口 / 選択年・31か国",
+        title: `人口 / ${rows.length}国・地域 · 全年共通`,
         current: `選択国 ${formatPopulationScaleJa(selected?.population)}`,
         value: Number(selected?.population),
         minimum: 0,
-        maximum: maximumPopulation,
+        maximum: POPULATION_AREA_REFERENCE,
         minimumLabel: "0人",
-        maximumLabel: formatPopulationScaleJa(maximumPopulation),
+        maximumLabel: formatPopulationScaleJa(POPULATION_AREA_REFERENCE),
         colors: ["rgb(255,128,70)", "rgb(255,183,86)", "rgb(255,251,214)"],
       });
     }
@@ -6113,9 +6288,7 @@
       return selected ? 34 : 26;
     }
     if (poi?.type === "data" && signalModeId === "population-tide") {
-      const state = getMapSequenceState(getActiveSignalMode());
-      const maximumPopulation = Math.max(1, ...(state?.yearRows || []).map((row) => Number(row.population || 0)));
-      return 12 + Math.sqrt(Math.max(0, poi.record?.population || 0) / maximumPopulation) * 42;
+      return Math.max(12, getPopulationRadius(poi.record?.population || 0, rect) + 7);
     }
     if (poi?.type === "history" || poi?.type === "earthquake") return 22;
     return 25;
@@ -6732,15 +6905,21 @@
   };
 
   let mapTitleTransitionTimer = 0;
+  let mapTitleTransitionTitle = `${japanTitle.dataset.exhibitNumber}　${japanTitle.textContent}`;
   const cancelMapTitleTransition = () => {
     window.clearTimeout(mapTitleTransitionTimer);
     mapTitleTransitionTimer = 0;
     mapPlotRevealBlockedUntil = 0;
     japanLayer.classList.remove("is-map-title-transitioning");
+    if (japanOverlay.dataset.titleSeparatorState === "running") {
+      japanOverlay.dataset.titleSeparatorState = "cancelled";
+    }
   };
 
   const animateMapTitleTransition = (title) => {
     if (!mapTitleTransition || !mapTitleTransitionText || !japanIsOpen) return;
+    if (mapTitleTransitionTitle === title) return;
+    mapTitleTransitionTitle = title;
     cancelMapTitleTransition();
     const separatorStartedAt = performance.now();
     const separatorDuration = reducedMotion
@@ -6762,6 +6941,25 @@
     }, separatorDuration);
   };
 
+  // Extension exhibits own their headings without entering updateModeInterface.
+  // Observe the settled heading so every exhibition shares the same separator.
+  // Repeated source/POI updates and intermediate heading restores do not replay it.
+  const mapTitleObserver = new MutationObserver(() => {
+    const title = `${japanTitle.dataset.exhibitNumber}　${japanTitle.textContent}`;
+    if (!japanIsOpen) {
+      mapTitleTransitionTitle = title;
+      return;
+    }
+    animateMapTitleTransition(title);
+  });
+  mapTitleObserver.observe(japanTitle, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-exhibit-number"],
+  });
+
   const updateMapObservationNarrative = () => {
     const signalMode = getActiveSignalMode();
     const guide = MAP_READING_GUIDES[getThemeIndex()];
@@ -6781,9 +6979,9 @@
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
           "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公式値、破線は近隣5か国からの補完値。左右ボタンとスライダーで31の国・地域を切り替えます。"],
           "anthropocene-scar": ["1945—2023年 化石燃料由来CO₂ × 2016年固定夜間光", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
-          "three-ecologies": ["森林率 × 都市人口率 / 31か国比較", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
+          "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、31か国の散布図、文化・記憶を順に切り替えて比較します。選択標本で基準年も異なるため、世界全体や因果関係の結論ではありません。"],
           "earth-organ": ["再生可能電力 / 31か国の塗り分け", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
-          "population-tide": ["1960—2025年 人口 / 31か国", "琥珀色の円は選択年の国別人口です。円の面積が人口に比例します。国の代表位置へ置いた比較円で、都市の位置や人口密度ではありません。"],
+          "population-tide": ["1960—2025年 人口 / 世界の国・地域", "琥珀色の円は選択年の人口です。217の国・地域を対象に、円の面積が人口に比例する全年共通尺度で比較します。欠測年は非表示。点は代表位置で、都市の位置や人口密度ではありません。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
           `ACT ${signalMode.act.number} / ${signalMode.act.en}`,
@@ -7160,6 +7358,14 @@
   };
 
   const openJapanPoi = (poi, clientX, clientY) => {
+    if (getActiveSignalMode()?.id === "three-ecologies" && poi.type === "data") {
+      if (poi.record.iso3) selectEcologiesCountry(poi.record.iso3, { focus: false });
+      else {
+        ecologiesCultureIndex = Math.max(0, getActiveSignalMode().signals.culture.findIndex(row => row.name === poi.record.name));
+        ecologiesExhibit?.selectSite(ecologiesCultureIndex);
+      }
+      return;
+    }
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
     clearJapanPoiHover();
@@ -7316,6 +7522,10 @@
       let hitRadius = hitRadii.node;
       if (signalModeId === "forest-cloud-engine") {
         hitRadius = Math.max(hitRadius, getForestRainRadius(record.precipitationMmDay));
+      } else if (signalModeId === "three-ecologies" && ecologiesView !== "culture") {
+        hitRadius = Math.max(hitRadius, clamp(rect.width * .025, 28, 82) / 2 + 9);
+      } else if (signalModeId === "population-tide") {
+        hitRadius = Math.max(hitRadius, getPopulationRadius(record.population, rect));
       } else if (signalModeId === "nothing-is-waste") {
         hitRadius = record.sequenceIndex === wasteSelectedIndex
           ? clamp(rect.width / 34, 46, 62) + 8
@@ -7679,7 +7889,7 @@
           ? `森林率 ${state.selected.forestPercent.toFixed(1)}% / 都市人口率 ${state.selected.urbanPercent.toFixed(1)}%`
           : "比較できる国別データなし",
         note: state
-          ? `緑と青の二重円は同じ国の割合です。散布図の r ${state.correlation.toFixed(2)} は${state.correlationLabel}。紫の世界遺産例は相関計算へ含めません。`
+          ? `緑は陸地の森林率、青は人口の都市居住率。別の分母なので足して100%にはなりません。散布図の r ${state.correlation.toFixed(2)} は${state.correlationLabel}で、文化・記憶は別表示です。`
           : "同じ国の森林率と都市人口率を組にして比較します。",
         temporal: true,
       };
@@ -8239,6 +8449,13 @@
         : 0;
     signalTimePosition = clamp(reducedMotion ? reducedMotionPosition : position, 0, 100);
     const activeSignalMode = getActiveSignalMode();
+    if (activeId === "three-ecologies") {
+      ecologiesPlaying = false;
+      ecologiesExhibit?.reset();
+      const rows = getThreeEcologiesComparison(activeSignalMode.signals)?.rows || [];
+      const japanIndex = Math.max(0, rows.findIndex(row => row.iso3 === "JPN"));
+      signalTimePosition = ((japanIndex + .5) / Math.max(1, rows.length)) * 100;
+    }
     const timelineDuration = getActiveTimelineDuration();
     co2TimelineStartedAt = now - getTimelineElapsedForPosition(
       activeSignalMode,
@@ -8269,6 +8486,7 @@
       !japanIsOpen ||
       !isTimelineMode ||
       signalMode.id === "nothing-is-waste" ||
+      (signalMode.id === "three-ecologies" && !ecologiesPlaying) ||
       co2TimelineHeld
     ) return;
 
@@ -8405,11 +8623,11 @@ const nightLightOpacity = longPress ? 0.04 : 0.5;
     "three-ecologies": `const paired = joinByIso3(countryForestPercent, countryUrbanPercent); // same countries only
 const relation = pearson(paired.map(row => [row.urbanPercent, row.forestPercent]));
 const trend = linearRegression(paired); // display the tendency and each residual
-drawPairedMapGlyphs(paired, { inner: "forest", outer: "urban", center: "residual" });
-drawScatterPlot(paired, trend, relation); // x = urban %, y = forest %
+drawPairedBars(paired, { green: "forest / land", blue: "urban / people", range: [0, 100] });
+if (view === "pattern") drawScatterPlot(paired, trend, relation); // x = urban %, y = forest %
 
-drawForestRaster(modisIgbp2023, { opacity: 0.16 }); // geographic context, not correlation input
-drawMemoryContext(unescoGlobalSample); // purple sites; deliberately excluded from r
+compare(selected, nearestUrbanShareCountry(selected)); // same 0–100% rails; no automatic country change
+if (view === "culture") drawMemoryContext(unescoGlobalSample); // separate view, excluded from r
 // COUNTRY VALUES with different latest years. Correlation is not causation.`,
     "earth-organ": `const countries = joinByIso3(countryRenewableShare, naturalEarthCountries);
 drawCountryChoropleth(countries, { scale: "dark-blue 0% → cyan 100%" });
@@ -8418,9 +8636,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 // Solar and wind are context, not a causal model of the current electricity share.`,
     "population-tide": `const year = mix(1960, 2025, timelinePosition);
 const countryValues = worldBankPopulation.filter(row => row.year === year);
-const maximum = Math.max(...countryValues.map(row => row.population));
+const reference = 1_500_000_000; // fixed for every year, never the selected-year maximum
+const referenceRadius = clamp(mapWidth * 0.065, 86, 240);
 for (const country of countryValues) {
-  const radius = Math.sqrt(country.population / maximum) * maximumRadius;
+  const radius = Math.sqrt(country.population / reference) * referenceRadius;
   drawPopulationCircle(country, radius); // circle area ∝ population
 }
 // Representative country points: not cities, population density, or environmental load.`,
@@ -8683,6 +8902,7 @@ for (const country of countryValues) {
         signalTimePosition = Number(input.value);
       }
       if (japanIsOpen) {
+        if (getActiveSignalMode()?.id === "three-ecologies") ecologiesPlaying = false;
         co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
         resumeTimelineAfterManualSeek();
       }
@@ -9229,7 +9449,7 @@ for (const country of countryValues) {
 
   const positionMapModeTooltip = (tooltip, button = mapModePreviewAnchor) => {
     const bankRect = japanModeBank.getBoundingClientRect();
-    const mobile = innerWidth <= 900;
+    const mobile = usesCompactMapUi();
     const width = mobile
       ? bankRect.width
       : Math.min(430, Math.max(320, innerWidth - 24));
@@ -9274,7 +9494,9 @@ for (const country of countryValues) {
   };
 
   const syncMapModePreviewContainer = () => {
-    const target = usesCompactMapBank() ? japanModeBank : japanLayer;
+    // Match the inline preview's CSS breakpoint, not the wider bank breakpoint.
+    // Otherwise tablet previews are trapped beneath the bank's sibling panels.
+    const target = usesCompactMapUi() ? japanModeBank : japanLayer;
     if (mapModePreview.parentElement !== target) target.append(mapModePreview);
   };
 
@@ -9341,7 +9563,7 @@ for (const country of countryValues) {
     }
     mapModePreview.classList.toggle("is-open", Boolean(open));
     mapModePreview.setAttribute("aria-hidden", String(!open));
-    if (open && usesCompactMapBank()) {
+    if (open && usesCompactMapUi()) {
       mapModePreview.style.removeProperty("width");
       mapModePreview.style.removeProperty("left");
       mapModePreview.style.removeProperty("top");
@@ -9476,7 +9698,7 @@ for (const country of countryValues) {
     if (event.target.closest?.(".map-mode-button")) setMobileMapBankExpanded(false);
   });
   window.addEventListener("gaia:live-exhibit-mounted", () => {
-    japanModeList.querySelectorAll("[data-live-exhibit]").forEach((button) => {
+    japanModeBank.querySelectorAll("[data-live-exhibit]").forEach((button) => {
       button.dataset.mapPreviewSurface = "map";
       button.setAttribute("aria-describedby", "map-mode-preview");
     });
@@ -9505,7 +9727,7 @@ for (const country of countryValues) {
     compactMapUiWasActive = compactMapUiIsActive;
     if (!usesCompactMapBank()) setMobileMapBankExpanded(false);
     syncMapModePreviewContainer();
-    if (mapModePreview.classList.contains("is-open") && !usesCompactMapBank()) {
+    if (mapModePreview.classList.contains("is-open") && !usesCompactMapUi()) {
       scheduleMapModeTooltipPosition(mapModePreview, mapModePreviewAnchor);
     }
   }, { passive: true });
@@ -9588,6 +9810,7 @@ for (const country of countryValues) {
       syncIntegratedMapLight();
       setMobileMapBankExpanded(false, { restoreFocus: true });
     });
+    japanModeButton.dataset.mapStandardIndex = String(index);
     japanModeButtons.push(japanModeButton);
     japanModeList.append(japanModeButton);
   });
@@ -9832,7 +10055,7 @@ for (const country of countryValues) {
     "#japan-data-panel",
     "#gaia-statistics-lab",
     ".gaia-live-exhibit-readout",
-    "#japan-mode-list",
+    ".map-mode-groups",
     "input",
     "select",
     "textarea",
@@ -10124,6 +10347,7 @@ for (const country of countryValues) {
         );
       }
     }
+    japanDataReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : japanDataButton;
     japanDataIsOpen = true;
     japanDataPanel.inert = false;
     japanDataPanel.setAttribute("aria-hidden", "false");
@@ -10138,9 +10362,10 @@ for (const country of countryValues) {
     if (!japanDataIsOpen) {
       return;
     }
+    const focusTarget = japanDataReturnFocus?.isConnected ? japanDataReturnFocus : japanDataButton;
     if (japanDataPanel.contains(document.activeElement)) {
       if (restoreFocus) {
-        japanDataButton.focus({ preventScroll: true });
+        focusTarget.focus({ preventScroll: true });
       } else {
         document.activeElement?.blur?.();
       }
@@ -10152,8 +10377,8 @@ for (const country of countryValues) {
     japanDataScrim.tabIndex = -1;
     japanDataButton.setAttribute("aria-expanded", "false");
     japanLayer.classList.remove("japan-data-open");
-    if (restoreFocus && document.activeElement !== japanDataButton) {
-      japanDataButton.focus({ preventScroll: true });
+    if (restoreFocus && document.activeElement !== focusTarget) {
+      focusTarget.focus({ preventScroll: true });
     }
   };
 
@@ -10308,9 +10533,9 @@ for (const country of countryValues) {
     available: () => japanIsOpen && !japanLayer.hidden && !document.body.classList.contains("gaia-tour-open"),
     steps: [
       {
-        target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
+        target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),
         title: "展示を選ぶ",
-        copy: "左右の切替か中央の展示名を押して、世界15展示と日本・都道府県3展示を選べます。",
+        copy: "左右の切替か展示一覧から、6つのテーマに分かれた全30展示を選べます。下の帯には、今見ているテーマと展示名が表示されます。",
       },
       {
         target: "[data-signal-time]",
@@ -10349,30 +10574,26 @@ for (const country of countryValues) {
     {
       target: document.querySelector("[data-intro-guide='map']"),
       copy: "世界の公開観測データを地図に重ね、地点・年代・変化をたどれます。",
-      preview: "./assets/guide-previews/map.jpg",
+      preview: "./assets/guide-previews/map.jpg?v=current-guide-20260906",
       previewAlt: "地球の一呼吸を表示した世界観測マップの画面",
-      previewLabel: "WORLD MAP / SCREEN PREVIEW",
     },
     {
       target: document.querySelector("[data-intro-guide='sensor']"),
       copy: "実物のセンサーをつなぎ、自分の観測点を地球の感覚器として追加できます。",
-      preview: "./assets/guide-previews/sensor.jpg",
-      previewAlt: "センサー登録の参加方法を選ぶ画面",
-      previewLabel: "SENSOR / SCREEN PREVIEW",
+      preview: "./assets/guide-previews/sensor.jpg?v=current-guide-20260906",
+      previewAlt: "公開された観測点を表示した、みんなのセンサーの地図画面",
     },
     {
       target: document.querySelector("[data-intro-guide='character']"),
       copy: "物語に登場する三人の設定やビジュアル資料を確認できます。",
-      preview: "./assets/guide-previews/character.jpg",
+      preview: "./assets/guide-previews/character.jpg?v=current-guide-20260906",
       previewAlt: "雨宮周のプロフィールを表示したキャラクター設定画面",
-      previewLabel: "CHARACTER / SCREEN PREVIEW",
     },
     {
       target: document.querySelector("[data-intro-guide='sound']"),
       copy: "作品の音楽を一覧で再生し、シーンを支えるサウンドを鑑賞できます。",
-      preview: "./assets/guide-previews/sound.jpg",
+      preview: "./assets/guide-previews/sound.jpg?v=current-guide-20260906",
       previewAlt: "収録曲一覧と再生パネルを表示したサウンド鑑賞画面",
-      previewLabel: "SOUND ARCHIVE / SCREEN PREVIEW",
     },
   ].filter(({ target }) => target instanceof Element));
   const introEntryGuide = document.createElement("section");
@@ -10384,30 +10605,70 @@ for (const country of countryValues) {
   introEntryGuide.setAttribute("role", "dialog");
   introEntryGuide.setAttribute("aria-modal", "false");
   introEntryGuide.setAttribute("aria-label", "データ入口ガイド");
-  introEntryGuide.setAttribute("aria-describedby", "intro-entry-guide-copy intro-entry-guide-hint");
+  introEntryGuide.setAttribute("aria-describedby", "intro-entry-guide-copy");
   introEntryGuide.innerHTML = `
     <div class="intro-entry-guide-shade" aria-hidden="true"></div>
     <article class="intro-entry-guide-bubble" aria-live="polite" aria-atomic="true">
-      <div class="intro-entry-guide-index"><b><i data-intro-entry-guide-step>1</i> / ${introEntryGuideSteps.length}</b></div>
-      <figure class="intro-entry-guide-preview">
-        <img data-intro-entry-guide-preview alt="" />
-        <figcaption data-intro-entry-guide-preview-label></figcaption>
-      </figure>
-      <p id="intro-entry-guide-copy" data-intro-entry-guide-copy></p>
-      <span class="intro-entry-guide-hint" id="intro-entry-guide-hint"><b>CLICK / TAP</b><span data-intro-entry-guide-action>次へ</span></span>
+      <div class="intro-entry-guide-surface">
+        <figure class="intro-entry-guide-preview">
+          <img data-intro-entry-guide-preview width="1440" height="810" decoding="async" alt="" />
+        </figure>
+        <p class="intro-entry-guide-copy" id="intro-entry-guide-copy" data-intro-entry-guide-copy></p>
+      </div>
     </article>`;
   introLayer.append(introEntryGuide);
 
   const introEntryGuideShade = introEntryGuide.querySelector(".intro-entry-guide-shade");
   const introEntryGuideBubble = introEntryGuide.querySelector(".intro-entry-guide-bubble");
+  const introEntryGuideSurface = introEntryGuide.querySelector(".intro-entry-guide-surface");
   const introEntryGuidePreview = introEntryGuide.querySelector(".intro-entry-guide-preview");
   const introEntryGuidePreviewImage = introEntryGuide.querySelector("[data-intro-entry-guide-preview]");
-  const introEntryGuidePreviewLabel = introEntryGuide.querySelector("[data-intro-entry-guide-preview-label]");
   let introEntryGuideActive = false;
   let introEntryGuideIndex = 0;
   let introEntryGuidePositionFrame = 0;
   let introEntryGuideStartTimer = 0;
   let introEntryGuideSettleTimer = 0;
+  let introEntryGuideRevealFrame = 0;
+  let introEntryGuideCloseTimer = 0;
+  let introEntryGuideGeneration = 0;
+  let introEntryGuideEcho = null;
+  let introEntryGuideEchoTimer = 0;
+  let introEntryGuideImagesWarmed = false;
+  const introEntryGuideMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+  const clearIntroEntryGuideEcho = () => {
+    window.clearTimeout(introEntryGuideEchoTimer);
+    introEntryGuideEchoTimer = 0;
+    introEntryGuideEcho?.remove();
+    introEntryGuideEcho = null;
+  };
+  const releaseIntroEntryGuideSurface = (nextTarget) => {
+    clearIntroEntryGuideEcho();
+    if (introEntryGuideMotion.matches || !introEntryGuide.classList.contains("is-presented")) return;
+    const opacity = Number(getComputedStyle(introEntryGuideSurface).opacity);
+    if (opacity < 0.05) return;
+    const rect = introEntryGuideSurface.getBoundingClientRect();
+    const destination = nextTarget?.getBoundingClientRect();
+    const drift = destination ? Math.max(-18, Math.min(18, (destination.left + destination.width / 2 - rect.left - rect.width / 2) * 0.06)) : 0;
+    const echo = introEntryGuideSurface.cloneNode(true);
+    echo.classList.add("intro-entry-guide-echo");
+    echo.setAttribute("aria-hidden", "true");
+    echo.inert = true;
+    // A visual afterimage must never duplicate live descriptions or selectors.
+    echo.querySelectorAll("*").forEach((element) => {
+      for (const attribute of Array.from(element.attributes)) {
+        if (attribute.name === "id" || attribute.name.startsWith("data-intro-entry-guide")) element.removeAttribute(attribute.name);
+      }
+    });
+    Object.assign(echo.style, { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px` });
+    echo.style.setProperty("--intro-guide-echo-opacity", String(opacity));
+    echo.style.setProperty("--intro-guide-echo-x", `${drift}px`);
+    const previewHeight = introEntryGuideBubble.style.getPropertyValue("--intro-guide-preview-height");
+    if (previewHeight) echo.style.setProperty("--intro-guide-preview-height", previewHeight);
+    introEntryGuide.append(echo);
+    introEntryGuideEcho = echo;
+    introEntryGuideEchoTimer = window.setTimeout(clearIntroEntryGuideEcho, 640);
+  };
 
   const clearIntroEntryGuideTarget = () => {
     introEntryGuideSteps.forEach(({ target }) => target.classList.remove("is-intro-entry-guide-target"));
@@ -10425,10 +10686,22 @@ for (const country of countryValues) {
       introEntryGuideShade.style.setProperty("--intro-guide-focus-height", `${targetRect.height}px`);
       introEntryGuideShade.style.setProperty("--intro-guide-focus-radius", getComputedStyle(target).borderRadius || "0px");
     }
-    const bubbleRect = introEntryGuideBubble.getBoundingClientRect();
     const compactLandscape = innerHeight <= 430 && innerWidth > innerHeight;
     const viewportInset = compactLandscape ? 8 : 12;
-    const gap = compactLandscape ? 8 : 12;
+    const gap = compactLandscape ? 12 : 18;
+    introEntryGuideBubble.style.setProperty("--intro-guide-gap", `${gap}px`);
+    // Keep the photograph and its target visible even on short portrait phones.
+    introEntryGuideBubble.style.removeProperty("--intro-guide-preview-height");
+    let bubbleRect = introEntryGuideBubble.getBoundingClientRect();
+    if (!introEntryGuidePreview.hidden) {
+      const previewHeight = introEntryGuidePreview.getBoundingClientRect().height;
+      const available = Math.max(targetRect.top - gap - viewportInset, innerHeight - targetRect.bottom - gap - viewportInset);
+      const roomForPreview = Math.max(48, available - (bubbleRect.height - previewHeight));
+      if (roomForPreview < previewHeight) {
+        introEntryGuideBubble.style.setProperty("--intro-guide-preview-height", `${Math.floor(roomForPreview)}px`);
+        bubbleRect = introEntryGuideBubble.getBoundingClientRect();
+      }
+    }
     const preferredLeft = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2;
     const left = Math.max(viewportInset, Math.min(innerWidth - bubbleRect.width - viewportInset, preferredLeft));
     const below = targetRect.bottom + gap;
@@ -10452,6 +10725,7 @@ for (const country of countryValues) {
     });
   };
   const reflowIntroEntryGuide = () => {
+    clearIntroEntryGuideEcho();
     if (introEntryGuideActive) {
       const target = introEntryGuideSteps[introEntryGuideIndex]?.target;
       if (target instanceof HTMLElement) {
@@ -10467,31 +10741,44 @@ for (const country of countryValues) {
   };
   const setIntroEntryGuideStep = (nextIndex) => {
     if (!introEntryGuideActive || introEntryGuideSteps.length === 0) return;
+    const generation = ++introEntryGuideGeneration;
+    cancelAnimationFrame(introEntryGuideRevealFrame);
+    cancelAnimationFrame(introEntryGuidePositionFrame);
     introEntryGuideIndex = Math.max(0, Math.min(introEntryGuideSteps.length - 1, nextIndex));
-    clearIntroEntryGuideTarget();
     const step = introEntryGuideSteps[introEntryGuideIndex];
+    releaseIntroEntryGuideSurface(step.target);
+    introEntryGuide.classList.remove("is-presented");
+    introEntryGuide.classList.toggle("is-changing", Boolean(introEntryGuideEcho));
+    clearIntroEntryGuideTarget();
     step.target.classList.add("is-intro-entry-guide-target");
-    introEntryGuide.querySelector("[data-intro-entry-guide-step]").textContent = String(introEntryGuideIndex + 1);
     introEntryGuide.querySelector("[data-intro-entry-guide-copy]").textContent = step.copy;
     if (introEntryGuidePreviewImage instanceof HTMLImageElement) {
       introEntryGuidePreviewImage.src = step.preview;
       introEntryGuidePreviewImage.alt = step.previewAlt;
     }
-    if (introEntryGuidePreviewLabel instanceof HTMLElement) {
-      introEntryGuidePreviewLabel.textContent = step.previewLabel;
-    }
     if (introEntryGuidePreview instanceof HTMLElement) {
       introEntryGuidePreview.hidden = !step.preview;
     }
-    introEntryGuide.querySelector("[data-intro-entry-guide-action]").textContent = introEntryGuideIndex === introEntryGuideSteps.length - 1
-      ? "案内を終える"
-      : "次へ";
     introEntryGuide.dataset.step = String(introEntryGuideIndex + 1);
     const targetRect = step.target.getBoundingClientRect();
     if (targetRect.top < 12 || targetRect.bottom > innerHeight - 12) {
-      step.target.scrollIntoView({ block: "center", inline: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+      step.target.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
     }
-    scheduleIntroEntryGuidePosition();
+    positionIntroEntryGuide();
+    // Decode the next real screenshot before it emerges. Superseded image
+    // completions cannot reveal the wrong step or reopen a dismissed guide.
+    const imageReady = introEntryGuidePreviewImage instanceof HTMLImageElement
+      ? introEntryGuidePreviewImage.decode().catch(() => {}) : Promise.resolve();
+    void imageReady.then(() => {
+      if (!introEntryGuideActive || generation !== introEntryGuideGeneration) return;
+      positionIntroEntryGuide();
+      introEntryGuideRevealFrame = requestAnimationFrame(() => {
+        introEntryGuideRevealFrame = 0;
+        if (introEntryGuideActive && generation === introEntryGuideGeneration) {
+          introEntryGuide.classList.add("is-visible", "is-presented");
+        }
+      });
+    });
     window.clearTimeout(introEntryGuideSettleTimer);
     introEntryGuideSettleTimer = window.setTimeout(scheduleIntroEntryGuidePosition, reducedMotion ? 0 : 420);
   };
@@ -10501,32 +10788,44 @@ for (const country of countryValues) {
     introEntryGuideStartTimer = 0;
     introEntryGuideSettleTimer = 0;
     if (!introEntryGuideActive) return;
+    ++introEntryGuideGeneration;
+    cancelAnimationFrame(introEntryGuideRevealFrame);
+    cancelAnimationFrame(introEntryGuidePositionFrame);
+    introEntryGuideRevealFrame = 0;
+    introEntryGuidePositionFrame = 0;
+    releaseIntroEntryGuideSurface();
     introEntryGuideActive = false;
     clearIntroEntryGuideTarget();
     introLayer.classList.remove("is-intro-entry-guide-active");
-    introEntryGuide.classList.remove("is-visible");
+    introEntryGuide.classList.remove("is-visible", "is-presented", "is-changing");
     introEntryGuide.inert = true;
     introEntryGuide.setAttribute("aria-hidden", "true");
-    window.setTimeout(() => {
-      if (!introEntryGuideActive) introEntryGuide.hidden = true;
-    }, reducedMotion ? 0 : 180);
+    window.clearTimeout(introEntryGuideCloseTimer);
+    introEntryGuideCloseTimer = window.setTimeout(() => {
+      introEntryGuideCloseTimer = 0;
+      if (!introEntryGuideActive) {
+        introEntryGuide.hidden = true;
+        clearIntroEntryGuideEcho();
+      }
+    }, introEntryGuideMotion.matches ? 0 : 640);
     if (restoreFocus) introEntryGuideReplay?.focus({ preventScroll: true });
   };
   const openIntroEntryGuide = () => {
     if (introEntryGuideActive || introEntryGuideSteps.length === 0 || !introIsOpen || introStage !== "path") return;
+    window.clearTimeout(introEntryGuideCloseTimer);
+    introEntryGuideCloseTimer = 0;
+    clearIntroEntryGuideEcho();
+    if (!introEntryGuideImagesWarmed) {
+      introEntryGuideImagesWarmed = true;
+      introEntryGuideSteps.forEach(({ preview }) => { const image = new Image(); image.src = preview; });
+    }
     introEntryGuideActive = true;
     introEntryGuide.hidden = false;
     introEntryGuide.inert = false;
     introEntryGuide.setAttribute("aria-hidden", "false");
     introLayer.classList.add("is-intro-entry-guide-active");
-    requestAnimationFrame(() => {
-      setIntroEntryGuideStep(0);
-      positionIntroEntryGuide();
-      requestAnimationFrame(() => {
-        introEntryGuide.classList.add("is-visible");
-        introEntryGuide.focus({ preventScroll: true });
-      });
-    });
+    setIntroEntryGuideStep(0);
+    introEntryGuide.focus({ preventScroll: true });
   };
   const scheduleIntroEntryGuide = (delay = 2000) => {
     window.clearTimeout(introEntryGuideStartTimer);
@@ -10565,6 +10864,9 @@ for (const country of countryValues) {
   });
   introLayer.addEventListener("scroll", scheduleIntroEntryGuidePosition, { passive: true });
   window.addEventListener("resize", reflowIntroEntryGuide, { passive: true });
+  introEntryGuideMotion.addEventListener("change", () => {
+    if (introEntryGuideMotion.matches) clearIntroEntryGuideEcho();
+  });
   globalThis.GaiaIntroEntryGuide = Object.freeze({
     open: openIntroEntryGuide,
     close: closeIntroEntryGuide,
@@ -10738,6 +11040,50 @@ for (const country of countryValues) {
     getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen }),
   });
   globalThis.GaiaMapObservationAdapter = mapObservationAdapter;
+  const focusEcologiesLocation = (row, label) => {
+    const rect = japanMap.getBoundingClientRect();
+    const targetX = rect.width < 680 ? .48 : .38, targetY = rect.width < 680 ? .2 : .44;
+    const mapX = earthLongitudeToMapX(row.lon), mapY = 90 - row.lat;
+    const baseScale = Math.max(rect.width / 360, rect.height / 180);
+    // The map clamps pan to its edges. Zoom enough to put western/eastern
+    // sites in the open reading area, not underneath the inspector.
+    const requiredScale = Math.max(rect.width * targetX / Math.max(1, mapX),
+      rect.width * (1 - targetX) / Math.max(1, 360 - mapX),
+      rect.height * targetY / Math.max(1, mapY), rect.height * (1 - targetY) / Math.max(1, 180 - mapY));
+    focusEarthLocation({ lon: row.lon, lat: row.lat, zoom: clamp(Math.max(1.35, requiredScale / baseScale + .04), 1, 8),
+      targetX, targetY, durationMs: reducedMotion ? 0 : 650, label });
+  };
+  const selectEcologiesCountry = (iso3, { focus = true } = {}) => {
+    const mode = getActiveSignalMode();
+    if (mode?.id !== "three-ecologies") return;
+    const rows = getThreeEcologiesComparison(mode.signals)?.rows || [];
+    const index = rows.findIndex(row => row.iso3 === iso3);
+    if (index < 0) return;
+    closeJapanPoi(); clearJapanPoiHover();
+    ecologiesPlaying = false; co2TimelineHeld = true;
+    signalTimePosition = ((index + .5) / rows.length) * 100;
+    signalTimeInputs.forEach(input => { input.value = String(signalTimePosition); });
+    updateSignalInterface();
+    if (focus) focusEcologiesLocation(rows[index], "ecologies-country");
+  };
+  const ecologiesExhibit = globalThis.GaiaEcologiesExhibit?.mount(japanLayer, {
+    select: selectEcologiesCountry,
+    view: view => {
+      ecologiesView = view; ecologiesPlaying = false; co2TimelineHeld = true; closeJapanPoi(); clearJapanPoiHover();
+      const heading = japanLayer.querySelector("#map-guide-title");
+      if (heading) heading.textContent = view === "culture" ? "割合では語れない、場所の意味。" : "都市人口率が高い国は、森が少ない？";
+    },
+    play: () => {
+      ecologiesPlaying = !ecologiesPlaying; co2TimelineHeld = !ecologiesPlaying;
+      co2TimelinePausedUntil = 0;
+      co2TimelineStartedAt = performance.now() - (signalTimePosition / 100) * getActiveTimelineDuration();
+    },
+    site: index => {
+      ecologiesCultureIndex = index;
+      const site = getActiveSignalMode()?.signals?.culture?.[index];
+      if (site) focusEcologiesLocation(site, "ecologies-culture");
+    },
+  });
   window.dispatchEvent(new CustomEvent("gaia:map-adapter-ready"));
 
   window.addEventListener("gaia:novel-open", () => {

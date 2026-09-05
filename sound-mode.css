@@ -262,6 +262,7 @@
 }
 
 .sound-player {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
@@ -840,8 +841,8 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   }
   .sound-morph-prototype .sound-cover-art img {
     display: block; width: 100%; height: 100%; object-fit: cover;
-    object-position: 48% 24%; transform: scale(1.95);
-    filter: saturate(.82) brightness(.92);
+    object-position: center; transform: none;
+    filter: none;
   }
   .sound-morph-prototype .sound-now-playing > p:first-of-type {
     grid-column: 2; align-self: end; margin: 4px 0 10px;
@@ -1067,4 +1068,158 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   .sound-morph-prototype .sound-track-constellation svg,
   .sound-morph-prototype .sound-constellation-star,
   .sound-morph-prototype .sound-constellation-glint { animation: none !important; }
+}
+
+/* A recording arrives like a developed photograph: picture, title, then its
+   afterword. Only these surfaces move; the playback controls keep their place. */
+.sound-morph-prototype .sound-now-playing {
+  min-width: 0;
+  align-content: start;
+}
+.sound-morph-prototype .sound-cover-art {
+  position: relative;
+  align-self: start;
+  min-width: 0;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 28% 20%, #234b57, #06131f 76%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+.sound-morph-prototype .sound-cover-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sound-morph-prototype .sound-cover-art img[hidden] { display: none; }
+.sound-morph-prototype .sound-cover-art::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: -50%;
+  background: linear-gradient(115deg, transparent 34%, rgba(222, 255, 242, .03) 44%, rgba(224, 248, 240, .32) 50%, rgba(197, 230, 238, .045) 58%, transparent 68%);
+  opacity: 0;
+  pointer-events: none;
+}
+.sound-morph-prototype .sound-now-playing.is-track-changing > .sound-cover-art img {
+  animation: sound-jacket-arrive 1400ms 60ms cubic-bezier(.16, .74, .2, 1) both;
+}
+.sound-morph-prototype .sound-now-playing.is-track-changing > .sound-cover-art::after {
+  animation: sound-jacket-reflection 1650ms 100ms cubic-bezier(.2, .65, .3, 1) both;
+}
+.sound-morph-prototype .sound-now-playing.is-track-changing > p:first-of-type {
+  animation: sound-recording-copy-arrive 850ms 100ms cubic-bezier(.18, .74, .2, 1) both;
+}
+.sound-morph-prototype .sound-now-playing.is-track-changing > h3 {
+  animation: sound-recording-title-arrive 1100ms 190ms cubic-bezier(.16, .72, .2, 1) both;
+}
+.sound-morph-prototype .sound-now-playing.is-track-changing > p:last-child {
+  animation: sound-recording-copy-arrive 1000ms 340ms cubic-bezier(.18, .74, .2, 1) both;
+}
+.sound-morph-prototype .sound-player-echo,
+.sound-morph-prototype .sound-player-measure {
+  position: absolute;
+  grid-area: auto;
+  z-index: 3;
+  margin: 0;
+  pointer-events: none;
+}
+.sound-morph-prototype .sound-player-echo > .sound-cover-art img {
+  animation: sound-jacket-release 920ms cubic-bezier(.22, .61, .36, 1) both;
+}
+.sound-morph-prototype .sound-player-echo > .sound-cover-art {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.sound-morph-prototype .sound-player-echo > p,
+.sound-morph-prototype .sound-player-echo > h3 {
+  animation: sound-recording-copy-release 420ms cubic-bezier(.22, .61, .36, 1) both;
+}
+.sound-morph-prototype .sound-player-measure {
+  top: 0;
+  left: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  visibility: hidden;
+}
+.sound-morph-prototype .sound-player-measure *,
+.sound-morph-prototype .sound-player-measure *::after { animation: none !important; }
+.sound-morph-prototype .sound-player.is-track-changing .sound-play::after {
+  animation: sound-recording-ring 1600ms cubic-bezier(.16, .74, .2, 1) both;
+}
+@keyframes sound-jacket-arrive {
+  from { opacity: 0; transform: scale(1.075) translate3d(0, 3%, 0); filter: blur(5px) saturate(.72); }
+  56% { opacity: 1; }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes sound-jacket-release {
+  from { opacity: var(--sound-release-opacity, 1); transform: none; filter: none; }
+  to { opacity: 0; transform: scale(1.045) translate3d(0, -2%, 0); filter: blur(6px); }
+}
+@keyframes sound-recording-title-arrive {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); filter: blur(4px); clip-path: inset(0 0 22% 0); }
+  to { opacity: 1; transform: none; filter: none; clip-path: inset(0); }
+}
+@keyframes sound-recording-copy-arrive {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes sound-recording-copy-release {
+  from { opacity: var(--sound-release-opacity, 1); transform: none; filter: none; }
+  to { opacity: 0; transform: translate3d(0, -7px, 0); filter: blur(3px); }
+}
+@keyframes sound-jacket-reflection {
+  0% { opacity: 0; transform: translate3d(-42%, 6%, 0); }
+  38% { opacity: .65; }
+  100% { opacity: 0; transform: translate3d(42%, -6%, 0); }
+}
+@keyframes sound-recording-ring {
+  0% { opacity: .3; transform: scale(.96); }
+  32% { opacity: .85; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@media (max-width: 920px) {
+  .sound-morph-prototype .sound-now-playing {
+    display: grid;
+    grid-template-columns: clamp(72px, 18vw, 112px) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: clamp(14px, 3vw, 24px);
+  }
+  .sound-morph-prototype .sound-cover-art {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid rgba(158, 225, 215, .3);
+    border-radius: 3px;
+  }
+  .sound-morph-prototype .sound-now-playing > p:first-of-type {
+    grid-column: 2;
+    margin: 0 0 9px;
+    font-size: clamp(8px, 1.6vw, 11px);
+    line-height: 1.6;
+    letter-spacing: .1em;
+    color: #b3ccc8;
+  }
+  .sound-morph-prototype .sound-now-playing > h3 {
+    grid-column: 2;
+    font-size: clamp(21px, 4.8vw, 32px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .sound-morph-prototype .sound-now-playing > p:last-child {
+    grid-column: 1 / -1;
+    margin: 16px 0 0;
+    font-size: 12px;
+    line-height: 1.8;
+    letter-spacing: .06em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sound-morph-prototype .sound-now-playing > *,
+  .sound-morph-prototype .sound-now-playing > .sound-cover-art img,
+  .sound-morph-prototype .sound-now-playing > .sound-cover-art::after,
+  .sound-morph-prototype .sound-player.is-track-changing .sound-play::after { animation: none !important; }
+  .sound-morph-prototype .sound-player-echo { display: none; }
 }

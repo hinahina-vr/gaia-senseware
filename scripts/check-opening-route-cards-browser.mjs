@@ -89,19 +89,26 @@ try {
       const shade = guide.querySelector(".gaia-opening-route-guide-shade");
       const target = document.querySelector(".gaia-opening-route.is-route-guide-target");
       const menu = document.querySelector("#gaia-opening-final-menu");
+      const copy = guide.querySelector("[data-route-guide-copy]");
+      const copyRect = copy.getBoundingClientRect();
       return {
         step: guide.dataset.step,
         targetId: target?.id,
         activeId: document.activeElement?.id,
         title: title?.textContent.trim() || "",
         titleHidden: title?.hidden,
-        indexLabelCount: guide.querySelectorAll(".gaia-opening-route-guide-index > span").length,
+        indexLabelCount: guide.querySelectorAll(".gaia-opening-route-guide-index, [data-route-guide-step]").length,
+        inputBadgeCount: guide.querySelectorAll(".gaia-opening-route-guide-hint b").length,
         copy: guide.querySelector("[data-route-guide-copy]")?.textContent.trim(),
+        copyOverflow: Array.from(copy.children).some(phrase => {
+          const rect = phrase.getBoundingClientRect();
+          return rect.left < copyRect.left - 1 || rect.right > copyRect.right + 1;
+        }),
         kickerCount: guide.querySelectorAll("[data-route-guide-kicker]").length,
-        hint: guide.querySelector("[data-route-guide-hint-action]")?.textContent.trim(),
+        hintCount: guide.querySelectorAll(".gaia-opening-route-guide-hint, [data-route-guide-hint-action]").length,
         buttonCount: guide.querySelectorAll("button").length,
-        bubbleTransitionProperty: getComputedStyle(bubble).transitionProperty,
-        bubbleTransitionDuration: getComputedStyle(bubble).transitionDuration,
+        surfaceAnimation: getComputedStyle(guide.querySelector(".gaia-opening-route-guide-surface")).animationName,
+        surfaceAnimationDuration: getComputedStyle(guide.querySelector(".gaia-opening-route-guide-surface")).animationDuration,
         bubbleRect: bubble.getBoundingClientRect().toJSON(),
         targetRect: target.getBoundingClientRect().toJSON(),
         shadeRect: shade.getBoundingClientRect().toJSON(),
@@ -120,13 +127,14 @@ try {
     assert.equal(guideSteps[0].title, "");
     assert.equal(guideSteps[0].titleHidden, true, `${viewport.name}: first route guide title is still visible`);
     assert.equal(guideSteps[0].indexLabelCount, 0, `${viewport.name}: removed route-guide heading returned`);
+    assert.equal(guideSteps[0].inputBadgeCount, 0, `${viewport.name}: CLICK / TAP badge returned`);
     assert.equal(guideSteps[0].copy, "ビジュアルノベル風のストーリーを読みながら、インタラクティブに展示の世界を楽しめます。");
     assert.equal(guideSteps[0].kickerCount, 0, `${viewport.name}: route guide still contains category kickers`);
     assert.equal(guideSteps[0].buttonCount, 0, `${viewport.name}: route guide still contains operation buttons`);
-    assert.equal(guideSteps[0].hint, "次へ");
+    assert.equal(guideSteps[0].hintCount, 0);
     if (!viewport.reduced) {
-      assert(guideSteps[0].bubbleTransitionProperty.split(",").map((value) => value.trim()).includes("opacity"), `${viewport.name}: route guide does not fade with opacity`);
-      assert(Number.parseFloat(guideSteps[0].bubbleTransitionDuration) >= 0.4, `${viewport.name}: route guide fade-in is too short`);
+      assert.equal(guideSteps[0].surfaceAnimation, "opening-guide-surface", `${viewport.name}: route guide entrance is missing`);
+      assert(Number.parseFloat(guideSteps[0].surfaceAnimationDuration) >= 0.6, `${viewport.name}: route guide entrance is too short`);
     }
     const automaticGuideDelay = guideSteps[0].openedAt - guideSteps[0].revealStartedAt;
     assert(automaticGuideDelay >= 2900, `${viewport.name}: guide opened before the three-second title-screen delay`);
@@ -143,8 +151,9 @@ try {
     assert.equal(clickAdvancedGuide.title, "");
     assert.equal(clickAdvancedGuide.titleHidden, true);
     assert.equal(clickAdvancedGuide.copy, "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。");
-    assert.equal(clickAdvancedGuide.hint, "案内を終える");
+    assert.equal(clickAdvancedGuide.hintCount, 0);
     guideSteps.push(clickAdvancedGuide);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-guide-data.png`), animations: "disabled" });
 
     await page.keyboard.press("Enter");
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
@@ -157,6 +166,12 @@ try {
     assert.equal(replayedGuide.buttonCount, 0, `${viewport.name}: replayed guide restored removed buttons`);
     for (const guideStep of [...guideSteps, replayedGuide]) {
       assert.equal(guideStep.indexLabelCount, 0, `${viewport.name}: a route-guide heading returned`);
+      assert.equal(guideStep.inputBadgeCount, 0, `${viewport.name}: a guide input badge returned`);
+      assert.equal(guideStep.hintCount, 0, `${viewport.name}: removed guide footer returned`);
+      assert.equal(guideStep.copyOverflow, false, `${viewport.name}: a phrase overflowed the guide`);
+      assert(guideStep.bubbleRect.left >= 11 && guideStep.bubbleRect.right <= viewport.width - 11, `${viewport.name}: guide escaped the viewport horizontally`);
+      assert(guideStep.bubbleRect.top >= 11 && guideStep.bubbleRect.bottom <= viewport.height - 11, `${viewport.name}: guide escaped the viewport vertically`);
+      assert.equal(overlapArea(guideStep.bubbleRect, guideStep.targetRect), 0, `${viewport.name}: guide covers its target`);
       assert(Math.abs(guideStep.targetRect.left - guideStep.shadeRect.left) <= 0.5, `${viewport.name}: spotlight left edge is offset from ${guideStep.targetId}`);
       assert(Math.abs(guideStep.targetRect.top - guideStep.shadeRect.top) <= 0.5, `${viewport.name}: spotlight top edge is offset from ${guideStep.targetId}`);
       assert(Math.abs(guideStep.targetRect.width - guideStep.shadeRect.width) <= 0.5, `${viewport.name}: spotlight width does not match ${guideStep.targetId}`);

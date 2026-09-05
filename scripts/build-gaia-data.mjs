@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { inflateRawSync, inflateSync } from "node:zlib";
 import { enrichSnapshotWithStatistics } from "./statistics.mjs";
+import { fetchPopulationData, populationDataset } from "./population-data.mjs";
+import { applyEcologiesReadingMetadata } from "./update-ecologies-reading-data.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptDirectory, "..");
@@ -612,35 +614,6 @@ const fetchWorldBankLatest = async (indicator, valueKey) => {
   }).filter(Boolean);
 };
 
-const fetchWorldBankSeries = async (indicator, valueKey, startYear = 1960) => {
-  const url = `${URLS.worldBank.replace(/\/country$/, "")}/en/indicator/${indicator}?downloadformat=csv`;
-  const archive = await fetchBuffer(url, { attempts: 2, timeout: 60_000 });
-  if (!archive) return [];
-  const entries = readZipEntries(archive);
-  const dataEntry = [...entries.entries()].find(([name]) => /^API_.+\.csv$/i.test(name) && !/Metadata_/i.test(name));
-  if (!dataEntry) return [];
-  const table = parseCsv(dataEntry[1].toString("utf8"));
-  const headerIndex = table.findIndex((row) => row[0] === "Country Name" && row[1] === "Country Code");
-  if (headerIndex < 0) return [];
-  const header = table[headerIndex];
-  const sitesByIso3 = new Map(climateSites.map((site) => [site.iso3, site]));
-  return table.slice(headerIndex + 1).flatMap((row) => {
-    const site = sitesByIso3.get(row[1]);
-    if (!site) return [];
-    return row.slice(4).map((rawValue, offset) => {
-      const year = Number(header[offset + 4]);
-      const value = numeric(rawValue);
-      if (!Number.isFinite(year) || year < startYear || value === null) return null;
-      return {
-        ...site,
-        country: row[0] || site.name,
-        year,
-        [valueKey]: value,
-      };
-    }).filter(Boolean);
-  }).sort((left, right) => left.year - right.year || left.iso3.localeCompare(right.iso3));
-};
-
 const parseGcpFossilCo2 = (text) => {
   const table = parseCsv(text);
   const header = table[0] || [];
@@ -665,11 +638,17 @@ const parseGcpFossilCo2 = (text) => {
 };
 
 // Bulk CSV is faster and more stable than long multi-country Indicators API URLs.
-const [renewableRows, urbanRows, forestRows, fetchedPopulationRows, gcpFossilText] = await Promise.all([
+const [renewableRows, urbanRows, forestRows, populationData, gcpFossilText] = await Promise.all([
   fetchWorldBankLatest("EG.ELC.RNEW.ZS", "renewablePercent"),
   fetchWorldBankLatest("SP.URB.TOTL.IN.ZS", "urbanPercent"),
   fetchWorldBankLatest("AG.LND.FRST.ZS", "forestPercent"),
-  fetchWorldBankSeries("SP.POP.TOTL", "population", 1960),
+  readFile(resolve(projectDirectory, "data/natural-earth-50m-countries.geojson"), "utf8")
+    .then(JSON.parse).then(fetchPopulationData).catch(error => {
+      const previous = previousSnapshot?.modes?.find(mode => mode.id === "population-tide");
+      if (!previous?.signals?.populationCoverage || previous.signals.populationCoverage.countryCount < 200) throw error;
+      console.warn(`Population refresh failed; retaining the previous global snapshot: ${error.message}`);
+      return { rows: previous.signals.population, coverage: previous.signals.populationCoverage, dataset: previous.datasets[0] };
+    }),
   fetchText(URLS.gcpFossilCo2, { attempts: 2, timeout: 60_000 }),
 ]);
 const fetchedGcpFossilRows = parseGcpFossilCo2(gcpFossilText);
@@ -677,9 +656,7 @@ const globalEmissionsRows = fetchedGcpFossilRows.length
   ? fetchedGcpFossilRows
   : previousSignalRows("anthropocene-scar", "emissions")
     .filter((row) => Number.isFinite(Number(row.emissionsMtCo2)));
-const populationRows = fetchedPopulationRows.length
-  ? fetchedPopulationRows
-  : previousSignalRows("population-tide", "population");
+const populationRows = populationData.rows;
 if (!globalEmissionsRows.length) throw new Error("GCP fossil CO₂ history is unavailable and no compatible snapshot exists");
 if (!populationRows.length) throw new Error("World Bank population history is unavailable and no compatible snapshot exists");
 
@@ -938,12 +915,13 @@ const modes = [
     { number: 2, title: "人間の影響を見る", en: "SEE HUMAN IMPACT" },
     "1960年から現在まで、世界の人口の重心はどの地域へ動いたでしょう。",
     [
-      source({ id: "worldbank-population", organisation: "World Bank / United Nations Population Division", title: "Population, total (SP.POP.TOTL)", url: "https://data.worldbank.org/indicator/SP.POP.TOTL", period: `${Math.min(...populationRows.map((row) => row.year))}–${Math.max(...populationRows.map((row) => row.year))}`, unit: "people", resolution: `${populationRows.length} annual country values / ${climateSites.length} selected countries`, transformation: "同じ31か国を年ごとにそろえ、人口に比例する円面積へ変換します。スライダーは国ではなく年を切り替えます。", caveat: "点は国を示す代表位置で、都市位置や人口密度ではありません。人口の多さを豊かさ、排出量、環境負荷へ変換しません。", rows: populationRows }),
+      populationData.dataset || populationDataset(populationData, retrievedAt),
     ],
-    { population: populationRows },
+    { population: populationRows, populationCoverage: populationData.coverage },
   ),
 ];
 
+applyEcologiesReadingMetadata(modes.find(mode => mode.id === "three-ecologies"));
 const output = enrichSnapshotWithStatistics({
   title: "惑星の放課後",
   subtitle: "GAIA SENSATION",

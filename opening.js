@@ -246,11 +246,11 @@
   const routeGuideSteps = [
     {
       target: finalStoryButton,
-      copy: "ビジュアルノベル風のストーリーを読みながら、インタラクティブに展示の世界を楽しめます。",
+      copy: ["ビジュアルノベル風の", "ストーリーを読みながら、", "インタラクティブに", "展示の世界を楽しめます。"],
     },
     {
       target: finalOtherButton,
-      copy: "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。",
+      copy: ["気候変動や観測ポイントを、", "インタラクティブな地図上で", "探索・分析できます。"],
     },
   ].filter((step) => step.target instanceof HTMLButtonElement);
   const routeGuideLayer = document.createElement("section");
@@ -262,15 +262,15 @@
   routeGuideLayer.setAttribute("role", "dialog");
   routeGuideLayer.setAttribute("aria-modal", "false");
   routeGuideLayer.setAttribute("aria-label", "入口ガイド");
-  routeGuideLayer.setAttribute("aria-describedby", "gaia-opening-route-guide-copy gaia-opening-route-guide-hint");
+  routeGuideLayer.setAttribute("aria-describedby", "gaia-opening-route-guide-copy");
   routeGuideLayer.tabIndex = 0;
   routeGuideLayer.innerHTML = `
     <div class="gaia-opening-route-guide-shade" aria-hidden="true"></div>
     <article class="gaia-opening-route-guide-bubble" aria-live="polite" aria-atomic="true">
-      <div class="gaia-opening-route-guide-index"><b><i data-route-guide-step>1</i> / ${routeGuideSteps.length}</b></div>
-      <h2 data-route-guide-title hidden></h2>
-      <p id="gaia-opening-route-guide-copy" data-route-guide-copy></p>
-      <span class="gaia-opening-route-guide-hint" id="gaia-opening-route-guide-hint"><b>CLICK / TAP</b><span data-route-guide-hint-action>次へ</span></span>
+      <div class="gaia-opening-route-guide-surface">
+        <h2 data-route-guide-title hidden></h2>
+        <p id="gaia-opening-route-guide-copy" data-route-guide-copy></p>
+      </div>
     </article>`;
   opening.append(routeGuideLayer);
 
@@ -280,6 +280,8 @@
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;
+  let routeGuideRevealFrame = 0;
+  let routeGuideCloseTimer = 0;
   let gatewayLayoutFrame = 0;
   let routeGuideStartTimer = 0;
 
@@ -302,7 +304,7 @@
       routeGuideShade.style.setProperty("--route-guide-focus-radius", targetStyle.borderRadius);
     }
     const bubbleRect = routeGuideBubble.getBoundingClientRect();
-    const gutter = 12;
+    const gutter = 18;
     const viewportInset = 12;
     const preferredLeft = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2;
     const left = Math.max(viewportInset, Math.min(innerWidth - bubbleRect.width - viewportInset, preferredLeft));
@@ -341,19 +343,29 @@
 
   const setRouteGuideStep = (nextIndex) => {
     if (!routeGuideActive || routeGuideSteps.length === 0) return;
+    cancelAnimationFrame(routeGuideRevealFrame);
+    routeGuideLayer.classList.remove("is-presented");
     routeGuideIndex = Math.max(0, Math.min(routeGuideSteps.length - 1, nextIndex));
     clearRouteGuideTarget();
     const step = routeGuideSteps[routeGuideIndex];
     step.target.classList.add("is-route-guide-target");
-    routeGuideLayer.querySelector("[data-route-guide-step]").textContent = String(routeGuideIndex + 1);
     const title = routeGuideLayer.querySelector("[data-route-guide-title]");
     title.textContent = step.title || "";
     title.hidden = !step.title;
-    routeGuideLayer.querySelector("[data-route-guide-copy]").textContent = step.copy;
-    routeGuideLayer.querySelector("[data-route-guide-hint-action]").textContent = routeGuideIndex === routeGuideSteps.length - 1
-      ? "案内を終える"
-      : "次へ";
+    routeGuideLayer.querySelector("[data-route-guide-copy]").replaceChildren(...step.copy.map((phrase) => {
+      const span = document.createElement("span");
+      span.textContent = phrase;
+      return span;
+    }));
     routeGuideLayer.dataset.step = String(routeGuideIndex + 1);
+    // Measure an untransformed wrapper before revealing its animated surface.
+    // The layout read also resets the one-shot entrance for every new step.
+    cancelAnimationFrame(routeGuidePositionFrame);
+    positionRouteGuideBubble();
+    routeGuideRevealFrame = requestAnimationFrame(() => {
+      routeGuideRevealFrame = 0;
+      if (routeGuideActive) routeGuideLayer.classList.add("is-visible", "is-presented");
+    });
     scheduleRouteGuidePosition();
   };
 
@@ -361,30 +373,38 @@
     window.clearTimeout(routeGuideStartTimer);
     routeGuideStartTimer = 0;
     routeGuideActive = false;
+    cancelAnimationFrame(routeGuideRevealFrame);
+    cancelAnimationFrame(routeGuidePositionFrame);
+    routeGuideRevealFrame = 0;
+    routeGuidePositionFrame = 0;
     clearRouteGuideTarget();
     opening.classList.remove("is-route-guide-active");
     routeGuideLayer.classList.remove("is-visible");
     routeGuideLayer.inert = true;
     routeGuideLayer.setAttribute("aria-hidden", "true");
-    window.setTimeout(() => {
-      if (!routeGuideActive) routeGuideLayer.hidden = true;
-    }, reducedMotion ? 0 : 180);
+    window.clearTimeout(routeGuideCloseTimer);
+    routeGuideCloseTimer = window.setTimeout(() => {
+      routeGuideCloseTimer = 0;
+      if (!routeGuideActive) {
+        routeGuideLayer.hidden = true;
+        routeGuideLayer.classList.remove("is-presented");
+      }
+    }, reducedMotion ? 0 : 220);
     if (restoreFocus) finalStoryButton?.focus({ preventScroll: true });
   };
 
   const openRouteGuide = () => {
     if (routeGuideActive || routeGuideSteps.length === 0 || finished) return;
+    window.clearTimeout(routeGuideCloseTimer);
+    routeGuideCloseTimer = 0;
     routeGuideLayer.dataset.openedAt = performance.now().toFixed(3);
     routeGuideActive = true;
     routeGuideLayer.hidden = false;
     routeGuideLayer.inert = false;
     routeGuideLayer.setAttribute("aria-hidden", "false");
     opening.classList.add("is-route-guide-active");
-    requestAnimationFrame(() => {
-      routeGuideLayer.classList.add("is-visible");
-      setRouteGuideStep(0);
-      routeGuideLayer.focus({ preventScroll: true });
-    });
+    setRouteGuideStep(0);
+    routeGuideLayer.focus({ preventScroll: true });
   };
 
   const maybeStartRouteGuide = () => {
@@ -660,6 +680,174 @@
     intensity: 1,
   }) || createOpeningParticles(particleCanvas);
 
+  // A small, separate field for the sound entrance. It is retired before the
+  // opening particles start, so the two scenes never keep competing draw loops.
+  const createSoundAtmosphere = (canvas) => {
+    const noop = { start() {}, stop() {} };
+    if (!(canvas instanceof HTMLCanvasElement)) return noop;
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) {
+      canvas.dataset.state = "unsupported";
+      return noop;
+    }
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let calmMotion = motion.matches;
+    const random = (min, max) => min + Math.random() * (max - min);
+    const colors = ["183, 225, 204", "157, 199, 224", "230, 214, 170"];
+    const sprites = colors.map((color) => {
+      const sprite = document.createElement("canvas");
+      sprite.width = sprite.height = 96;
+      const brush = sprite.getContext("2d");
+      if (!brush) return null;
+      const glow = brush.createRadialGradient(48, 48, 0, 48, 48, 48);
+      glow.addColorStop(0, `rgba(${color}, .9)`);
+      glow.addColorStop(.12, `rgba(${color}, .44)`);
+      glow.addColorStop(.4, `rgba(${color}, .12)`);
+      glow.addColorStop(1, `rgba(${color}, 0)`);
+      brush.fillStyle = glow;
+      brush.fillRect(0, 0, 96, 96);
+      return sprite;
+    });
+    let active = false;
+    let frame = 0;
+    let startedAt = 0;
+    let lastPaint = 0;
+    let frames = 0;
+    let width = 1;
+    let height = 1;
+    let motes = [];
+    const pointer = { x: .5, y: .5, targetX: .5, targetY: .5 };
+
+    const render = (now) => {
+      const time = calmMotion ? 0 : (now - startedAt) / 1000;
+      pointer.x += (pointer.targetX - pointer.x) * .04;
+      pointer.y += (pointer.targetY - pointer.y) * .04;
+      context.clearRect(0, 0, width, height);
+      context.save();
+      context.globalCompositeOperation = "lighter";
+
+      // Broad, low-contrast light pools give the drifting points a sense of depth.
+      for (let i = 0; i < 3; i += 1) {
+        if (!sprites[i]) continue;
+        const x = width * ([.12, .88, .68][i] + Math.sin(time * .08 + i * 2) * .07);
+        const y = height * ([.7, .3, .86][i] + Math.cos(time * .07 + i) * .04);
+        const size = Math.min(width, height) * (.9 + Math.sin(time * .09 + i) * .08);
+        context.globalAlpha = .23;
+        context.drawImage(sprites[i], x - size / 2, y - size / 2, size, size);
+      }
+
+      // Refracted tide lines travel slowly across the artwork, below the text.
+      for (let i = 0; i < 3; i += 1) {
+        const drift = Math.sin(time * .13 + i * 1.1);
+        const y = height * (.58 + i * .065 + drift * .03);
+        const ribbon = context.createLinearGradient(0, y, width, y);
+        ribbon.addColorStop(0, "rgba(151, 218, 207, 0)");
+        ribbon.addColorStop(.18, "rgba(151, 218, 207, .2)");
+        ribbon.addColorStop(.48, "rgba(183, 211, 228, .015)");
+        ribbon.addColorStop(.78, "rgba(221, 223, 187, .17)");
+        ribbon.addColorStop(1, "rgba(221, 223, 187, 0)");
+        context.strokeStyle = ribbon;
+        context.beginPath();
+        context.moveTo(-30, y + height * .15);
+        context.bezierCurveTo(width * .24, y - height * .28, width * .62, y + height * .28, width + 30, y - height * .16);
+        for (const [lineWidth, alpha] of [[18, .1], [5, .2], [.7, .5]]) {
+          context.lineWidth = lineWidth;
+          context.globalAlpha = alpha;
+          context.stroke();
+        }
+      }
+
+      motes.forEach((mote) => {
+        const x = width * mote.x + Math.sin(time * mote.sway + mote.phase) * 24
+          + (pointer.x - .5) * mote.depth * 14;
+        const y = ((mote.y * height - time * mote.speed) % (height + 80) + height + 80) % (height + 80) - 40
+          + (pointer.y - .5) * mote.depth * 10;
+        const central = Math.abs(x / width - .5) < .24 && Math.abs(y / height - .5) < .32;
+        const pulse = .68 + Math.sin(time * .55 + mote.phase) * .32;
+        const alpha = mote.alpha * pulse * (central ? .23 : 1);
+        const glowSize = mote.radius * (mote.depth > .75 ? 15 : 8);
+        const sprite = sprites[mote.color];
+        context.globalAlpha = alpha;
+        if (sprite) context.drawImage(sprite, x - glowSize / 2, y - glowSize / 2, glowSize, glowSize);
+        context.globalAlpha = alpha * .8;
+        context.fillStyle = `rgb(${colors[mote.color]})`;
+        context.beginPath();
+        context.arc(x, y, mote.radius * .45, 0, Math.PI * 2);
+        context.fill();
+      });
+      context.restore();
+      canvas.dataset.frames = String(++frames);
+    };
+
+    const draw = (now) => {
+      frame = 0;
+      if (!active || document.hidden || calmMotion) return;
+      if (now - lastPaint >= 1000 / 30) {
+        render(now);
+        lastPaint = now;
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    const resize = () => {
+      width = Math.max(1, soundModal.clientWidth);
+      height = Math.max(1, soundModal.clientHeight);
+      const ratio = Math.min(devicePixelRatio || 1, 1.25, Math.sqrt(1100000 / (width * height)));
+      canvas.width = Math.max(1, Math.floor(width * ratio));
+      canvas.height = Math.max(1, Math.floor(height * ratio));
+      context.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
+      const count = width < 720 ? 36 : 68;
+      if (motes.length !== count) motes = Array.from({ length: count }, (_, index) => ({
+        x: random(0, 1), y: random(0, 1), phase: random(0, Math.PI * 2),
+        radius: index % 9 === 0 ? random(2.2, 4.8) : random(.7, 1.8),
+        depth: random(.2, 1), speed: random(3, 11), sway: random(.08, .18),
+        alpha: random(.3, .85), color: index % colors.length,
+      }));
+      canvas.dataset.particles = String(count);
+      if (active && !document.hidden) render(performance.now());
+    };
+    const resume = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      calmMotion = motion.matches;
+      soundModal.classList.toggle("is-atmosphere-paused", document.hidden || calmMotion);
+      canvas.dataset.state = document.hidden ? "paused" : calmMotion ? "reduced" : "running";
+      if (document.hidden || !active) return;
+      render(performance.now());
+      if (!calmMotion) frame = requestAnimationFrame(draw);
+    };
+    const followPointer = (event) => {
+      if (event.pointerType !== "mouse" || calmMotion) return;
+      pointer.targetX = event.clientX / width;
+      pointer.targetY = event.clientY / height;
+    };
+    return {
+      start() {
+        if (active) return;
+        active = true;
+        startedAt = performance.now();
+        lastPaint = 0;
+        window.addEventListener("resize", resize, { passive: true });
+        document.addEventListener("visibilitychange", resume);
+        motion.addEventListener("change", resume);
+        soundModal.addEventListener("pointermove", followPointer, { passive: true });
+        resize();
+        resume();
+      },
+      stop() {
+        active = false;
+        cancelAnimationFrame(frame);
+        frame = 0;
+        canvas.dataset.state = "stopped";
+        soundModal.classList.add("is-atmosphere-paused");
+        window.removeEventListener("resize", resize);
+        document.removeEventListener("visibilitychange", resume);
+        motion.removeEventListener("change", resume);
+        soundModal.removeEventListener("pointermove", followPointer);
+      },
+    };
+  };
+  const soundAtmosphere = createSoundAtmosphere(document.querySelector("#gaia-opening-sound-atmosphere"));
+
   const updatePreload = (message = "") => {
     const total = Math.max(1, preloadAssetCount);
     const percentage = Math.round((settledPreloads / total) * 100);
@@ -768,6 +956,7 @@
     window.clearTimeout(soundModalRevealTimer);
     window.clearTimeout(soundModalHideTimer);
     soundModalOpen = false;
+    soundAtmosphere.stop();
     opening.classList.remove("is-sound-modal-open");
     if (soundModal instanceof HTMLElement) {
       soundModal.classList.remove("is-visible");
@@ -785,6 +974,7 @@
     if (!soundModalOpen || !(soundModal instanceof HTMLElement)) return;
     window.clearTimeout(soundModalRevealTimer);
     soundModalOpen = false;
+    soundAtmosphere.stop();
     opening.classList.remove("is-sound-modal-open");
     soundModal.classList.remove("is-visible");
     soundModal.inert = true;
@@ -795,7 +985,7 @@
     }
     soundModalHideTimer = window.setTimeout(() => {
       soundModal.hidden = true;
-    }, reducedMotion ? 0 : 220);
+    }, reducedMotion ? 0 : 420);
   };
 
   const showSoundModal = () => {
@@ -828,6 +1018,7 @@
     };
     requestAnimationFrame(() => {
       soundModal.classList.add("is-visible");
+      soundAtmosphere.start();
       signalInitialViewReady();
       window.clearTimeout(openingArtWarmTimer);
       const warmOpeningArtAfterHandoff = () => {
@@ -1054,7 +1245,7 @@
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
     if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = false;
     particleSystem.start();
-    void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.2);
+    void window.GaiaOpeningAudio?.switchTrack?.("opening", 0.2);
     requestAnimationFrame(showFinalMenu);
   };
 
@@ -1205,8 +1396,12 @@
     window.clearTimeout(preloadRevealTimer);
     window.clearTimeout(openingArtWarmTimer);
     window.clearTimeout(routeGuideStartTimer);
+    window.clearTimeout(routeGuideCloseTimer);
+    cancelAnimationFrame(routeGuideRevealFrame);
+    cancelAnimationFrame(routeGuidePositionFrame);
     textTimers.forEach((timer) => window.clearTimeout(timer));
     particleSystem.stop();
+    soundAtmosphere.stop();
   });
 
   if (resumeAtTitleMenu) {
@@ -1214,7 +1409,12 @@
     opening.classList.remove("is-awaiting-sound");
     closeSoundModalImmediately();
     particleSystem.start();
-    void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.2);
+    // Direct-entry routes reload to restore the title shell. Preserve the
+    // visitor's audio preference, but select the title score, not the old route.
+    void (async () => {
+      const restored = await window.GaiaOpeningAudio?.restoreNavigationState?.("opening");
+      if (!restored?.restored) await window.GaiaOpeningAudio?.switchTrack?.("opening", 0);
+    })();
     requestAnimationFrame(showReducedMotionMenu);
     signalInitialViewReady();
   } else {

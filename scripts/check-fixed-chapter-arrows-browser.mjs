@@ -6,12 +6,13 @@ import { chromium } from "playwright-core";
 const base = process.argv[2] || "http://127.0.0.1:4397";
 const output = path.resolve(process.argv[3] || "artifacts/fixed-chapter-arrows");
 const widths = (process.argv[4] || "1440,3840,1024").split(",").map(Number);
+const defaultHeight = Number(process.argv[5] || 900);
 fs.mkdirSync(output, { recursive: true });
 const report = { status: "running", checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 try {
   for (const width of widths) {
-    const height = width === 3840 ? 2088 : 900;
+    const height = width === 3840 ? 2088 : defaultHeight;
     const context = await browser.newContext({ viewport: { width, height } });
     await context.addInitScript(() => {
       sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
@@ -38,7 +39,23 @@ try {
     const selector = (n, direction) => n <= 9 ? `[data-map-dock-mode-step="${direction}"]`
       : n <= 15 ? `[data-live-deck-step="${direction}"]` : n <= 25 ? `[data-estat-step="${direction}"]`
         : n === 26 ? `[data-firms-step="${direction}"]` : `[data-planet-step="${direction}"]`;
+    let dockGeometry;
     const measure = async n => {
+      const dock = page.locator(n <= 9 ? ".map-command-dock" : n <= 15 ? ".gaia-live-exhibit-readout"
+        : n <= 25 ? ".gaia-estat-readout" : n === 26 ? ".gaia-firms-readout" : ".gaia-planet-signals-readout");
+      const rect = await dock.boundingBox();
+      assert(rect, `MAP ${n}: dock must be visible`);
+      dockGeometry ||= { y: rect.y, height: rect.height };
+      assert(Math.abs(rect.y - dockGeometry.y) < .75 && Math.abs(rect.height - dockGeometry.height) < .75,
+        `${width}px MAP ${n}: dock ${JSON.stringify(rect)} must match MAP01 ${JSON.stringify(dockGeometry)}`);
+      if (n >= 10) {
+        const fields = await dock.locator("[data-live-exhibit-value], [data-live-deck-step], [data-live-poi-step], [data-estat-value], [data-estat-month], [data-firms-primary], [data-firms-progress], [data-firms-play], [data-planet-primary], .gaia-map-action").evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => ({
+          name: node.getAttributeNames().find(name => name.startsWith("data-")) || node.className,
+          top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom,
+        })));
+        for (const field of fields) assert(field.top >= rect.y - 1 && field.bottom <= rect.y + rect.height + 1,
+          `${width}px MAP ${n}: ${JSON.stringify(field)} overflows dock vertically`);
+      }
       const targets = [];
       for (const direction of [-1, 1]) {
         const button = page.locator(selector(n, direction));
@@ -87,8 +104,8 @@ try {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(1000);
     assert.deepEqual(await measure(23), anchors, "Data/animation settling cannot move navigation");
-    report.checks.push({ width, anchors, forward: 30, backward: 30, picker: true });
-    console.log(`PASS ${width}px: 01–30 forward/back at unchanged pointer coordinates, loading, title picker`);
+    report.checks.push({ width, dock: dockGeometry, anchors, forward: 30, backward: 30, picker: true });
+    console.log(`PASS ${width}px: identical 01–30 dock heights, values/actions inside dock, fixed arrows, loading, title picker`);
     await context.close();
   }
   assert.deepEqual(report.errors, []);

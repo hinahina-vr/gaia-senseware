@@ -64,6 +64,7 @@
     }
 
     section.append(heading, title, organisation, links);
+    if (dataset.attributionNote) section.append(element("p", "data-ledger-organisation", dataset.attributionNote));
     return section;
   };
 
@@ -118,10 +119,14 @@
         esa: "ESA / Copernicus Data Space Ecosystem",
         "open-meteo": "Open-Meteo / CAMS",
       };
-      const provider = providerNames[event?.provider] || event?.provider?.toUpperCase() || "公開データ提供元";
+      const openMeteo = event?.provider === "open-meteo" || (!event && ["weatherWindSpeed", "weatherPrecipitation", "weatherTemperature", "cloudCover", "forecastCo2", "pm25"].includes(exhibit.key));
+      const airModel = ["forecastCo2", "pm25"].includes(exhibit.key);
+      const provider = openMeteo ? airModel ? "Open-Meteo / CAMS" : "Open-Meteo" : providerNames[event?.provider] || event?.provider?.toUpperCase() || "公開データ提供元";
       const location = event?.location;
       const bbox = Array.isArray(location?.bbox) ? ` / bbox ${location.bbox.join(", ")}` : "";
-      const status = event?.status?.toUpperCase() || "DATA MISSING";
+      const loading = state?.requestState === "loading";
+      const retained = Boolean(event && state?.requestState === "unavailable");
+      const status = loading ? event ? "UPDATING" : "LOADING" : retained ? "CACHED" : event?.status?.toUpperCase() || "UNAVAILABLE";
       const savedEvent = event?.status === "snapshot";
       const modelData = measurement?.sourceKind === "MODEL";
       const dataKind = modelData ? "モデル" : "観測";
@@ -135,11 +140,17 @@
         period: event?.observedAt ? `データ時刻 ${displayJptDateTime(event.observedAt)}` : "データ時刻なし",
         unit: measurement?.unit || "—",
         resolution: `${location?.label || exhibit.location?.label || "公開データ対象範囲"}${bbox}`,
-        caveat: state?.connected && !savedEvent
+        caveat: loading ? event ? "同じ地点の前回取得値を表示して更新しています。時刻は前回取得値のものです。" : "選択した地点のデータを取得中です。別の地点の値で補ってはいません。"
+          : retained ? "更新できなかったため、同じ地点の前回取得値とそのデータ時刻を表示しています。"
+          : !event ? "選択した地点の値は未取得です。保存データに未収録の場合も、別の地点の値では補いません。"
+          : state?.connected && !savedEvent
           ? "公開APIへ接続中です。5分ごとに再取得し、提供元の更新周期と公開遅延をそのまま表示へ反映します。"
           : `${status}。現在は保存済み${dataKind}値を再現しており、現在時刻の実況値ではありません。`,
-        url: event?.provenance?.sourceUrl || "./data/live-observation-fallback-v1.json",
-        termsUrl: event?.provenance?.licenseUrl,
+        url: event?.provenance?.sourceUrl || (openMeteo ? `https://open-meteo.com/en/docs${airModel ? "/air-quality-api" : ""}` : "./data/live-observation-fallback-v1.json"),
+        termsUrl: openMeteo ? "https://creativecommons.org/licenses/by/4.0/" : event?.provenance?.licenseUrl,
+        attributionNote: openMeteo ? airModel
+          ? "Copernicus Atmosphere Monitoring Service (CAMS) の全球モデル予測を Open-Meteo 経由で取得し、色・形・動きへ加工して表示しています（CC BY 4.0）。実測地点の観測値ではありません。"
+          : "Open-Meteo のデータを色・形・動きへ加工して表示しています（CC BY 4.0）。" : null,
         preview: [{
           eventId: event?.eventId || null,
           status: event?.status || "missing",
@@ -152,8 +163,8 @@
       };
       elements.title.textContent = `${exhibit.number} ${exhibit.shortTitle}`;
       elements.question.textContent = "";
-      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? modelData ? "LATEST MODEL · 5 MIN RECHECK" : "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : modelData ? "SAVED MODEL SNAPSHOT" : "SAVED SNAPSHOT"}`;
-      elements.state.textContent = event ? `1種類の${dataKind}データを使用 / ${status}` : "このデータの出典情報を取得できませんでした";
+      elements.act.textContent = `LIVE SENSEWARE / ${loading || retained || !event ? status : state?.connected ? modelData ? "LATEST MODEL · 5 MIN RECHECK" : "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : modelData ? "SAVED MODEL SNAPSHOT" : "SAVED SNAPSHOT"}`;
+      elements.state.textContent = event ? `1種類の${dataKind}データを使用 / ${status}` : loading ? "この地点のデータと出典情報を取得中です" : "この地点のデータは未取得です";
       elements.updated.textContent = `取得日時：${displayJptDateTime(event?.retrievedAt)}`;
       elements.historyState.hidden = true;
       elements.historyUpdated.hidden = true;

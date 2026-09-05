@@ -33,7 +33,7 @@
     bankTrigger.setAttribute("aria-controls", "map-dock-bank-popover");
     bankTrigger.innerHTML = `
       <span class="map-dock-bank-copy">
-        <small>CHAPTER / MAP <b>MAP-01–15</b></small>
+        <small class="map-category-eyebrow" data-map-category-label>気候と炭素</small>
         <span><em data-map-dock-number>01</em><strong data-map-dock-title>地球の一呼吸</strong></span>
       </span>
     `;
@@ -152,7 +152,7 @@
       bankTrigger.querySelector("[data-map-dock-number]").textContent = number;
       bankTrigger.querySelector("[data-map-dock-title]").textContent = title;
       bankTrigger.setAttribute("aria-label", `${number} ${title}。展示一覧を開く`);
-      const modeButtons = [...panels.bank.querySelectorAll(".map-mode-button")];
+      const modeButtons = globalThis.GaiaMapCategories.buttons();
       const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
       const describeStep = (direction) => {
         if (activeButtonIndex < 0 || modeButtons.length < 2) return direction < 0 ? "一つ前の地図展示へ" : "一つ次の地図展示へ";
@@ -164,7 +164,7 @@
     };
 
     const stepBankMode = (direction) => {
-      const modeButtons = [...panels.bank.querySelectorAll(".map-mode-button")];
+      const modeButtons = globalThis.GaiaMapCategories.buttons();
       if (!modeButtons.length) return;
       const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
       const baseIndex = activeButtonIndex >= 0 ? activeButtonIndex : 0;

@@ -82,7 +82,7 @@ assert.equal((indexHtml.match(/sound-archive-bg-v2\.png\?v=gaia-sound-linked-ink
 assert.match(characterRuntime, /const quoteRevealDelay = 620;/u, "Character quote letter animation starts too early");
 assert.match(characterRuntime, /setLetterText\(quote, character\.quote, quoteRevealDelay\);/u, "Character quote does not use the delayed reveal");
 assert.match(characterStyles, /\.character-book-layer\.is-open \.character-book-hero-quote\s*\{[\s\S]*?transition-delay: 520ms;/u, "Character quote panel does not enter one beat after the hero");
-assert.equal((modeLoader.match(/gaia-character-copy-natural-1/gu) || []).length, 2, "Character page assets are not cache-busted together");
+assert.equal((modeLoader.match(/gaia-character-profile-wrap-1/gu) || []).length, 2, "Character page assets are not cache-busted together");
 [
   "物語を彩った、六つの景色。絵をめくるたび、あの日の空気がよみがえります。",
   "キャラクター設定資料",

@@ -90,6 +90,7 @@ try {
         description: document.querySelector("#gaia-opening-sound-description")?.textContent.trim(),
         soundEyebrows: document.querySelectorAll(".gaia-opening-sound-heading > p").length,
         soundCornerMeta: getComputedStyle(document.querySelector(".gaia-opening-sound-dialog"), "::after").content,
+        soundKicker: document.querySelector(".gaia-opening-sound-kicker")?.textContent.trim(),
         languageVisible: __qaVisible(document.querySelector(".gaia-opening-language")),
         languageHeadings: document.querySelectorAll(".gaia-opening-language-label").length,
         languageLabels: Array.from(document.querySelectorAll(".gaia-opening-language-name"), (label) => label.textContent.trim()),
@@ -162,26 +163,27 @@ try {
     assert(initial.modalRect.top >= -1 && initial.modalRect.bottom <= viewport.height + 1, `${viewport.name}: modal is outside the viewport vertically`);
     assert(initial.dialogRect.left >= -1 && initial.dialogRect.right <= viewport.width + 1, `${viewport.name}: sound dialog is outside the viewport`);
     assert(initial.dialogRect.top >= -1 && initial.dialogRect.bottom <= viewport.height + 1, `${viewport.name}: sound dialog is outside the viewport vertically`);
-    assert.equal(initial.scrimBackground, "rgba(2, 11, 24, 0.68)", `${viewport.name}: sound backdrop lost its blue-hour tint`);
-    const shortLandscape = viewport.width > viewport.height && viewport.height <= 430;
+    assert.equal(initial.scrimBackground, "rgba(3, 17, 27, 0.56)", `${viewport.name}: sound backdrop lost its blue-hour tint`);
+    const shortLandscape = viewport.width > viewport.height && viewport.width <= 960 && viewport.height <= 520;
     assert.equal(initial.modalPlaceItems, "center", `${viewport.name}: sound dialog alignment is incorrect`);
     assert(Math.abs((initial.dialogRect.left + initial.dialogRect.right) / 2 - viewport.width / 2) <= 1, `${viewport.name}: sound dialog is not horizontally centered`);
-    if (shortLandscape) assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 6, `${viewport.name}: short landscape setup is not centered`);
-    else assert((initial.dialogRect.top + initial.dialogRect.bottom) / 2 > viewport.height / 2, `${viewport.name}: game menu should sit below center, leaving the artwork visible`);
+    assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 2, `${viewport.name}: sound setup must be vertically centered`);
     assert.equal(initial.dialogBackground, "rgba(0, 0, 0, 0)", `${viewport.name}: a large opaque settings panel returned`);
     assert.equal(initial.dialogBorder, "0px");
-    assert(initial.dialogRect.width <= 440, `${viewport.name}: game setup is too wide`);
-    assert.equal(initial.flourishCount, 2);
-    assert(initial.soundOnRect.right < initial.soundOffRect.left, `${viewport.name}: sound choices must remain side by side`);
+    assert(initial.dialogRect.width <= 620, `${viewport.name}: sound setup is too wide`);
+    assert.equal(initial.flourishCount, 0, "Retired ornamental flourishes returned");
+    assert.equal(initial.soundKicker, "惑星の放課後");
+    if (shortLandscape) assert(initial.soundOnRect.right < initial.soundOffRect.left, `${viewport.name}: landscape choices must stay side by side`);
+    else assert(initial.soundOnRect.bottom < initial.soundOffRect.top, `${viewport.name}: sound choices must form two invitation rows`);
     assert(initial.volumeRect.top >= initial.choicesRect.bottom, `${viewport.name}: volume overlaps the choices`);
     for (let index = 0; index < 2; index++) {
       const card = [initial.soundOnRect, initial.soundOffRect][index];
       const icon = initial.iconRects[index];
       const label = initial.soundLabelRects[index];
-      assert(icon.width >= 52 && Math.abs(icon.width - icon.height) < 1, `${viewport.name}: icon ring must be large and circular`);
-      assert(icon.bottom < label.top, `${viewport.name}: icon and label overlap`);
+      assert(icon.width >= 28, `${viewport.name}: sound icon is too small`);
+      assert(icon.right < label.left, `${viewport.name}: icon and label overlap`);
       assert(label.left >= card.left && label.right <= card.right, `${viewport.name}: choice text overflows`);
-      assert(Math.abs((icon.left + icon.right) / 2 - (card.left + card.right) / 2) < 1, `${viewport.name}: icon is not centered in its card`);
+      assert(Math.abs((icon.top + icon.bottom) / 2 - (card.top + card.bottom) / 2) < 1, `${viewport.name}: icon is not vertically centered in its row`);
     }
     for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
@@ -217,7 +219,7 @@ try {
         };
       });
       assert.deepEqual(rendering.backdropFilters, ["none", "none"]);
-      assert.equal(rendering.sceneAnimation, "none");
+      assert.equal(rendering.sceneAnimation, viewport.reduced ? "none" : "sound-scene-breathe");
       assert.equal(rendering.infiniteAnimations, 0);
       initial.rendering = rendering;
       assert(Math.abs(initial.soundOnRect.height - initial.soundOffRect.height) <= 1, `${viewport.name}: sound choices have mismatched heights`);

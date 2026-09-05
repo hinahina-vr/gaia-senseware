@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const sharedStylesheet = "./styles.css?v=gaia-guide-copy-three-lines-1";
+  const sharedStylesheet = "./styles.css?v=gaia-exhibit-preview-card-1";
 
   const groups = Object.freeze({
     exploration: {
@@ -10,31 +10,36 @@
         sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
-        "./data-ledger.css?v=gaia-simple-source-list-1",
+        "./data-ledger.css?v=gaia-compact-source-ledger-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-dock-step-width-1",
+        "./map-ui-grid-polish.css?v=gaia-exhibit-preview-card-1",
         "./estat-exhibits.css?v=gaia-warm-stat-map-1",
         "./firms-exhibit.css?v=gaia-firms-no-return-1",
         "./planet-signals-exhibit.css?v=gaia-satellite-clouds-1",
         "./statistics-lab.css?v=gaia-statistics-report-1",
-        "./statistics-workspace.css?v=gaia-statistics-workspace-1",
+        "./statistics-workspace.css?v=gaia-statistics-byok-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
         "./map-instrument-ui.css?v=gaia-poi-compact-card-1",
-        "./map-chapter-navigation.css?v=gaia-fixed-chapter-arrows-1",
+        "./map-chapter-navigation.css?v=gaia-weather-credit-2",
+        "./map-exhibit-actions.css?v=gaia-unified-dock-height-1",
+        "./map-exhibit-categories.css?v=gaia-subject-categories-1",
+        "./ecologies-exhibit.css?v=gaia-ecologies-reading-1",
       ],
       scripts: [
         "./mode-entry-guide.js?v=gaia-live-deck-3",
         "./scene-transition.js?v=gaia-66",
-        "./data-ledger.js?v=gaia-live-model-ledger-1",
+        "./data-ledger.js?v=gaia-weather-credit-2",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-map-preview-copy-1",
-        "./app.js?v=gaia-current-land-foreground-1",
-        "./map-ui-grid-polish.js?v=gaia-estat-picker-1",
+        "./app-content.js?v=gaia-ecologies-reading-1",
+        "./ecologies-exhibit.js?v=gaia-ecologies-reading-1",
+        "./map-exhibit-categories.js?v=gaia-subject-categories-1",
+        "./app.js?v=gaia-ecologies-reading-1",
+        "./map-ui-grid-polish.js?v=gaia-subject-categories-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-warm-stat-map-1",
-        "./statistics-lab.js?v=gaia-statistics-workspace-1",
+        "./src/exploration/index.js?v=gaia-weather-credit-2",
+        "./statistics-lab.js?v=gaia-statistics-byok-1",
       ],
     },
     story: {
@@ -93,22 +98,22 @@
       parallel: true,
       styles: [
         sharedStylesheet,
-        "./sound-mode.css?v=gaia-sound-asterisms-1",
+        "./sound-mode.css?v=gaia-sound-recording-dissolve-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-constellation.js?v=gaia-sound-comet-writing-1", "./sound-mode.js?v=gaia-sound-asterisms-1"],
+      scripts: ["./sound-constellation.js?v=gaia-sound-comet-writing-1", "./sound-mode.js?v=gaia-sound-descriptions-1"],
     },
     character: {
       templates: ["gaia-template-character"],
       styles: [
         sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
-        "./character-mode.css?v=gaia-character-copy-natural-1",
+        "./character-mode.css?v=gaia-character-profile-wrap-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./mode-entry-guide.js?v=gaia-live-deck-3",
-        "./character-mode.js?v=gaia-character-copy-natural-1",
+        "./character-mode.js?v=gaia-character-profile-wrap-1",
       ],
     },
     tour: {

@@ -1,4 +1,5 @@
 import { initSensorSenseField } from "./sensor-field.js?v=gaia-real-sensor-field-1";
+import { aiProviderPresets, aiConfigStorageKey, aiKeyStorageKey, aiSessionKeyStorageKey, saveAiConfiguration, validatedAiEndpoint, requestAiAnswer } from "../byok-ai.js?v=gaia-statistics-byok-1";
 
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
@@ -96,25 +97,6 @@ const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
 const publicMapMarkerCollisionDistance = 50;
 const resonanceDistanceKm = 1_800;
-const aiConfigStorageKey = "gaia-senseware-ai-config-v1";
-const aiKeyStorageKey = "gaia-senseware-ai-key-v1";
-const aiSessionKeyStorageKey = "gaia-senseware-ai-session-key-v1";
-const aiProviderPresets = Object.freeze({
-  openrouter: { label: "OpenRouter", adapter: "openai", endpoint: "https://openrouter.ai/api/v1/chat/completions", model: "openai/gpt-4.1-mini" },
-  openai: { label: "OpenAI", adapter: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4.1-mini" },
-  xai: { label: "xAI", adapter: "openai", endpoint: "https://api.x.ai/v1/chat/completions", model: "grok-3-mini" },
-  gemini: { label: "Google Gemini", adapter: "gemini", endpoint: "https://generativelanguage.googleapis.com/v1beta", model: "gemini-2.5-flash" },
-  anthropic: { label: "Anthropic", adapter: "anthropic", endpoint: "https://api.anthropic.com/v1/messages", model: "claude-sonnet-4-20250514" },
-  mistral: { label: "Mistral AI", adapter: "openai", endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" },
-  groq: { label: "Groq", adapter: "openai", endpoint: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile" },
-  deepseek: { label: "DeepSeek", adapter: "openai", endpoint: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
-  together: { label: "Together AI", adapter: "openai", endpoint: "https://api.together.xyz/v1/chat/completions", model: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
-  fireworks: { label: "Fireworks AI", adapter: "openai", endpoint: "https://api.fireworks.ai/inference/v1/chat/completions", model: "accounts/fireworks/models/llama-v3p3-70b-instruct" },
-  cerebras: { label: "Cerebras", adapter: "openai", endpoint: "https://api.cerebras.ai/v1/chat/completions", model: "llama-3.3-70b" },
-  perplexity: { label: "Perplexity", adapter: "openai", endpoint: "https://api.perplexity.ai/chat/completions", model: "sonar" },
-  cohere: { label: "Cohere", adapter: "cohere", endpoint: "https://api.cohere.com/v2/chat", model: "command-a-03-2025" },
-  custom: { label: "任意エンドポイント", adapter: "openai", endpoint: "", model: "" },
-});
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
@@ -2329,10 +2311,6 @@ function storageRead(storage, key) {
   try { return storage.getItem(key) || ""; } catch { return ""; }
 }
 
-function storageWrite(storage, key, value) {
-  try { storage.setItem(key, value); return true; } catch { return false; }
-}
-
 function storageRemove(storage, key) {
   try { storage.removeItem(key); } catch { /* Storage may be disabled by browser policy. */ }
 }
@@ -2348,16 +2326,6 @@ function selectAiProvider(provider) {
   }
 }
 
-function saveAiConfiguration({ provider, endpoint, model, apiKey, rememberKey }) {
-  storageWrite(localStorage, aiConfigStorageKey, JSON.stringify({ provider, endpoint, model }));
-  if (rememberKey) {
-    storageWrite(localStorage, aiKeyStorageKey, apiKey);
-    storageRemove(sessionStorage, aiSessionKeyStorageKey);
-  } else {
-    storageRemove(localStorage, aiKeyStorageKey);
-    storageWrite(sessionStorage, aiSessionKeyStorageKey, apiKey);
-  }
-}
 
 async function askSensorAi(event) {
   event.preventDefault();
@@ -2398,55 +2366,9 @@ async function askSensorAi(event) {
   }
 }
 
-function validatedAiEndpoint(endpoint, model, adapter) {
-  if (!endpoint) throw new Error("エンドポイントを入力してください。");
-  let resolved = endpoint.replaceAll("{model}", encodeURIComponent(model));
-  if (adapter === "gemini" && !/:generateContent(?:\?|$)/u.test(resolved)) {
-    resolved = `${resolved.replace(/\/+$/u, "")}/models/${encodeURIComponent(model)}:generateContent`;
-  }
-  let url;
-  try { url = new URL(resolved); } catch { throw new Error("エンドポイントURLが正しくありません。"); }
-  const localEndpoint = new Set(["localhost", "127.0.0.1", "::1"]).has(url.hostname);
-  const localPage = new Set(["localhost", "127.0.0.1", "::1"]).has(location.hostname);
-  if (url.protocol !== "https:" && !(localPage && localEndpoint && url.protocol === "http:")) {
-    throw new Error("APIキーを保護するため、HTTPSエンドポイントだけを使用できます。");
-  }
-  if (url.username || url.password) throw new Error("認証情報をURLへ埋め込まないでください。");
-  if (url.origin === location.origin) throw new Error("APIキーをGAIAへ誤送信しないよう、GAIA自身のURLは指定できません。");
-  return url.toString();
-}
 
-async function fetchAiAnswer({ requestUrl, preset, model, apiKey, question }) {
-  const prompt = buildSensorAiPrompt(question);
-  const { headers, body } = buildAiRequest(preset.adapter, model, apiKey, prompt);
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 45_000);
-  try {
-    const response = await fetch(requestUrl, {
-      method: "POST",
-      mode: "cors",
-      credentials: "omit",
-      cache: "no-store",
-      referrerPolicy: "no-referrer",
-      headers,
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      const providerMessage = extractAiError(payload);
-      throw new Error(`APIが${response.status}を返しました${providerMessage ? `：${providerMessage}` : "。"}`);
-    }
-    const answer = extractAiText(payload, preset.adapter);
-    if (!answer) throw new Error("APIの応答から回答文を読み取れませんでした。モデルまたは互換形式を確認してください。");
-    return answer;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw new Error("API応答が45秒以内に返りませんでした。");
-    if (error instanceof TypeError) throw new Error("APIへ接続できません。URL、CORS許可、ブラウザ拡張の遮断を確認してください。");
-    throw error;
-  } finally {
-    window.clearTimeout(timeout);
-  }
+function fetchAiAnswer({ requestUrl, preset, model, apiKey, question }) {
+  return requestAiAnswer({ requestUrl, preset, model, apiKey, prompt: buildSensorAiPrompt(question) });
 }
 
 function buildSensorAiPrompt(question) {
@@ -2471,49 +2393,6 @@ function buildSensorAiPrompt(question) {
   return { system, user };
 }
 
-function buildAiRequest(adapter, model, apiKey, prompt) {
-  if (adapter === "gemini") return {
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: {
-      systemInstruction: { parts: [{ text: prompt.system }] },
-      contents: [{ role: "user", parts: [{ text: prompt.user }] }],
-      generationConfig: { temperature: .2, maxOutputTokens: 1200 },
-    },
-  };
-  if (adapter === "anthropic") return {
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: { model, system: prompt.system, messages: [{ role: "user", content: prompt.user }], max_tokens: 1200, temperature: .2 },
-  };
-  if (adapter === "cohere") return {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: { model, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], temperature: .2, max_tokens: 1200 },
-  };
-  return {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: { model, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], temperature: .2, max_tokens: 1200 },
-  };
-}
-
-function extractAiText(payload, adapter) {
-  if (!payload || typeof payload !== "object") return "";
-  if (adapter === "gemini") return payload.candidates?.[0]?.content?.parts?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
-  if (adapter === "anthropic") return payload.content?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
-  if (adapter === "cohere") return payload.message?.content?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
-  const content = payload.choices?.[0]?.message?.content;
-  if (typeof content === "string") return content.trim();
-  if (Array.isArray(content)) return content.map((part) => part?.text || part?.content).filter(Boolean).join("\n").trim();
-  return "";
-}
-
-function extractAiError(payload) {
-  const value = payload?.error?.message ?? payload?.message ?? payload?.error;
-  return typeof value === "string" ? value.replace(/\s+/gu, " ").slice(0, 240) : "";
-}
 
 const renderHistory = (telemetry) => {
   historyList.replaceChildren();

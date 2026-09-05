@@ -92,9 +92,9 @@ const selectMode = async (page, index, expectedTitle) => {
     await mobileBankToggle.evaluate((button) => button.click());
   }
   const previousGuideTitle = await page.locator("#map-guide-title").textContent();
-  const previousModeIndex = await page.evaluate(() => Array.from(document.querySelectorAll("#japan-mode-list .map-mode-button"))
+  const previousModeIndex = await page.evaluate(() => GaiaMapCategories.buttons()
     .findIndex((button) => button.getAttribute("aria-current") === "true"));
-  await page.locator("#japan-mode-list .map-mode-button").nth(index).evaluate((button) => button.click());
+  await page.locator(`.map-mode-bank [data-map-standard-index="${index}"]`).evaluate((button) => button.click());
   await page.waitForFunction(
     ({ number, title, previousGuideTitle: previousGuide, requireGuideChange }) => document.querySelector("#japan-mode-number")?.textContent === number
       && document.querySelector("#japan-mode-title")?.textContent === title
@@ -111,7 +111,7 @@ const selectMode = async (page, index, expectedTitle) => {
   const observed = await page.evaluate(() => ({
     number: document.querySelector("#japan-mode-number")?.textContent || "",
     title: document.querySelector("#japan-mode-title")?.textContent || "",
-    current: Array.from(document.querySelectorAll("#japan-mode-list .map-mode-button"))
+    current: GaiaMapCategories.buttons()
       .findIndex((button) => button.getAttribute("aria-current") === "true"),
   }));
   assert.deepEqual(
@@ -123,13 +123,11 @@ const selectMode = async (page, index, expectedTitle) => {
 
 const selectLiveMode = async (page, index, expectedTitle) => {
   const liveIndex = index - 9;
-  const button = page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(liveIndex);
+  const button = page.locator(".map-mode-bank .map-mode-button[data-live-exhibit]").filter({ hasText: new RegExp(`^${String(index + 1).padStart(2, "0")}$`) });
   await button.evaluate((element) => element.click());
   await page.waitForFunction(
     ({ number, title, expectedLiveIndex }) => {
-      const liveButtons = Array.from(document.querySelectorAll(
-        "#japan-mode-list .map-mode-button[data-live-exhibit]",
-      ));
+      const liveButtons = GaiaMapCategories.buttons().filter(button => button.dataset.liveExhibit);
       return document.querySelector("#japan-mode-number")?.textContent === number
         && document.querySelector("#japan-mode-title")?.textContent === title
         && document.querySelector("#japan-title")?.textContent === title
@@ -381,7 +379,7 @@ const boot = async (viewport, { startStatic = false, boundaryDelayMs = 0 } = {})
     && !document.body.classList.contains("scene-transitioning"));
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
   await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) >= 1);
-  assert.equal(await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").count(), 9);
+  assert.equal(await page.locator(".map-mode-bank .map-mode-button[data-map-standard-index]").count(), 9);
   assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 9);
   assert.equal(await page.locator("#error-panel").isHidden(), true);
   return { context, page };
@@ -448,7 +446,7 @@ try {
         scan.quantitativeLegends.push(observed);
       }
       for (const reference of [
-        { index: 6, title: "三つの生態系", panelId: "three-ecologies-scatter" },
+        // Three Ecologies has a dedicated responsive DOM panel, tested separately.
         { index: 7, title: "人工物の共生化", panelId: "earth-organ-scale" },
       ]) {
         await selectMode(page, reference.index, reference.title);
@@ -520,8 +518,9 @@ try {
       }
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
-        return overlay?.dataset.selectionLabelShape === "speech-bubble"
-          && Number(overlay.dataset.selectionLabelTailLengthPx) >= 8;
+        return overlay?.dataset.selectionLabelShape === "inline-readout"
+          || (overlay?.dataset.selectionLabelShape === "speech-bubble"
+            && Number(overlay.dataset.selectionLabelTailLengthPx) >= 8);
       });
       await page.waitForTimeout(500);
       scan.selectionBubble = await page.locator("#japan-overlay").evaluate((element) => ({
@@ -532,10 +531,15 @@ try {
         width: Number(element.dataset.selectionLabelWidthPx),
         height: Number(element.dataset.selectionLabelHeightPx),
       }));
-      assert.equal(scan.selectionBubble.shape, "speech-bubble");
-      assert.match(scan.selectionBubble.tailSide, /^(left|right)$/u);
-      assert.ok(scan.selectionBubble.tailLength >= 8, `bubble tail is missing: ${JSON.stringify(scan.selectionBubble)}`);
-      assert.ok(scan.selectionBubble.cornerRadius >= 8, `bubble corners are too square: ${JSON.stringify(scan.selectionBubble)}`);
+      if (viewport.width >= 600) {
+        assert.equal(scan.selectionBubble.shape, "inline-readout");
+        assert.ok(scan.selectionBubble.height <= 68, "rain readout should stay on one compact row");
+      } else {
+        assert.equal(scan.selectionBubble.shape, "speech-bubble");
+        assert.match(scan.selectionBubble.tailSide, /^(left|right)$/u);
+        assert.ok(scan.selectionBubble.tailLength >= 8, `bubble tail is missing: ${JSON.stringify(scan.selectionBubble)}`);
+        assert.ok(scan.selectionBubble.cornerRadius >= 8, `bubble corners are too square: ${JSON.stringify(scan.selectionBubble)}`);
+      }
       assert.ok(scan.selectionBubble.width > 0 && scan.selectionBubble.height > 0);
       const screenshot = path.join(outputDir, `${viewport.name}-03-selection-speech-bubble.png`);
       await page.locator("#japan-map").screenshot({ path: screenshot });
@@ -930,7 +934,7 @@ try {
       assert.equal(scan.earthquakeManualFirst.markerStyle, "red-heavy-cross");
       assert.equal(scan.earthquakeManualFirst.markerColor, "rgb(255,43,51)");
       assert.ok(scan.earthquakeManualFirst.markerLineWidth >= (viewport.width >= 2400 ? 7 : 4));
-      assert.equal(scan.earthquakeManualFirst.activeMagnitudeLabel, "callout-only");
+      assert.equal(scan.earthquakeManualFirst.activeMagnitudeLabel, "below-marker");
       const manualFirstScreenshot = path.join(outputDir, `${viewport.name}-06-manual-2004-first-event.png`);
       await page.screenshot({ path: manualFirstScreenshot });
       scan.screenshots.push(manualFirstScreenshot);
@@ -1434,7 +1438,7 @@ try {
         !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
         && document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete"
       ));
-      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(7).evaluate((button) => button.click());
+      await page.locator('.map-mode-bank [data-map-standard-index="7"]').evaluate((button) => button.click());
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
         return document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
@@ -1525,7 +1529,7 @@ try {
     if (legendOnly) {
       await selectMode(page, 0, "地球の一呼吸");
       await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
-      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(2).evaluate((button) => button.click());
+      await page.locator('.map-mode-bank [data-map-standard-index="2"]').evaluate((button) => button.click());
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
         return document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
@@ -2260,7 +2264,7 @@ try {
     scan.screenshots.push(earthquakeSettledScreenshot);
 
     await selectMode(page, 6, "三つの生態系");
-    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.ecologiesPlot === "paired-country-scatter");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.ecologiesPlot === "paired-bars-with-linked-scatter");
     const ecologySlider = page.locator("#japan-layer [data-signal-time]").first();
     await ecologySlider.evaluate((element) => {
       element.value = "50";
@@ -2274,11 +2278,11 @@ try {
       selectedCountry: element.dataset.ecologiesSelectedCountry,
       cultureCount: Number(element.dataset.ecologiesCultureCount),
     }));
-    assert.equal(ecologyState.plot, "paired-country-scatter");
+    assert.equal(ecologyState.plot, "paired-bars-with-linked-scatter");
     assert.equal(ecologyState.pairCount, 31);
     assert.ok(ecologyState.correlation > 0.2 && ecologyState.correlation < 0.3);
     assert.ok(ecologyState.selectedCountry);
-    assert.equal(ecologyState.cultureCount, 24);
+    assert.equal(ecologyState.cultureCount, 0);
     await waitForMapGuide(page);
     const ecologyGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(ecologyGuide, /散布図.*回帰線.*相関係数r/u);
@@ -2332,7 +2336,7 @@ try {
       encoding: element.dataset.populationEncoding,
     }));
     assert.equal(populationStart.year, "1960");
-    assert.equal(populationStart.count, 31);
+    assert.equal(populationStart.count, 216);
     assert(
       populationStart.visibleCount >= (viewport.name === "pc" ? 26 : 8),
       `population circles left the global viewport: ${JSON.stringify(populationStart)}`,

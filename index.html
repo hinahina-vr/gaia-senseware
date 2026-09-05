@@ -168,12 +168,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-sound-game-menu-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-route-guide-copy-only-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-left-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-route-guide-delay-3s-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-current-land-foreground-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-title-return-bgm-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-weather-credit-2" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -399,13 +399,11 @@
         >
           <div class="gaia-opening-sound-scene" aria-hidden="true"><span></span></div>
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
+          <canvas class="gaia-opening-sound-atmosphere" id="gaia-opening-sound-atmosphere" aria-hidden="true"></canvas>
           <div class="gaia-opening-sound-dialog">
             <div class="gaia-opening-sound-heading">
-              <h2 id="gaia-opening-sound-title">
-                <svg class="gaia-opening-sound-flourish" viewBox="0 0 48 20" fill="none" aria-hidden="true"><path d="M3 10c8-8 14 8 24 0s14-2 18 0M3 10c8 8 14-8 24 0s14 2 18 0M12 10h26"/><path d="m4 6 4 4-4 4-3-4Z"/><circle cx="41" cy="10" r="1.4"/></svg>
-                <span>サウンド設定</span>
-                <svg class="gaia-opening-sound-flourish" viewBox="0 0 48 20" fill="none" aria-hidden="true"><path d="M3 10c8-8 14 8 24 0s14-2 18 0M3 10c8 8 14-8 24 0s14 2 18 0M12 10h26"/><path d="m4 6 4 4-4 4-3-4Z"/><circle cx="41" cy="10" r="1.4"/></svg>
-              </h2>
+              <small class="gaia-opening-sound-kicker">惑星の放課後</small>
+              <h2 id="gaia-opening-sound-title">サウンド設定</h2>
               <span id="gaia-opening-sound-description">ゲーム中でも変更できます。</span>
             </div>
             <div class="gaia-opening-language" role="group" aria-label="表示言語を選ぶ">
@@ -427,10 +425,6 @@
             <section class="gaia-opening-sound-choices" aria-label="サウンド設定">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="サウンドをオンにして始める" aria-pressed="true">
-                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" preserveAspectRatio="none" fill="none" aria-hidden="true">
-                    <path d="m0 45 13 4 7-11 8 26 9-51 9 43 7-12 8 7 8-18 7 27 8-14 9 6 8-9 8 9 10-3 10 4 9-6 9 3 9-4 10 3 10-10 8 12 9-25 9 28 8-14 9 19 11-63 10 63 9-20 9 16 11-6" />
-                    <path d="M0 52C31 21 45 70 68 48S105 57 136 51 168 33 194 48 244 70 280 37" />
-                  </svg>
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                       <path d="M4 14v-3a8 8 0 0 1 16 0v3" />
@@ -439,7 +433,11 @@
                       <path d="M7 7a6 6 0 0 1 10 0" opacity=".45" />
                     </svg>
                   </span>
-                  <span class="gaia-opening-sound-option-label">サウンドあり</span>
+                  <span class="gaia-opening-sound-option-copy">
+                    <span class="gaia-opening-sound-option-label">サウンドあり</span>
+                    <small>音楽と環境音を、一緒に。</small>
+                  </span>
+                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 32 16" fill="none" aria-hidden="true"><path d="M2 8h26m-6-6 6 6-6 6" /></svg>
                 </button>
               </div>
               <div class="gaia-opening-sound-option gaia-opening-sound-option--off">
@@ -450,7 +448,11 @@
                       <path d="m17 9 5 6m0-6-5 6" />
                     </svg>
                   </span>
-                  <span class="gaia-opening-sound-option-label">サウンドなし</span>
+                  <span class="gaia-opening-sound-option-copy">
+                    <span class="gaia-opening-sound-option-label">サウンドなし</span>
+                    <small>映像と言葉を、静かに。</small>
+                  </span>
+                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 32 16" fill="none" aria-hidden="true"><path d="M2 8h26m-6-6 6 6-6 6" /></svg>
                 </button>
               </div>
             </section>
@@ -660,10 +662,10 @@
           </aside>
 
           <main class="sound-player">
-            <div class="sound-now-playing">
+            <div class="sound-now-playing" aria-live="polite" aria-atomic="true">
               <p id="sound-track-number">TRACK 01 / OPENING THEME</p>
               <h3 id="sound-track-title">Planet Forecast - Hope</h3>
-              <p id="sound-mode-description">惑星の放課後のオープニングで、三人と地球の物語への入口をひらく音楽。</p>
+              <p id="sound-mode-description">『惑星の放課後』オープニングテーマ。地球と生命、そして私たちの物語への入口をひらく。</p>
             </div>
 
             <div class="sound-transport">
@@ -1677,7 +1679,7 @@
             id="map-mobile-bank-toggle"
             type="button"
             aria-expanded="false"
-            aria-controls="japan-mode-list japan-estat-mode-list japan-firms-mode-list"
+            aria-controls="map-exhibit-groups"
           >
             <span>SELECT</span>
             <strong>展示一覧</strong>
@@ -1691,7 +1693,7 @@
             </div>
           </div>
           <p class="map-mode-bank-guide" id="map-mode-bank-guide">見たい地図展示を選んでください</p>
-          <div class="map-mode-groups">
+          <div id="map-exhibit-groups" class="map-mode-groups">
             <section class="map-mode-group" aria-labelledby="map-mode-map-label">
               <p class="map-mode-group-label" id="map-mode-map-label"><span>MAP</span><strong>地図</strong></p>
               <div class="map-mode-list" id="japan-mode-list"></div>
@@ -1886,6 +1888,7 @@
                 <p id="gaia-statistics-context">現在の展示データを引き継いでいます。</p>
               </div>
               <div class="gaia-statistics-header-actions">
+                <button class="gaia-statistics-ai-open" id="gaia-statistics-ai-open" type="button" aria-haspopup="dialog" aria-controls="gaia-statistics-ai-dialog" disabled>AIで分析する</button>
                 <button class="gaia-statistics-menu-toggle" id="gaia-statistics-menu-toggle" type="button" aria-expanded="false" aria-controls="gaia-statistics-controls">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>分析を変える</span>
                 </button>
@@ -1944,14 +1947,14 @@
                 </section>
                 <section>
                   <p class="gaia-statistics-control-label">見方を選ぶ</p>
-                  <div class="gaia-statistics-methods" id="gaia-statistics-methods" role="list" aria-label="分析手法"></div>
+                  <div class="gaia-statistics-methods" id="gaia-statistics-methods" role="group" aria-label="分析手法"></div>
                 </section>
               </aside>
 
               <main class="gaia-statistics-stage">
                 <header class="gaia-statistics-stage-header">
                   <div>
-                    <p id="gaia-statistics-method-number">01 / DESCRIPTIVE</p>
+                    <p id="gaia-statistics-method-number">記述・探索</p>
                     <h3 id="gaia-statistics-method-title">要約統計</h3>
                     <p id="gaia-statistics-method-copy">中心、広がり、分布の形を同じ画面で確認します。</p>
                   </div>
