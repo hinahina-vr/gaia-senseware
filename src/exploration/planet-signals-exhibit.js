@@ -1,26 +1,12 @@
-const ATMOSPHERE_POINTS = Object.freeze([
-  ["逗子", 35.295, 139.578],
-  ["レイキャヴィーク", 64.147, -21.94],
-  ["ニューヨーク", 40.713, -74.006],
-  ["リマ", -12.046, -77.043],
-  ["サンパウロ", -23.55, -46.633],
-  ["ケープタウン", -33.925, 18.424],
-  ["ナイロビ", -1.286, 36.818],
-  ["シンガポール", 1.352, 103.82],
-  ["シドニー", -33.868, 151.209],
-  ["ホノルル", 21.307, -157.858],
-].map(([label, lat, lon]) => Object.freeze({ label, lat, lon })));
-
-const MARINE_POINTS = Object.freeze([
-  ["相模湾", 35.2, 139.45],
-  ["北太平洋", 40, -160],
-  ["南太平洋", -30, -120],
-  ["北大西洋", 45, -30],
-  ["南大西洋", -35, -20],
-  ["インド洋", -20, 80],
-  ["珊瑚海", -20, 155],
-  ["北海", 56, 3],
-].map(([label, lat, lon]) => Object.freeze({ label, lat, lon })));
+const GLOBAL_SAMPLE_COUNT = 240;
+const GLOBAL_OBSERVATION_POINTS = Object.freeze(Array.from({ length: GLOBAL_SAMPLE_COUNT }, (_, index) => {
+  const latitudeRadians = Math.asin(-1 + (2 * (index + 0.5)) / GLOBAL_SAMPLE_COUNT);
+  const lat = latitudeRadians * 180 / Math.PI;
+  const lon = ((index * 137.50776405003785 + 180) % 360) - 180;
+  const northSouth = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? "N" : "S"}`;
+  const eastWest = `${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`;
+  return Object.freeze({ label: `${northSouth} ${eastWest}`, lat, lon });
+}));
 
 const DEFINITIONS = Object.freeze([
   Object.freeze({
@@ -31,7 +17,7 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "風速・風向・気圧",
     accent: "#63f3ff",
     rgb: "99, 243, 255",
-    caption: "世界10地点の風速・風向・気圧を、地表を走る細い光跡へ変換します。",
+    caption: "全球240サンプル点の風速・風向・気圧を、各地点から伸びる細い光跡へ変換します。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
@@ -41,31 +27,14 @@ const DEFINITIONS = Object.freeze([
     renderer: "wind",
   }),
   Object.freeze({
-    id: "global-ocean-pulse",
-    number: "28",
-    shortTitle: "海の脈動",
-    title: "海の脈動 — WAVE FIELD",
-    signalLabel: "波高・周期・波向",
-    accent: "#65a9ff",
-    rgb: "101, 169, 255",
-    caption: "8つの海域の波高と周期を、互いに重なる波紋として描きます。",
-    sourceName: "Open-Meteo Marine API / DWDほか",
-    sourcePage: "https://open-meteo.com/en/docs/marine-weather-api",
-    sourceLabel: "Marine APIの仕様を見る",
-    primaryLabel: "平均波高",
-    visualLabel: "INTERFERENCE RINGS / HEIGHT + PERIOD",
-    loader: "marine",
-    renderer: "ocean",
-  }),
-  Object.freeze({
     id: "global-aerosol-light",
-    number: "29",
+    number: "28",
     shortTitle: "大気の散乱",
     title: "大気の散乱 — AEROSOL LIGHT",
     signalLabel: "PM2.5・光学的厚さ",
     accent: "#f3a3ff",
     rgb: "243, 163, 255",
-    caption: "大気中の微粒子と光学的厚さを、にじむ光環と浮遊粒子へ変換します。",
+    caption: "全球240サンプル点の微粒子と光学的厚さを、にじむ光環と浮遊粒子へ変換します。",
     sourceName: "Open-Meteo Air Quality API / CAMS",
     sourcePage: "https://open-meteo.com/en/docs/air-quality-api",
     sourceLabel: "Air Quality APIの仕様を見る",
@@ -76,10 +45,10 @@ const DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     id: "usgs-earthquake-ripples",
-    number: "30",
+    number: "29",
     shortTitle: "地殻の波紋",
     title: "地殻の波紋 — EARTHQUAKES",
-    signalLabel: "M2.5以上・直近24時間",
+    signalLabel: "全規模・直近24時間",
     accent: "#ffbd68",
     rgb: "255, 189, 104",
     caption: "USGSが公開する直近24時間の地震を、発生時刻と規模に応じた波紋で示します。",
@@ -92,64 +61,54 @@ const DEFINITIONS = Object.freeze([
     renderer: "quake",
   }),
   Object.freeze({
-    id: "noaa-solar-wind",
-    number: "31",
-    shortTitle: "太陽風の到着",
-    title: "太陽風の到着 — SPACE WEATHER",
-    signalLabel: "太陽風速度・惑星間磁場",
-    accent: "#9bffca",
-    rgb: "155, 255, 202",
-    caption: "地球へ届く太陽風と磁場の値を、極域を横切る流光と粒子の速度へ変換します。",
-    sourceName: "NOAA Space Weather Prediction Center",
-    sourcePage: "https://www.swpc.noaa.gov/products/real-time-solar-wind",
-    sourceLabel: "NOAAの観測ページを見る",
-    primaryLabel: "太陽風速度",
-    visualLabel: "POLAR STREAM / SPEED + BZ",
-    loader: "solar",
-    renderer: "solar",
+    id: "global-cloud-radiance",
+    number: "30",
+    shortTitle: "雲を透る光",
+    title: "雲を透る光 — CLOUD / RADIATION",
+    signalLabel: "雲量・短波放射",
+    accent: "#ffd879",
+    rgb: "255, 216, 121",
+    caption: "全球240サンプル点の雲量と地表へ届く短波放射を、開閉する光の窓として描きます。",
+    sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
+    sourcePage: "https://open-meteo.com/en/docs",
+    sourceLabel: "Open-Meteoの仕様を見る",
+    primaryLabel: "平均日射",
+    visualLabel: "LIGHT APERTURES / CLOUD + SHORTWAVE",
+    loader: "atmosphere",
+    renderer: "cloud",
   }),
 ]);
 
 const OPEN_METEO_WEATHER = "https://api.open-meteo.com/v1/forecast";
-const OPEN_METEO_MARINE = "https://marine-api.open-meteo.com/v1/marine";
 const OPEN_METEO_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality";
-const USGS_DAY = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson";
-const NOAA_SPEED = "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json";
-const NOAA_FIELD = "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json";
-const CACHE_PREFIX = "gaia-planet-signals-v1:";
+const USGS_DAY = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
+const CACHE_PREFIX = "gaia-planet-signals-v2:";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const FRAME_INTERVAL_MS = 1000 / 30;
 const MAX_CANVAS_PIXELS = 1_500_000;
 const EARTH_INITIAL_CENTER_LONGITUDE = 138;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fract = (value) => value - Math.floor(value);
+const hash = (value) => fract(Math.sin(value * 12.9898 + 78.233) * 43758.5453);
 
 const FALLBACKS = Object.freeze({
   atmosphere: Object.freeze({
     observedAt: "2026-09-03T09:00:00Z",
-    points: ATMOSPHERE_POINTS.map((point, index) => ({
+    points: GLOBAL_OBSERVATION_POINTS.map((point, index) => ({
       ...point,
-      windSpeed: [3.4, 6.8, 4.7, 5.2, 3.1, 7.4, 4.2, 2.8, 8.1, 6.2][index],
-      windDirection: [182, 236, 274, 191, 118, 305, 146, 211, 259, 71][index],
-      pressure: [1008, 1002, 1014, 1011, 1016, 1005, 1010, 1009, 1001, 1013][index],
-      cloud: [58, 79, 42, 51, 30, 72, 63, 81, 69, 37][index],
-      radiation: [410, 130, 520, 610, 280, 350, 560, 470, 220, 680][index],
-    })),
-  }),
-  marine: Object.freeze({
-    observedAt: "2026-09-03T09:00:00Z",
-    points: MARINE_POINTS.map((point, index) => ({
-      ...point,
-      waveHeight: [0.8, 2.7, 2.1, 3.3, 2.5, 1.9, 2.2, 1.6][index],
-      wavePeriod: [6.2, 10.8, 12.1, 9.5, 11.4, 8.9, 9.8, 7.1][index],
-      waveDirection: [151, 96, 231, 282, 203, 248, 111, 317][index],
+      windSpeed: 2.4 + hash(index * 1.73 + 4.1) * 7.6,
+      windDirection: Math.round(hash(index * 2.17 + 8.3) * 359),
+      pressure: 997 + Math.round(hash(index * 3.11 + 2.7) * 22),
+      cloud: Math.round(12 + hash(index * 4.37 + 6.2) * 82),
+      radiation: Math.round(70 + hash(index * 5.23 + 9.8) * 720),
     })),
   }),
   air: Object.freeze({
     observedAt: "2026-09-03T09:00:00Z",
-    points: ATMOSPHERE_POINTS.map((point, index) => ({
+    points: GLOBAL_OBSERVATION_POINTS.map((point, index) => ({
       ...point,
-      pm25: [10.2, 4.1, 8.9, 17.3, 12.8, 7.4, 15.1, 13.8, 5.6, 9.3][index],
-      aerosol: [0.14, 0.06, 0.12, 0.22, 0.18, 0.1, 0.2, 0.17, 0.08, 0.13][index],
+      pm25: 3.5 + hash(index * 2.83 + 1.9) * 24,
+      aerosol: 0.04 + hash(index * 3.71 + 7.4) * 0.24,
     })),
   }),
   earthquake: Object.freeze({
@@ -168,13 +127,6 @@ const FALLBACKS = Object.freeze({
       time: Date.parse("2026-09-03T09:00:00Z") - index * 73 * 60 * 1000,
     })),
   }),
-  solar: Object.freeze({
-    observedAt: "2026-09-03T09:00:00Z",
-    points: [],
-    speed: 394,
-    bt: 6,
-    bz: 2,
-  }),
 });
 
 let layer;
@@ -189,15 +141,12 @@ let currentData = null;
 let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
-let particles = [];
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
 const average = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
 const mapLongitude = (longitude) => wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
-const fract = (value) => value - Math.floor(value);
-const hash = (value) => fract(Math.sin(value * 12.9898 + 78.233) * 43758.5453);
 const asFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const formatNumber = (value, decimals = 1) => Number(value).toLocaleString("ja-JP", {
   minimumFractionDigits: decimals,
@@ -255,16 +204,29 @@ const fetchJson = async (url, timeoutMs = 9000) => {
 };
 
 const normalizeMulti = (payload) => Array.isArray(payload) ? payload : [payload];
+const fetchPointRows = async (base, points, params) => {
+  const batchSize = 48;
+  const batches = [];
+  for (let index = 0; index < points.length; index += batchSize) {
+    batches.push(points.slice(index, index + batchSize));
+  }
+  const payloads = await Promise.all(batches.map((batch) => fetchJson(apiUrl(base, {
+    ...coordinateParams(batch),
+    ...params,
+  }))));
+  const rows = payloads.flatMap(normalizeMulti);
+  if (rows.length !== points.length) throw new Error(`Expected ${points.length} grid points, received ${rows.length}`);
+  return rows;
+};
 
 const loadAtmosphere = async () => {
-  const url = apiUrl(OPEN_METEO_WEATHER, {
-    ...coordinateParams(ATMOSPHERE_POINTS),
+  const rows = await fetchPointRows(OPEN_METEO_WEATHER, GLOBAL_OBSERVATION_POINTS, {
     current: "wind_speed_10m,wind_direction_10m,surface_pressure,cloud_cover,shortwave_radiation",
     wind_speed_unit: "ms",
     timezone: "GMT",
+    cell_selection: "nearest",
   });
-  const rows = normalizeMulti(await fetchJson(url));
-  const points = ATMOSPHERE_POINTS.map((point, index) => {
+  const points = GLOBAL_OBSERVATION_POINTS.map((point, index) => {
     const current = rows[index]?.current || {};
     return {
       ...point,
@@ -279,35 +241,14 @@ const loadAtmosphere = async () => {
   return { observedAt: rows.find(({ current }) => current?.time)?.current.time + "Z", points };
 };
 
-const loadMarine = async () => {
-  const url = apiUrl(OPEN_METEO_MARINE, {
-    ...coordinateParams(MARINE_POINTS),
-    current: "wave_height,wave_period,wave_direction",
-    timezone: "GMT",
-    cell_selection: "sea",
-  });
-  const rows = normalizeMulti(await fetchJson(url));
-  const points = MARINE_POINTS.map((point, index) => {
-    const current = rows[index]?.current || {};
-    return {
-      ...point,
-      waveHeight: asFinite(current.wave_height),
-      wavePeriod: asFinite(current.wave_period),
-      waveDirection: asFinite(current.wave_direction),
-    };
-  });
-  if (!points.some(({ waveHeight }) => waveHeight > 0)) throw new Error("Open-Meteo marine values are unavailable");
-  return { observedAt: rows.find(({ current }) => current?.time)?.current.time + "Z", points };
-};
-
 const loadAir = async () => {
-  const url = apiUrl(OPEN_METEO_AIR, {
-    ...coordinateParams(ATMOSPHERE_POINTS),
+  const rows = await fetchPointRows(OPEN_METEO_AIR, GLOBAL_OBSERVATION_POINTS, {
     current: "pm2_5,aerosol_optical_depth",
     timezone: "GMT",
+    domains: "cams_global",
+    cell_selection: "nearest",
   });
-  const rows = normalizeMulti(await fetchJson(url));
-  const points = ATMOSPHERE_POINTS.map((point, index) => {
+  const points = GLOBAL_OBSERVATION_POINTS.map((point, index) => {
     const current = rows[index]?.current || {};
     return {
       ...point,
@@ -331,34 +272,15 @@ const loadEarthquake = async () => {
     time: asFinite(feature.properties?.time),
   })).filter(({ id, lon, lat, time }) => id && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90 && time > 0)
     .sort((left, right) => left.time - right.time)
-    .slice(-240);
+    .slice(-1_000);
   if (!points.length) throw new Error("USGS earthquake feed contains no events");
   return { observedAt: new Date(asFinite(payload.metadata?.generated, Date.now())).toISOString(), points };
 };
 
-const loadSolar = async () => {
-  const [speedPayload, fieldPayload] = await Promise.all([fetchJson(NOAA_SPEED), fetchJson(NOAA_FIELD)]);
-  const speedRow = speedPayload?.[0] || {};
-  const fieldRow = fieldPayload?.[0] || {};
-  const speed = asFinite(speedRow.proton_speed);
-  const bt = asFinite(fieldRow.bt);
-  const bz = asFinite(fieldRow.bz_gsm);
-  if (!(speed > 0)) throw new Error("NOAA solar-wind speed is unavailable");
-  return {
-    observedAt: fieldRow.time_tag || speedRow.time_tag || new Date().toISOString(),
-    points: [],
-    speed,
-    bt,
-    bz,
-  };
-};
-
 const LOADERS = Object.freeze({
   atmosphere: loadAtmosphere,
-  marine: loadMarine,
   air: loadAir,
   earthquake: loadEarthquake,
-  solar: loadSolar,
 });
 
 const readCache = (key) => {
@@ -389,6 +311,17 @@ const loadData = async (definition) => {
 };
 
 const summarize = (definition, data) => {
+  if (definition.renderer === "cloud") {
+    return {
+      primary: formatNumber(average(data.points.map(({ radiation }) => radiation)), 0),
+      unit: "W/m²",
+      secondary: [
+        ["平均雲量", `${formatNumber(average(data.points.map(({ cloud }) => cloud)), 0)}%`],
+        ["最大日射", `${formatNumber(Math.max(...data.points.map(({ radiation }) => radiation)), 0)} W/m²`],
+      ],
+      count: `${data.points.length}格子点`,
+    };
+  }
   if (definition.loader === "atmosphere") {
     return {
       primary: formatNumber(average(data.points.map(({ windSpeed }) => windSpeed))),
@@ -397,18 +330,7 @@ const summarize = (definition, data) => {
         ["平均気圧", `${formatNumber(average(data.points.map(({ pressure }) => pressure)), 0)} hPa`],
         ["平均雲量", `${formatNumber(average(data.points.map(({ cloud }) => cloud)), 0)}%`],
       ],
-      count: `${data.points.length}地点`,
-    };
-  }
-  if (definition.loader === "marine") {
-    return {
-      primary: formatNumber(average(data.points.map(({ waveHeight }) => waveHeight))),
-      unit: "m",
-      secondary: [
-        ["平均周期", `${formatNumber(average(data.points.map(({ wavePeriod }) => wavePeriod)))} sec`],
-        ["最大波高", `${formatNumber(Math.max(...data.points.map(({ waveHeight }) => waveHeight)))} m`],
-      ],
-      count: `${data.points.length}海域`,
+      count: `${data.points.length}格子点`,
     };
   }
   if (definition.loader === "air") {
@@ -419,7 +341,7 @@ const summarize = (definition, data) => {
         ["平均AOD", formatNumber(average(data.points.map(({ aerosol }) => aerosol)), 2)],
         ["最大PM2.5", `${formatNumber(Math.max(...data.points.map(({ pm25 }) => pm25)))} µg/m³`],
       ],
-      count: `${data.points.length}地点`,
+      count: `${data.points.length}格子点`,
     };
   }
   if (definition.loader === "earthquake") {
@@ -434,15 +356,7 @@ const summarize = (definition, data) => {
       count: `${data.points.length}地震`,
     };
   }
-  return {
-    primary: formatNumber(data.speed, 0),
-    unit: "km/s",
-    secondary: [
-      ["磁場強度 Bt", `${formatNumber(data.bt)} nT`],
-      ["磁場南北 Bz", `${formatNumber(data.bz)} nT`],
-    ],
-    count: "L1観測",
-  };
+  throw new Error(`Unknown planet signal: ${definition.id}`);
 };
 
 const projection = () => {
@@ -480,16 +394,6 @@ const resizeCanvas = (rect) => {
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
 };
 
-const rebuildParticles = (definition) => {
-  const count = reducedMotion ? 80 : innerWidth <= 720 ? 180 : 360;
-  particles = Array.from({ length: count }, (_, index) => ({
-    seed: hash(index + Number(definition.number) * 19.7),
-    seedB: hash(index * 2.31 + Number(definition.number) * 31.1),
-    seedC: hash(index * 4.71 + Number(definition.number) * 7.3),
-  }));
-  canvas.dataset.planetParticleCount = String(particles.length);
-};
-
 const drawWind = (time, view, data, definition) => {
   data.points.forEach((point, index) => {
     const center = screenPoint(point, view);
@@ -499,10 +403,11 @@ const drawWind = (time, view, data, definition) => {
     const speed = clamp(point.windSpeed, 0.4, 18);
     const reach = 28 + speed * 6.5;
     const color = point.pressure < 1008 ? "151, 132, 255" : definition.rgb;
-    for (let lane = 0; lane < 13; lane += 1) {
+    const laneCount = data.points.length >= 100 ? 4 : 13;
+    for (let lane = 0; lane < laneCount; lane += 1) {
       const seed = hash(index * 43 + lane * 11);
       const phase = fract(time * (0.035 + speed * 0.005) + seed);
-      const offset = (lane - 6) * 2.7;
+      const offset = (lane - (laneCount - 1) / 2) * 2.7;
       const normalX = -dy * offset;
       const normalY = dx * offset;
       const x = center.x + dx * (phase - 0.5) * reach + normalX;
@@ -515,26 +420,10 @@ const drawWind = (time, view, data, definition) => {
       context.lineWidth = 0.55 + clamp01(speed / 15) * 1.35;
       context.stroke();
     }
-  });
-};
-
-const drawOcean = (time, view, data, definition) => {
-  data.points.forEach((point, index) => {
-    const center = screenPoint(point, view);
-    const height = clamp(point.waveHeight, 0.1, 8);
-    const period = clamp(point.wavePeriod, 3, 18);
-    for (let ring = 0; ring < 4; ring += 1) {
-      const phase = fract(time / period + ring / 4 + hash(index * 17) * 0.2);
-      const radius = (5 + phase * (30 + height * 15)) * Math.min(1.45, view.scale / 4);
-      context.beginPath();
-      context.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      context.strokeStyle = `rgba(${definition.rgb}, ${(1 - phase) * (0.12 + height * 0.055)})`;
-      context.lineWidth = 0.6 + height * 0.35;
-      context.stroke();
-    }
+    const twinkle = reducedMotion ? 0.72 : 0.48 + 0.32 * Math.sin(time * (0.8 + hash(index + 3) * 1.4) + index);
     context.beginPath();
-    context.arc(center.x, center.y, 2.2 + height, 0, Math.PI * 2);
-    context.fillStyle = `rgba(215, 245, 255, ${0.28 + height * 0.06})`;
+    context.arc(center.x, center.y, 1.25 + clamp01(speed / 14) * 1.7, 0, Math.PI * 2);
+    context.fillStyle = `rgba(218, 255, 250, ${twinkle})`;
     context.fill();
   });
 };
@@ -544,14 +433,13 @@ const drawAir = (time, view, data, definition) => {
     const center = screenPoint(point, view);
     const density = clamp01(point.pm25 / 45);
     const haze = clamp01(point.aerosol / 0.6);
-    const radius = 20 + density * 42 + haze * 30;
-    const gradient = context.createRadialGradient(center.x, center.y, 0, center.x, center.y, radius);
-    gradient.addColorStop(0, `rgba(255, 224, 191, ${0.08 + haze * 0.14})`);
-    gradient.addColorStop(0.38, `rgba(${definition.rgb}, ${0.07 + density * 0.12})`);
-    gradient.addColorStop(1, `rgba(${definition.rgb}, 0)`);
-    context.fillStyle = gradient;
-    context.fillRect(center.x - radius, center.y - radius, radius * 2, radius * 2);
-    for (let dust = 0; dust < 12; dust += 1) {
+    const radius = 7 + density * 18 + haze * 12;
+    const breath = reducedMotion ? 0.8 : 0.72 + Math.sin(time * (0.22 + hash(index) * 0.18) + index) * 0.12;
+    context.beginPath();
+    context.arc(center.x, center.y, radius * breath, 0, Math.PI * 2);
+    context.fillStyle = `rgba(${definition.rgb}, ${0.025 + density * 0.055})`;
+    context.fill();
+    for (let dust = 0; dust < 4; dust += 1) {
       const seed = hash(index * 101 + dust * 7);
       const angle = seed * Math.PI * 2 + time * (0.05 + haze * 0.08);
       const distance = (8 + hash(index * 53 + dust * 13) * radius) * (0.65 + 0.35 * Math.sin(time * 0.3 + seed * 8));
@@ -560,17 +448,22 @@ const drawAir = (time, view, data, definition) => {
       context.fillStyle = `rgba(255, 220, 247, ${0.08 + density * 0.34})`;
       context.fill();
     }
+    context.beginPath();
+    context.arc(center.x, center.y, 1.3 + density * 2.2, 0, Math.PI * 2);
+    context.fillStyle = `rgba(255, 232, 250, ${0.36 + haze * 0.5})`;
+    context.fill();
   });
 };
 
 const drawQuakes = (time, view, data, definition) => {
   const now = Date.now();
+  const ringCount = data.points.length > 240 ? 1 : data.points.length > 100 ? 2 : 3;
   data.points.forEach((point, index) => {
     const center = screenPoint(point, view);
     const magnitude = clamp(point.magnitude, 2.5, 8);
     const age = clamp01((now - point.time) / 86_400_000);
-    for (let ring = 0; ring < 3; ring += 1) {
-      const phase = reducedMotion ? 0.72 : fract(time * (0.06 + magnitude * 0.01) + ring / 3 + hash(index * 23));
+    for (let ring = 0; ring < ringCount; ring += 1) {
+      const phase = reducedMotion ? 0.72 : fract(time * (0.06 + magnitude * 0.01) + ring / ringCount + hash(index * 23));
       const radius = (3 + phase * (13 + magnitude * 7)) * Math.min(1.35, view.scale / 4);
       context.beginPath();
       context.arc(center.x, center.y, radius, 0, Math.PI * 2);
@@ -585,40 +478,35 @@ const drawQuakes = (time, view, data, definition) => {
   });
 };
 
-const drawSolar = (time, view, data, definition) => {
-  const energy = clamp01((data.speed - 280) / 520);
-  const southward = clamp01((-data.bz + 1) / 14);
-  [67, -67].forEach((latitude, bandIndex) => {
-    const y = screenPoint({ lon: 0, lat: latitude }, view).y;
+const drawCloud = (time, view, data, definition) => {
+  data.points.forEach((point, index) => {
+    const center = screenPoint(point, view);
+    const cloud = clamp01(point.cloud / 100);
+    const radiance = clamp01(point.radiation / 900);
+    const openness = 1 - cloud * 0.72;
+    const twinkle = reducedMotion ? 0.78 : 0.58 + Math.sin(time * (0.55 + hash(index + 12) * 0.8) + index * 0.7) * 0.24;
+    const radius = 3 + radiance * 8 + openness * 4;
     context.beginPath();
-    for (let step = 0; step <= 80; step += 1) {
-      const x = view.rect.width * step / 80;
-      const wave = Math.sin(step * 0.28 + time * (0.35 + energy * 0.5) + bandIndex * 2.3) * (4 + southward * 12);
-      if (step === 0) context.moveTo(x, y + wave);
-      else context.lineTo(x, y + wave);
-    }
-    context.strokeStyle = `rgba(${bandIndex ? "112, 190, 255" : definition.rgb}, ${0.2 + energy * 0.32 + southward * 0.2})`;
-    context.lineWidth = 1.2 + energy * 3;
-    context.shadowBlur = 13 + energy * 22;
-    context.shadowColor = definition.accent;
-    context.stroke();
-    context.shadowBlur = 0;
-  });
-  particles.forEach((particle, index) => {
-    const phase = reducedMotion ? particle.seed : fract(time * (0.055 + energy * 0.11) + particle.seed);
-    const x = view.rect.width * (1 - phase);
-    const y = view.rect.height * (0.08 + particle.seedB * 0.84) + Math.sin(time + index) * 4;
-    const length = 18 + energy * 58 + particle.seedC * 20;
+    context.arc(center.x, center.y, radius * (0.82 + twinkle * 0.18), 0, Math.PI * 2);
+    context.fillStyle = `rgba(${definition.rgb}, ${0.035 + radiance * openness * 0.12})`;
+    context.fill();
     context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x + length, y + (particle.seedB - 0.5) * 8);
-    context.strokeStyle = `rgba(${definition.rgb}, ${0.05 + particle.seedC * 0.22 + energy * 0.18})`;
-    context.lineWidth = 0.45 + particle.seedC * 1.2;
+    context.arc(center.x, center.y, 1.2 + radiance * 2.4, 0, Math.PI * 2);
+    context.fillStyle = `rgba(255, 249, 214, ${0.3 + radiance * openness * twinkle * 0.65})`;
+    context.fill();
+    const ray = 3 + radiance * 8;
+    context.beginPath();
+    context.moveTo(center.x - ray, center.y);
+    context.lineTo(center.x + ray, center.y);
+    context.moveTo(center.x, center.y - ray * 0.7);
+    context.lineTo(center.x, center.y + ray * 0.7);
+    context.strokeStyle = `rgba(255, 231, 154, ${0.08 + openness * radiance * 0.32})`;
+    context.lineWidth = 0.55 + radiance * 0.7;
     context.stroke();
   });
 };
 
-const RENDERERS = Object.freeze({ wind: drawWind, ocean: drawOcean, air: drawAir, quake: drawQuakes, solar: drawSolar });
+const RENDERERS = Object.freeze({ wind: drawWind, air: drawAir, quake: drawQuakes, cloud: drawCloud });
 
 const draw = (timestamp = performance.now()) => {
   if (activeIndex < 0 || document.hidden || !currentData || !context) {
@@ -705,7 +593,6 @@ const select = async (index) => {
   }
   activeIndex = index;
   currentData = null;
-  rebuildParticles(definition);
   layer.classList.add("is-firms-exhibit", "is-planet-signals-exhibit");
   layer.dataset.planetExhibit = definition.id;
   canvas.hidden = false;

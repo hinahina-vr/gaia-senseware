@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4193"] = process.argv.slice(2);
+const setupOnly = process.argv.includes("--setup-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -138,7 +139,7 @@ try {
     assert.equal(initial.languageValue, "ja");
     assert.equal(initial.soundOnLabel, "サウンドあり");
     assert.equal(initial.soundOffLabel, "サウンドなし");
-    assert.equal(initial.tourLabel, "30秒ガイド");
+    if (!setupOnly) assert.equal(initial.tourLabel, "30秒ガイド");
     assert.equal(initial.sliderValue, "23");
     assert.equal(initial.output, "23%");
     assert.equal(initial.soundOnPressed, "true");
@@ -167,7 +168,38 @@ try {
     assert.equal(overlapArea(initial.soundOnRect, initial.soundOffRect), 0, `${viewport.name}: sound actions overlap`);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
+    if (setupOnly) {
+      const rendering = await page.evaluate(async () => {
+        const dialog = document.querySelector(".gaia-opening-sound-dialog");
+        const scrim = document.querySelector(".gaia-opening-sound-modal-scrim");
+        const scene = document.querySelector(".gaia-opening-sound-scene > span");
+        const longTasks = [];
+        const observer = new PerformanceObserver((list) => longTasks.push(...list.getEntries().map((entry) => entry.duration)));
+        observer.observe({ type: "longtask" });
+        const samples = [];
+        for (const id of ["gaia-opening-sound-off", "gaia-opening-volume", "gaia-opening-sound-on"]) {
+          const started = performance.now();
+          document.getElementById(id).focus();
+          samples.push(performance.now() - started);
+          await new Promise((resolve) => setTimeout(resolve, 180));
+        }
+        observer.disconnect();
+        return {
+          backdropFilters: [getComputedStyle(dialog).backdropFilter, getComputedStyle(scrim).backdropFilter],
+          sceneAnimation: getComputedStyle(scene).animationName,
+          infiniteAnimations: dialog.getAnimations({ subtree: true }).filter((animation) => animation.effect.getTiming().iterations === Infinity).length,
+          focusMaxMs: Math.max(...samples),
+          longTasks,
+        };
+      });
+      assert.deepEqual(rendering.backdropFilters, ["none", "none"]);
+      assert.equal(rendering.sceneAnimation, "none");
+      assert.equal(rendering.infiniteAnimations, 0);
+      initial.rendering = rendering;
+      assert(Math.abs(initial.soundOnRect.height - initial.soundOffRect.height) <= 1, `${viewport.name}: sound choices have mismatched heights`);
+    }
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-first-sound-setup.png`), animations: "disabled" });
+    await page.locator(".gaia-opening-sound-dialog").screenshot({ path: path.join(outputDir, `${viewport.name}-dialog.png`), animations: "disabled" });
 
     await page.locator('[data-gaia-language="en"]').click();
     const languageState = await page.evaluate(() => ({
@@ -184,9 +216,12 @@ try {
     const storedVolume = await page.evaluate(() => localStorage.getItem("gaia-senseware-bgm-volume"));
     assert.equal(storedVolume, "0.37", `${viewport.name}: volume was not persisted`);
     assert.equal(await page.locator("#gaia-opening-volume-value").textContent(), "37%");
+    assert.equal(await page.locator("#gaia-opening-volume").evaluate((input) => input.style.getPropertyValue("--volume-fill")), "37%");
 
     await page.locator("#gaia-opening-sound-off").focus();
     await page.locator("#gaia-opening-sound-off").press("Tab");
+    assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-volume", `${viewport.name}: volume is not reachable after the sound actions`);
+    await page.locator("#gaia-opening-volume").press("Tab");
     assert.equal(await page.evaluate(() => document.activeElement?.dataset.gaiaLanguage), "ja", `${viewport.name}: modal focus did not wrap`);
 
     const startWithSound = ["pc-1440", "mobile-390", "mobile-landscape"].includes(viewport.name);
@@ -215,6 +250,12 @@ try {
     assert.equal(confirmed.audio.muted, !startWithSound, `${viewport.name}: confirmed sound choice was not applied`);
     assert.equal(confirmed.audio.track, "opening", `${viewport.name}: the opening did not start with Planet Forecast - Hope`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-post-sound.png`), animations: "disabled" });
+    if (setupOnly) {
+      assert(Math.abs(confirmed.audio.volume - 0.37) < 0.001);
+      report.scans.push({ viewport: viewport.name, initial, confirmed, passed: true });
+      await context.close();
+      continue;
+    }
 
     if (!viewport.reduced) {
       assert.equal(await page.locator("#gaia-opening-route-story").isVisible(), false, `${viewport.name}: title menu appeared before the cinematic ended`);

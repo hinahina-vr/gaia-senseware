@@ -168,12 +168,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-copy-natural-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-sound-setup-jade-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-left-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-sound-menu-warmup-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-tour-compact-safe-area-2" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-sound-setup-jade-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-visual-release-20260905" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -283,7 +283,7 @@
             <div class="gaia-vn-character-copy">
               <p><span>01</span> MIZU / FEEL</p>
               <h2 data-opening-focus>みず</h2>
-              <strong data-opening-focus>「海も空も生き物も、ぜんぶ影響し合って今の地球になってるんだよ。」</strong>
+              <strong data-opening-focus>「海も空も生き物も、ぜんぶ<span class="gaia-vn-quote-keep">影響し合って</span><br class="gaia-vn-quote-break">今の地球になってるんだよ。」</strong>
               <span class="gaia-vn-character-reply" data-opening-focus>複雑に絡み合う生態系のつながりを、直感的なビジュアルで受け止める。</span>
             </div>
             <div class="gaia-vn-character-band">MIZU　MIZU　MIZU</div>
@@ -407,18 +407,15 @@
             <div class="gaia-opening-language" role="group" aria-label="表示言語を選ぶ">
               <div class="gaia-opening-language-options">
                 <button type="button" data-gaia-language="ja" lang="ja" aria-label="表示言語：日本語" aria-pressed="true">
-                  <span class="gaia-opening-language-glyph" aria-hidden="true">あ</span>
-                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">日本語</strong><small>JA</small></span>
+                  <strong class="gaia-opening-language-name">日本語</strong>
                   <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
                 </button>
                 <button type="button" data-gaia-language="en" lang="en" aria-label="Display language: English" aria-pressed="false">
-                  <span class="gaia-opening-language-glyph" aria-hidden="true">A</span>
-                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">English</strong><small>EN</small></span>
+                  <strong class="gaia-opening-language-name">English</strong>
                   <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
                 </button>
                 <button type="button" data-gaia-language="zh-CN" lang="zh-Hans" aria-label="显示语言：简体字" aria-pressed="false">
-                  <span class="gaia-opening-language-glyph" aria-hidden="true">简</span>
-                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">简体字</strong><small>ZH-CN</small></span>
+                  <strong class="gaia-opening-language-name">简体字</strong>
                   <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
                 </button>
               </div>
@@ -426,47 +423,42 @@
             <section class="gaia-opening-sound-choices" aria-label="サウンド設定">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="サウンドをオンにして始める" aria-pressed="true">
+                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" fill="none" aria-hidden="true">
+                    <path d="M0 44C28 44 31 28 54 28S79 57 103 57 137 13 163 13 195 50 219 50 252 35 280 35" />
+                    <path d="M0 48C32 48 41 36 66 36S105 63 131 63 170 25 198 25 241 43 280 43" />
+                    <path d="M0 40C34 40 44 50 77 50S127 30 157 30 208 56 237 56 264 46 280 46" />
+                  </svg>
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
-                      <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
-                      <path d="M16 8.25c1.15.88 1.75 2.1 1.75 3.75S17.15 14.87 16 15.75" />
+                      <path d="M4 14v-3a8 8 0 0 1 16 0v3" />
+                      <rect x="3" y="12" width="4" height="8" rx="2" />
+                      <rect x="17" y="12" width="4" height="8" rx="2" />
+                      <path d="M7 7a6 6 0 0 1 10 0" opacity=".45" />
                     </svg>
                   </span>
                   <span class="gaia-opening-sound-option-label">サウンドあり</span>
-                  <span class="gaia-opening-sound-option-arrow" aria-hidden="true">→</span>
+                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
                 </button>
-                <div class="gaia-opening-volume-choice">
-                  <span class="gaia-opening-volume-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
-                      <path d="M16 8.25c1.15.88 1.75 2.1 1.75 3.75S17.15 14.87 16 15.75" />
-                    </svg>
-                  </span>
-                  <input
-                    id="gaia-opening-volume"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value="10"
-                    aria-label="BGM音量"
-                  />
-                  <output id="gaia-opening-volume-value" for="gaia-opening-volume">10%</output>
-                </div>
               </div>
               <div class="gaia-opening-sound-option gaia-opening-sound-option--off">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-off" type="button" aria-label="サウンドをオフにして始める" aria-pressed="false">
+                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" fill="none" aria-hidden="true"><path d="M0 40h280" /></svg>
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
-                      <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
-                      <path d="m16.25 8.25 5.5 7.5M21.75 8.25l-5.5 7.5" />
+                      <path d="M4 9h4l5-4v14l-5-4H4z" />
+                      <path d="m17 9 5 6m0-6-5 6" />
                     </svg>
                   </span>
                   <span class="gaia-opening-sound-option-label">サウンドなし</span>
-                  <span class="gaia-opening-sound-option-arrow" aria-hidden="true">→</span>
+                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
                 </button>
               </div>
             </section>
+            <div class="gaia-opening-volume-choice gaia-opening-setup-volume">
+              <label for="gaia-opening-volume">音量</label>
+              <input id="gaia-opening-volume" type="range" min="0" max="100" step="1" value="10" aria-label="BGM音量" />
+              <output id="gaia-opening-volume-value" for="gaia-opening-volume">10%</output>
+            </div>
           </div>
         </div>
 
@@ -689,7 +681,7 @@
             </div>
 
             <label class="sound-volume" for="sound-volume" data-sound-control="volume">
-              <span class="sound-volume-label"><strong>音量</strong><small>VOLUME / OUTPUT</small></span>
+              <span class="sound-volume-label"><svg class="sound-volume-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5 5 9H2v6h3l5 4Z M14 8c3 2 3 6 0 8 M17 5c5 4 5 10 0 14" /></svg><strong>音量</strong><small>VOLUME</small></span>
               <input id="sound-volume" type="range" min="0" max="100" step="1" value="10" />
               <output id="sound-volume-value" for="sound-volume">10%</output>
             </label>
@@ -1679,7 +1671,7 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図の31展示を選ぶ">
+        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図の30展示を選ぶ">
           <button
             class="map-mobile-bank-toggle"
             id="map-mobile-bank-toggle"
@@ -1692,7 +1684,7 @@
             <i aria-hidden="true"></i>
           </button>
           <div class="map-mode-bank-heading">
-            <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—31</p>
+            <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—30</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
@@ -1709,7 +1701,7 @@
               <div class="map-mode-list" id="japan-estat-mode-list"></div>
             </section>
             <section class="map-mode-group map-mode-group-firms" aria-labelledby="map-mode-firms-label">
-              <p class="map-mode-group-label" id="map-mode-firms-label"><span>EARTH / LIVE OPEN DATA</span><strong>全球・6つの観測信号</strong></p>
+              <p class="map-mode-group-label" id="map-mode-firms-label"><span>EARTH / LIVE OPEN DATA</span><strong>全球・5つの観測信号</strong></p>
               <div class="map-mode-list" id="japan-firms-mode-list"></div>
             </section>
           </div>
@@ -1890,7 +1882,7 @@
             <header class="gaia-statistics-header">
               <div>
                 <p class="gaia-statistics-kicker">STATISTICS</p>
-                <h2 id="gaia-statistics-title">統計で読む</h2>
+                <h2 id="gaia-statistics-title">観測データを読む</h2>
                 <p id="gaia-statistics-context">現在の展示データを引き継いでいます。</p>
               </div>
               <div class="gaia-statistics-header-actions">
@@ -1968,7 +1960,7 @@
 
                 <section class="gaia-statistics-takeaway" id="gaia-statistics-takeaway" aria-labelledby="gaia-statistics-takeaway-title" aria-live="polite">
                   <div class="gaia-statistics-takeaway-copy">
-                    <p>QUICK INSIGHT <span>この結果からわかること</span></p>
+                    <p>観測の要点 <span>この条件で確認できたこと</span></p>
                     <h4 id="gaia-statistics-takeaway-title">データを読み込んでいます</h4>
                     <p id="gaia-statistics-takeaway-body">分析が完了すると、ここに要点を短く表示します。</p>
                   </div>
@@ -2017,7 +2009,7 @@
                 <p class="gaia-statistics-visually-hidden" id="gaia-statistics-chart-help">グラフへフォーカスし、左右または上下の矢印キーでデータ点を順番に確認できます。Enterキーで対応する監査レコードを開きます。</p>
 
                 <details class="gaia-statistics-values">
-                  <summary>計算結果</summary>
+                  <summary>計算の内訳</summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="数値一覧を閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-values-scroll">
                     <table>
@@ -2029,7 +2021,7 @@
                 </details>
 
                 <details class="gaia-statistics-records">
-                  <summary>データ一覧 <output id="gaia-statistics-record-count">0 ROWS</output></summary>
+                  <summary>観測データ <output id="gaia-statistics-record-count">0件</output></summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="元データを閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-records-scroll">
                     <table>
@@ -2049,7 +2041,7 @@
                 </details>
 
                 <details class="gaia-statistics-insights-panel">
-                  <summary>詳しい解説</summary>
+                  <summary>読み方と限界</summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="解説を閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-insights" id="gaia-statistics-insights" aria-live="polite"></div>
                 </details>

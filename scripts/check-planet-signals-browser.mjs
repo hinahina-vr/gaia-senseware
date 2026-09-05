@@ -8,31 +8,26 @@ const baseUrl = (process.argv[3] || "http://127.0.0.1:4198").replace(/\/$/u, "")
 const outputDir = path.resolve(process.argv[4] || "artifacts/planet-signals");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const atmosphereRows = Array.from({ length: 10 }, (_, index) => ({
+const atmosphereRows = Array.from({ length: 240 }, (_, index) => ({
   current: {
     time: "2026-09-04T00:00",
-    wind_speed_10m: 2.5 + index * 0.7,
-    wind_direction_10m: 20 + index * 31,
-    surface_pressure: 1002 + index,
-    cloud_cover: 22 + index * 6,
-    shortwave_radiation: 180 + index * 45,
-    pm2_5: 4 + index * 1.8,
-    aerosol_optical_depth: 0.05 + index * 0.018,
+    wind_speed_10m: 2.5 + (index * 7 % 110) / 10,
+    wind_direction_10m: (20 + index * 31) % 360,
+    surface_pressure: 993 + index * 11 % 29,
+    cloud_cover: 8 + index * 17 % 91,
+    shortwave_radiation: 40 + index * 37 % 820,
+    pm2_5: 4 + (index * 18 % 360) / 10,
+    aerosol_optical_depth: 0.05 + (index * 7 % 31) / 100,
   },
 }));
-const marineRows = Array.from({ length: 8 }, (_, index) => ({
-  current: {
-    time: "2026-09-04T00:00",
-    wave_height: 0.7 + index * 0.32,
-    wave_period: 5.5 + index * 0.7,
-    wave_direction: 35 + index * 37,
-  },
-}));
-const quakeFeatures = Array.from({ length: 18 }, (_, index) => ({
+const quakeFeatures = Array.from({ length: 360 }, (_, index) => ({
   type: "Feature",
   id: `test-quake-${index}`,
-  geometry: { type: "Point", coordinates: [-170 + index * 19, -55 + (index % 8) * 14, 12 + index] },
-  properties: { mag: 2.6 + index * 0.18, place: `TEST REGION ${index + 1}`, time: Date.now() - index * 2_400_000 },
+  geometry: {
+    type: "Point",
+    coordinates: [-175 + (index % 36) * 10, -67.5 + (Math.floor(index / 36) % 10) * 15, 12 + index],
+  },
+  properties: { mag: 0.4 + (index * 13 % 72) / 10, place: `TEST REGION ${index + 1}`, time: Date.now() - index * 220_000 },
 }));
 
 const browser = await chromium.launch({
@@ -54,35 +49,20 @@ const monitor = (page) => {
 };
 
 const mockLiveSources = async (page) => {
-  await page.route("https://api.open-meteo.com/**", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(atmosphereRows),
-  }));
-  await page.route("https://air-quality-api.open-meteo.com/**", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(atmosphereRows),
-  }));
-  await page.route("https://marine-api.open-meteo.com/**", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(marineRows),
-  }));
+  const fulfillPointBatch = (route) => {
+    const count = new URL(route.request().url()).searchParams.get("latitude")?.split(",").length || 1;
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(atmosphereRows.slice(0, count)),
+    });
+  };
+  await page.route("https://api.open-meteo.com/**", fulfillPointBatch);
+  await page.route("https://air-quality-api.open-meteo.com/**", fulfillPointBatch);
   await page.route("https://earthquake.usgs.gov/**", (route) => route.fulfill({
     status: 200,
     contentType: "application/geo+json",
     body: JSON.stringify({ type: "FeatureCollection", metadata: { generated: Date.now(), count: quakeFeatures.length }, features: quakeFeatures }),
-  }));
-  await page.route("https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify([{ proton_speed: 517, time_tag: "2026-09-04T00:05:00Z" }]),
-  }));
-  await page.route("https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify([{ bt: 7.2, bz_gsm: -4.1, time_tag: "2026-09-04T00:06:00Z" }]),
   }));
 };
 
@@ -91,7 +71,7 @@ const openMap = async (page) => {
   await page.goto(`${baseUrl}/#earth`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter && globalThis.GaiaPlanetSignals), null, { timeout: 30_000 });
   await page.evaluate(() => { location.hash = "#japan"; });
-  await page.waitForFunction(() => document.querySelectorAll("#japan-firms-mode-list [data-planet-exhibit]").length === 5, null, { timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelectorAll("#japan-firms-mode-list [data-planet-exhibit]").length === 4, null, { timeout: 20_000 });
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
 };
 
@@ -117,7 +97,6 @@ const selectAndRead = async (page, index) => {
     engine: canvas.dataset.planetEngine,
     source: canvas.dataset.planetSourceState,
     points: Number(canvas.dataset.planetPointCount),
-    particles: Number(canvas.dataset.planetParticleCount),
     frames: Number(canvas.dataset.planetFrame),
     width: canvas.width,
     height: canvas.height,
@@ -129,24 +108,37 @@ try {
   const desktop = await desktopContext.newPage();
   monitor(desktop);
   await openMap(desktop);
-  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 6);
-  assert.match(await desktop.locator("#map-mode-firms-label").textContent(), /LIVE OPEN DATA[\s\S]*6つの観測信号/u);
+  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 5);
+  assert.match(await desktop.locator("#map-mode-firms-label").textContent(), /LIVE OPEN DATA[\s\S]*5つの観測信号/u);
+  await desktop.evaluate(() => {
+    const card = document.querySelector("#japan-poi-card");
+    card.hidden = false;
+    card.setAttribute("aria-hidden", "false");
+    document.querySelector("#japan-layer")?.classList.add("japan-poi-open");
+  });
   const desktopEvidence = [];
-  for (let index = 0; index < 5; index += 1) desktopEvidence.push(await selectAndRead(desktop, index));
+  for (let index = 0; index < 4; index += 1) {
+    desktopEvidence.push(await selectAndRead(desktop, index));
+    if (index === 0) {
+      assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "base exhibit POI remained open over a live exhibit");
+      await desktop.mouse.click(720, 430);
+      assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "map tap opened an unrelated base exhibit POI");
+    }
+  }
   assert.equal(await desktop.locator("[data-planet-return]").count(), 0, "legacy return card should not be rendered");
   assert.match(await desktop.locator("[data-planet-data-time]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
   assert.match(await desktop.locator("[data-planet-data-age]").textContent(), /^データ時点から/u);
   assert.deepEqual(desktopEvidence.map(({ id }) => id), [
     "global-wind-pressure",
-    "global-ocean-pulse",
     "global-aerosol-light",
     "usgs-earthquake-ripples",
-    "noaa-solar-wind",
+    "global-cloud-radiance",
   ]);
-  assert(desktopEvidence.every(({ engine, source, particles, width, height }) => (
-    engine === "canvas2d-particle-field" && /^LIVE/u.test(source) && particles >= 300 && width > 500 && height > 300
+  assert(desktopEvidence.every(({ engine, source, width, height }) => (
+    engine === "canvas2d-particle-field" && /^LIVE/u.test(source) && width > 500 && height > 300
   )));
-  await desktop.screenshot({ path: path.join(outputDir, "desktop-31-solar-wind.png"), fullPage: true });
+  assert.deepEqual(desktopEvidence.map(({ points }) => points), [240, 240, 360, 240]);
+  await desktop.screenshot({ path: path.join(outputDir, "desktop-30-cloud-radiance.png"), fullPage: true });
   await desktopContext.close();
 
   const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
@@ -160,11 +152,11 @@ try {
     readoutVisible: document.querySelector(".gaia-planet-signals-readout")?.getBoundingClientRect().height > 0,
     legendVisible: document.querySelector(".gaia-planet-signals-legend")?.getBoundingClientRect().width > 0,
   }));
-  assert(mobileEvidence.particles >= 160);
+  assert.equal(mobileEvidence.points, 240);
   assert(mobileLayout.documentWidth <= mobileLayout.viewportWidth + 1, "mobile planet-signal exhibit overflows horizontally");
   assert.equal(mobileLayout.readoutVisible, true);
   assert.equal(mobileLayout.legendVisible, true);
-  await mobile.screenshot({ path: path.join(outputDir, "mobile-28-ocean-pulse.png"), fullPage: true });
+  await mobile.screenshot({ path: path.join(outputDir, "mobile-28-aerosol-light.png"), fullPage: true });
   await mobileContext.close();
 
   assert.deepEqual(errors, []);

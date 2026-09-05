@@ -440,7 +440,7 @@ const applyHeading = () => {
 const statisticsDataset = () => snapshot ? {
   id: "nasa-firms-active-fire-24h",
   modeId: "nasa-firms",
-  title: `燃える惑星 — 火災・熱異常 ${formatNumber(snapshot.points.length)}点`,
+  title: `火災・熱異常 ${formatNumber(snapshot.points.length)}地点`,
   rows: snapshot.points.map((point) => ({
     id: point.id,
     label: `${formatUtc(point.acquiredAt)} UTC / ${point.lat.toFixed(2)}, ${point.lon.toFixed(2)}`,

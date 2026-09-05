@@ -207,7 +207,8 @@ try {
       && desktopVisualizer.digitalGridCount === 0
       && desktopVisualizer.visualizerOpacity === 0
       && desktopVisualizer.visualizerVisibility === "hidden"
-      && desktopVisualizer.visualizerFilter.includes("blur"),
+      && desktopVisualizer.visualizerFilter.includes("blur(16px)")
+      && desktopVisualizer.visualizerFilter.includes("saturate"),
     `desktop WebGL deep-galaxy installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
   assert(desktopVisualizer.eqCount === 0, `the detached desktop EQ visualizer is still present: ${JSON.stringify(desktopVisualizer)}`);
@@ -307,8 +308,15 @@ try {
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
     sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
     visualizerFilter: getComputedStyle(document.querySelector("#sound-visualizer")).filter,
+    signalLayers: Number(document.querySelector(".sound-player-signal")?.dataset.layers || 0),
+    signalParticles: Number(document.querySelector(".sound-player-signal")?.dataset.particles || 0),
+    signalHeight: document.querySelector(".sound-player-signal")?.getBoundingClientRect().height || 0,
+    time: document.querySelector("#sound-current-time").getBoundingClientRect().toJSON(),
+    loop: document.querySelector(".sound-time span").getBoundingClientRect().toJSON(),
+    volume: document.querySelector(".sound-volume").getBoundingClientRect().toJSON(),
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.2 && playingAppearance.sceneOpacity <= 0.32 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.2)") && playingAppearance.visualizerFilter.includes("contrast(1.08)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.22 && playingAppearance.sceneOpacity <= 0.3 && playingAppearance.sceneFilter.includes("brightness(0.43)") && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate") && playingAppearance.visualizerFilter.includes("contrast") && playingAppearance.signalLayers >= 5 && playingAppearance.signalParticles > 0 && playingAppearance.signalParticles <= 64 && playingAppearance.signalHeight > 0, `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.time.bottom < playingAppearance.loop.top && playingAppearance.loop.bottom < playingAppearance.volume.top, "time, loop, and volume must occupy separate rows");
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   const reactiveRange = await page.evaluate(async () => {
     const samples = [];
@@ -414,7 +422,7 @@ try {
     visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
   }));
-  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.98 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.2 && mobilePlayingAppearance.sceneOpacity <= 0.32, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
+  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.98 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.22 && mobilePlayingAppearance.sceneOpacity <= 0.30, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile-playing.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();

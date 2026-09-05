@@ -2272,3 +2272,359 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
     white-space: nowrap;
   }
 }
+
+/* Final control treatment follows the drawer rules above. */
+.gaia-statistics-menu-toggle {
+  min-height: 38px;
+  padding-inline: 13px;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gaia-statistics-menu-toggle:is(:hover, :focus-visible, [aria-expanded="true"]) {
+  background: rgba(103, 208, 225, 0.08);
+  transform: none;
+}
+
+.gaia-statistics-stage {
+  padding-top: 16px;
+}
+
+@media (max-width: 980px) {
+  .gaia-statistics-stage {
+    padding-top: 12px;
+  }
+}
+
+/* Final observation-report skin. Keep this after the drawer layout. */
+.gaia-statistics-shell {
+  width: min(1360px, calc(100vw - 48px));
+  height: min(760px, calc(100dvh - 40px));
+  padding: 22px 26px 24px;
+  border: 1px solid rgba(133, 211, 229, 0.34);
+  border-radius: 3px;
+  background: #031426;
+  box-shadow: 0 28px 90px rgba(0, 4, 14, 0.72);
+}
+
+.gaia-statistics-header {
+  padding-bottom: 14px;
+  border-bottom-color: rgba(133, 211, 229, 0.24);
+}
+
+.gaia-statistics-header h2 {
+  color: #edf9fc;
+  background: none;
+  font-size: clamp(26px, 2vw, 34px);
+  font-weight: 500;
+  letter-spacing: 0.055em;
+}
+
+#gaia-statistics-context {
+  margin-top: 7px;
+  color: rgba(197, 225, 232, 0.6);
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+
+.gaia-statistics-menu-toggle,
+.gaia-statistics-close {
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gaia-statistics-menu-toggle {
+  min-height: 38px;
+  padding-inline: 13px;
+}
+
+.gaia-statistics-menu-toggle:is(:hover, :focus-visible, [aria-expanded="true"]) {
+  background: rgba(103, 208, 225, 0.08);
+  transform: none;
+}
+
+.gaia-statistics-close {
+  width: 38px;
+  height: 38px;
+  font-size: 20px;
+}
+
+.gaia-statistics-stage {
+  grid-template-rows: auto auto minmax(290px, 1fr) auto;
+  gap: 11px;
+  padding-top: 16px;
+}
+
+.gaia-statistics-stage-header {
+  min-height: 50px;
+}
+
+.gaia-statistics-stage-header > div > p:first-child {
+  margin-bottom: 6px;
+  color: #73d7e8;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.gaia-statistics-stage-header h3 {
+  color: #eef8fa;
+  font-size: clamp(20px, 1.55vw, 25px);
+  font-weight: 520;
+  letter-spacing: 0.035em;
+}
+
+#gaia-statistics-method-copy {
+  margin-top: 6px;
+  color: rgba(197, 225, 232, 0.58);
+  font-size: 10px;
+}
+
+#gaia-statistics-status {
+  padding: 0 0 4px;
+  color: rgba(197, 225, 232, 0.54);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.gaia-statistics-takeaway {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "copy" "evidence" "caveat";
+  gap: 12px;
+  padding: 15px 0 12px;
+  border: 0;
+  border-top: 1px solid rgba(133, 211, 229, 0.2);
+  border-bottom: 1px solid rgba(133, 211, 229, 0.2);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gaia-statistics-takeaway-copy > p:first-child {
+  margin-bottom: 8px;
+  color: #75d6c3;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+}
+
+.gaia-statistics-takeaway-copy > p:first-child span {
+  color: rgba(198, 230, 229, 0.58);
+}
+
+.gaia-statistics-takeaway h4 {
+  max-width: 1060px;
+  color: #eef9f8;
+  font-size: clamp(17px, 1.2vw, 21px);
+  font-weight: 520;
+  letter-spacing: 0.02em;
+}
+
+#gaia-statistics-takeaway-body {
+  max-width: 1040px;
+  margin-top: 6px;
+  color: rgba(206, 230, 232, 0.7);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.gaia-statistics-takeaway-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 180px));
+  gap: 0;
+  justify-content: start;
+  max-width: none;
+}
+
+.gaia-statistics-takeaway-evidence button,
+.gaia-statistics-takeaway-evidence > span {
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  justify-items: start;
+  min-height: 42px;
+  padding: 2px 18px;
+  border: 0;
+  border-left: 1px solid rgba(133, 211, 229, 0.22);
+  border-radius: 0;
+  color: rgba(206, 230, 232, 0.64);
+  background: transparent;
+  font-size: 8px;
+  white-space: normal;
+}
+
+.gaia-statistics-takeaway-evidence button:first-child,
+.gaia-statistics-takeaway-evidence > span:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.gaia-statistics-takeaway-evidence button span {
+  color: rgba(174, 211, 218, 0.56);
+  font: 600 8px/1.2 var(--font-ja);
+  letter-spacing: 0.08em;
+}
+
+.gaia-statistics-takeaway-evidence button strong {
+  color: #e9f7f8;
+  font: 520 15px/1.25 var(--font-ja);
+  letter-spacing: 0.02em;
+}
+
+.gaia-statistics-takeaway-evidence button:is(:hover, :focus-visible) {
+  outline: 1px solid rgba(117, 214, 195, 0.42);
+  outline-offset: 3px;
+  background: transparent;
+  transform: none;
+}
+
+.gaia-statistics-takeaway-caveat {
+  padding-top: 9px;
+  border-top: 1px dotted rgba(133, 211, 229, 0.17);
+  color: rgba(189, 215, 220, 0.5);
+  font-size: 8px;
+}
+
+.gaia-statistics-bi-strip {
+  display: none;
+}
+
+.gaia-statistics-visual {
+  min-height: 290px;
+  border: 0;
+  border-top: 1px solid rgba(133, 211, 229, 0.2);
+  border-bottom: 1px solid rgba(133, 211, 229, 0.2);
+  border-radius: 0;
+  background: #02101f;
+}
+
+.gaia-statistics-values,
+.gaia-statistics-records,
+.gaia-statistics-insights-panel {
+  border: 0;
+  border-right: 1px solid rgba(133, 211, 229, 0.14);
+  border-bottom: 1px solid rgba(133, 211, 229, 0.2);
+  border-radius: 0;
+  background: transparent;
+}
+
+.gaia-statistics-values:first-of-type {
+  border-left: 1px solid rgba(133, 211, 229, 0.14);
+}
+
+.gaia-statistics-values summary,
+.gaia-statistics-records summary,
+.gaia-statistics-insights-panel > summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 9px 12px;
+  list-style: none;
+  color: rgba(214, 236, 239, 0.68);
+  font-size: 9px;
+  font-weight: 550;
+  letter-spacing: 0.05em;
+}
+
+.gaia-statistics-values summary::-webkit-details-marker,
+.gaia-statistics-records summary::-webkit-details-marker,
+.gaia-statistics-insights-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.gaia-statistics-values summary::after,
+.gaia-statistics-records summary::after,
+.gaia-statistics-insights-panel > summary::after {
+  content: "＋";
+  color: #73d7e8;
+  font: 400 13px/1 var(--font-ja);
+}
+
+.gaia-statistics-values[open] > summary::after,
+.gaia-statistics-records[open] > summary::after,
+.gaia-statistics-insights-panel[open] > summary::after {
+  content: "－";
+}
+
+.gaia-statistics-records summary output {
+  margin-left: auto;
+  color: rgba(117, 215, 232, 0.74);
+  font: 600 8px/1 Consolas, monospace;
+  letter-spacing: 0.06em;
+}
+
+.gaia-statistics-values[open],
+.gaia-statistics-records[open],
+.gaia-statistics-insights-panel[open] {
+  border: 1px solid rgba(133, 211, 229, 0.34);
+  border-radius: 2px;
+  background: #031426;
+  box-shadow: 0 20px 48px rgba(0, 4, 14, 0.62);
+}
+
+@media (max-width: 980px) {
+  .gaia-statistics-shell {
+    width: calc(100vw - 12px);
+    height: calc(100dvh - 12px);
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    border-radius: 2px;
+  }
+
+  .gaia-statistics-header {
+    background: #031426;
+  }
+
+  .gaia-statistics-stage {
+    grid-template-rows: auto;
+    padding-top: 12px;
+  }
+
+  .gaia-statistics-takeaway-evidence {
+    grid-template-columns: repeat(3, minmax(118px, 1fr));
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .gaia-statistics-visual {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 520px) {
+  .gaia-statistics-header h2 {
+    font-size: 21px;
+  }
+
+  #gaia-statistics-context {
+    font-size: 8px;
+  }
+
+  .gaia-statistics-menu-toggle {
+    padding: 0;
+  }
+
+  .gaia-statistics-takeaway-evidence button {
+    padding-inline: 8px;
+  }
+
+  .gaia-statistics-takeaway-evidence button:first-child {
+    padding-left: 0;
+  }
+
+  .gaia-statistics-takeaway-evidence {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .gaia-statistics-takeaway-evidence button strong {
+    font-size: 13px;
+  }
+
+  .gaia-statistics-values,
+  .gaia-statistics-records,
+  .gaia-statistics-insights-panel {
+    border-left: 1px solid rgba(133, 211, 229, 0.14);
+  }
+}

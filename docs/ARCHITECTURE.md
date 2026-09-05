@@ -7,7 +7,7 @@
 ```mermaid
 flowchart LR
   Entry["軽量な入口<br/>サウンド設定とオープニング"] --> Loader["gaia-mode-loader.js<br/>モード単位の遅延読込"]
-  Loader --> Explore["exploration<br/>MAP 01—31"]
+  Loader --> Explore["exploration<br/>MAP 01—30"]
   Loader --> Story["story<br/>本編 + APEIRONCENE"]
   Loader --> GX["gx<br/>THE FIRST GX"]
   Loader --> Space["space<br/>ORBITAL 10展示"]
@@ -47,7 +47,7 @@ flowchart LR
 
 | グループ | 主な内容 | 読み込む契機 |
 |---|---|---|
-| `exploration` | MAP 01—31、地図、データ台帳、ライブ取得、統計、LOD | データ探索、地球観測の直接URL、ガイド |
+| `exploration` | MAP 01—30、地図、データ台帳、ライブ取得、統計、LOD | データ探索、地球観測の直接URL、ガイド |
 | `story` | 本編6章、APEIRONCENE、SAVE／LOAD、背景・演出 | 物語開始、`#story` |
 | `gx` | `THE FIRST GX` | GXカードまたは物語内のGX工程 |
 | `space` | ORBITAL 10展示、保存済み宇宙データ | 宇宙を開く、`?space=1` |
@@ -63,9 +63,9 @@ flowchart LR
 | 10—15 | `src/exploration/live-exhibits.js`, `live-data.js` | `/api/live/v1/snapshot`、`/stream`、`/wind-field`。表示値はOpen-Meteo／CAMS |
 | 16—25 | `src/exploration/estat-exhibits.js`, `estat-prefecture-data.js` | e-Stat／気象庁から生成済みの `data/estat-prefecture-series.json` |
 | 26 | `src/exploration/firms-exhibit.js` | `/api/live/v1/firms`。NASA FIRMS取得失敗時は `data/firms-active-fire-snapshot.json` |
-| 27—31 | `src/exploration/planet-signals-exhibit.js` | Open-Meteo Forecast／Marine／Air Quality、USGS、NOAA SWPCへブラウザから直接接続 |
+| 27—30 | `src/exploration/planet-signals-exhibit.js` | Open-Meteo Forecast／Air Qualityの全球240サンプル点とUSGS全地震フィードへブラウザから直接接続 |
 
-MAP 10—15のPages APIはCloudflare Cache APIを使用し、D1へ観測値を保存しません。MAP 27—31は5分のブラウザキャッシュを使い、外部取得値をファイルへ書き出しません。すべてのライブ系展示は提供元、データ時刻、取得状態を画面に出し、失敗時の保存値をライブ値と区別します。
+MAP 10—15のPages APIはCloudflare Cache APIを使用し、D1へ観測値を保存しません。MAP 27—30は5分のブラウザキャッシュを使い、外部取得値をファイルへ書き出しません。すべてのライブ系展示は提供元、データ時刻、取得状態を画面に出し、失敗時の保存値をライブ値と区別します。
 
 ## 主要アダプター
 
@@ -92,7 +92,7 @@ MAP 10—15のPages APIはCloudflare Cache APIを使用し、D1へ観測値を�
 | `gaia:live-exhibit-change` | MAP 10—15の選択変更 |
 | `gaia:estat-exhibit-change` | MAP 16—25の選択変更 |
 | `gaia:firms-exhibit-change` | MAP 26の開始／終了 |
-| `gaia:planet-signals-change` | MAP 27—31の選択と取得状態の変更 |
+| `gaia:planet-signals-change` | MAP 27—30の選択と取得状態の変更 |
 | `gaia:space-open-at-mode` / `gaia:space-close` | ORBITALの開始／破棄 |
 | `gaia:lodchange` | `high / medium / low / static` の描画品質変更 |
 

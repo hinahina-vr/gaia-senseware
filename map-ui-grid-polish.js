@@ -75,11 +75,31 @@
     timelineScale.setAttribute("aria-hidden", "true");
     if (timelineLabel) timelineLabel.append(timelineScale);
 
-    const makeProxy = ({ className, kicker, label, symbol, target }) => {
+    const actionIcons = Object.freeze({
+      source: `
+        <svg viewBox="0 0 32 32" role="presentation" focusable="false">
+          <ellipse cx="14" cy="7.5" rx="8.5" ry="3.5"></ellipse>
+          <path d="M5.5 7.5v6c0 1.95 3.8 3.5 8.5 3.5s8.5-1.55 8.5-3.5v-6"></path>
+          <path d="M5.5 13.5v6c0 1.95 3.8 3.5 8.5 3.5 1.2 0 2.34-.1 3.34-.3"></path>
+          <path class="map-dock-icon-accent" d="M21 21h6m0 0v-6m0 6-8 8"></path>
+        </svg>
+      `,
+      statistics: `
+        <svg viewBox="0 0 32 32" role="presentation" focusable="false">
+          <path d="M5.5 5.5v21h21"></path>
+          <path class="map-dock-icon-accent" d="M8 21.5 13 16l4 2.5L24.5 9"></path>
+          <circle cx="8" cy="21.5" r="1.7"></circle>
+          <circle cx="13" cy="16" r="1.7"></circle>
+          <circle cx="17" cy="18.5" r="1.7"></circle>
+          <circle cx="24.5" cy="9" r="1.7"></circle>
+        </svg>
+      `,
+    });
+    const makeProxy = ({ className, kicker, label, icon, target }) => {
       const button = document.createElement("button");
       button.className = className;
       button.type = "button";
-      button.innerHTML = `<span><small>${kicker}</small><strong>${label}</strong></span><i aria-hidden="true">${symbol}</i>`;
+      button.innerHTML = `<span><small>${kicker}</small><strong>${label}</strong></span><i aria-hidden="true">${actionIcons[icon] || ""}</i>`;
       button.addEventListener("click", () => {
         guide.open = false;
         setBankOpen(false);
@@ -91,7 +111,7 @@
       className: "map-dock-action map-dock-action--source",
       kicker: "SOURCE",
       label: "データの出典",
-      symbol: "↗",
+      icon: "source",
       target: sourceButton,
     });
     sourceProxy.setAttribute("aria-label", "データの出典を表示する");
@@ -100,7 +120,7 @@
       className: "map-dock-action map-dock-action--statistics",
       kicker: "ANALYSIS",
       label: "統計分析",
-      symbol: "+",
+      icon: "statistics",
       target: statisticsButton,
     });
     statisticsProxy.setAttribute("aria-label", "現在の展示データを統計分析する");

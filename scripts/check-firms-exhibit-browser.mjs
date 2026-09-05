@@ -66,10 +66,19 @@ try {
   const desktop = await desktopContext.newPage();
   monitor(desktop);
   await openMap(desktop);
-  assert.equal(await desktop.locator(".map-mode-bank").getAttribute("aria-label"), "地図の31展示を選ぶ");
-  assert.equal(await desktop.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—31");
-  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 6);
+  assert.equal(await desktop.locator(".map-mode-bank").getAttribute("aria-label"), "地図の30展示を選ぶ");
+  assert.equal(await desktop.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—30");
+  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 5);
+  await desktop.evaluate(() => {
+    const card = document.querySelector("#japan-poi-card");
+    card.hidden = false;
+    card.setAttribute("aria-hidden", "false");
+    document.querySelector("#japan-layer")?.classList.add("japan-poi-open");
+  });
   await selectFirms(desktop);
+  assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "base exhibit POI remained open over FIRMS");
+  await desktop.mouse.click(720, 430);
+  assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "map tap opened an unrelated base exhibit POI over FIRMS");
   const initial = await evidence(desktop);
   await desktop.waitForTimeout(3_000);
   const advancing = await evidence(desktop);
@@ -99,6 +108,34 @@ try {
   assert.equal(scrubbed.phase, "scrub");
   assert(scrubbed.visible > scrubbed.points * 0.7);
   await desktop.screenshot({ path: path.join(outputDir, "desktop-26-active-fire.png"), fullPage: true });
+  await desktop.waitForFunction(() => Boolean(globalThis.GaiaStatisticsLab?.open && globalThis.GaiaFirmsExhibit?.getStatisticsDataset));
+  await desktop.evaluate(() => {
+    const dataset = globalThis.GaiaFirmsExhibit.getStatisticsDataset();
+    void globalThis.GaiaStatisticsLab.open({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
+  });
+  await desktop.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent === "解析済み");
+  const analysisDesign = await desktop.evaluate(() => ({
+    title: document.querySelector("#gaia-statistics-title")?.textContent || "",
+    context: document.querySelector("#gaia-statistics-context")?.textContent || "",
+    method: document.querySelector("#gaia-statistics-method-title")?.textContent || "",
+    status: document.querySelector("#gaia-statistics-status")?.textContent || "",
+    recordCount: document.querySelector("#gaia-statistics-record-count")?.textContent || "",
+    kpiDisplay: getComputedStyle(document.querySelector(".gaia-statistics-bi-strip")).display,
+    evidenceRadius: getComputedStyle(document.querySelector(".gaia-statistics-takeaway-evidence button")).borderRadius,
+    shellRadius: getComputedStyle(document.querySelector(".gaia-statistics-shell")).borderRadius,
+    details: [...document.querySelectorAll(".gaia-statistics-stage > details > summary")].map((element) => element.childNodes[0]?.textContent?.trim() || ""),
+  }));
+  assert.equal(analysisDesign.title, "観測データを読む");
+  assert.match(analysisDesign.context, /^燃える惑星 \/ NASA FIRMS　\/　火災・熱異常/u);
+  assert.equal(analysisDesign.method, "値の分布を見る");
+  assert.equal(analysisDesign.status, "解析済み");
+  assert.match(analysisDesign.recordCount, /件$/u);
+  assert.equal(analysisDesign.kpiDisplay, "none");
+  assert.equal(analysisDesign.evidenceRadius, "0px");
+  assert.equal(analysisDesign.shellRadius, "3px");
+  assert.deepEqual(analysisDesign.details, ["計算の内訳", "観測データ", "読み方と限界"]);
+  await desktop.screenshot({ path: path.join(outputDir, "desktop-26-analysis-report.png"), fullPage: true });
+  await desktop.locator("#gaia-statistics-close").click();
   await desktop.locator("[data-firms-step='1']").click();
   await desktop.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-firms-exhibit"));
   assert.equal(await desktop.locator("#japan-mode-number").textContent(), "01");
@@ -126,6 +163,15 @@ try {
   assert(mobileLayout.valueFont >= 26);
   assert.equal(mobileLayout.legendVisible, true);
   await mobile.screenshot({ path: path.join(outputDir, "mobile-26-active-fire.png"), fullPage: true });
+  await mobile.waitForFunction(() => Boolean(globalThis.GaiaStatisticsLab?.open && globalThis.GaiaFirmsExhibit?.getStatisticsDataset));
+  await mobile.evaluate(() => {
+    const dataset = globalThis.GaiaFirmsExhibit.getStatisticsDataset();
+    void globalThis.GaiaStatisticsLab.open({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
+  });
+  await mobile.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent === "解析済み");
+  assert.equal(await mobile.locator(".gaia-statistics-shell").evaluate((element) => Math.ceil(element.scrollWidth) <= Math.ceil(element.clientWidth) + 1), true, "mobile analysis report overflows horizontally");
+  await mobile.screenshot({ path: path.join(outputDir, "mobile-26-analysis-report.png"), fullPage: true });
+  await mobile.locator("#gaia-statistics-close").click();
   await mobileContext.close();
 
   assert.deepEqual(errors, []);

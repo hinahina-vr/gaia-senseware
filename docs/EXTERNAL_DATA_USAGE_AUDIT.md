@@ -93,17 +93,16 @@
 
 MODISの公称空間分解能は1 kmであり、点の光環は焼失面積や火災範囲を表さない。誤認を防ぐため画面内にこの注意を常設し、「森林火災」だけに限定せず「火災・熱異常」と表記する。API応答は4 MBを上限に検査し、ブラウザへ渡す点数を制限する。FIRMSの公開24時間CSVをWorkerが取得するため、認証キーをクライアントへ配布しない。
 
-### 3.3 全球展示27〜31「LIVE OPEN DATA」
+### 3.3 全球展示27〜30「LIVE OPEN DATA」
 
 | 展示／データ | 取得範囲と二次加工 | 公開／ダウンロード面 | 判定と条件 |
 |---|---|---|---|
-| 27 大気をなぞる／Open-Meteo Forecast API | 逗子を含む世界10地点の風速、風向、地表気圧、雲量、短波放射をブラウザから取得。風向を光跡の進行方向、風速を移動速度と線長、気圧を色へ変換 | 取得値はセッション中だけ5分キャッシュし、ファイル書き出しは行わない。通信失敗時はコード内の保存値へ切り替え | **条件付可**。Open-Meteoおよび元モデル提供者を表示し、モデル値を観測実測と誤認させない。無料APIの非商用条件と呼出上限を守る |
-| 28 海の脈動／Open-Meteo Marine API | 相模湾を含む8海域の波高、周期、波向を取得。波高を波紋の大きさと線幅、周期を拡散速度へ変換 | 同上 | **条件付可**。Open-MeteoとDWDほか元モデルを表示する。沿岸精度に限界があり、航海用途ではないことを前提とする |
-| 29 大気の散乱／Open-Meteo Air Quality API / CAMS | 世界10地点のPM2.5と550 nmエアロゾル光学的厚さを取得。値を光環の半径、色、浮遊粒子密度へ変換 | 同上 | **条件付可**。Open-MeteoとCAMSを表示し、11〜45 km級のモデル予測値であることを維持する |
-| 30 地殻の波紋／USGS M2.5+ Past Day GeoJSON Feed | 全球の直近24時間M2.5以上を最大240件取得。緯度経度を震源位置、マグニチュードを波紋半径、発生時刻を表示順へ変換 | 取得値はセッション中だけ5分キャッシュ。再配布用ファイルは生成しない | **可**。USGS、取得条件、加工内容を表示し、波紋を震度分布や被害範囲と誤認させない |
-| 31 太陽風の到着／NOAA SWPC Real-Time Solar Wind | L1点の最新太陽風速度、磁場強度Bt、南北成分Bzを取得。速度を粒子移動速度、BtとBzを極域流光の太さと振幅へ変換 | NOAAの小容量summary JSONを取得し、セッション中だけ5分キャッシュ | **可**。NOAA SWPCを表示し、可視化がオーロラ発生確率や警報そのものではないことを維持する |
+| 27 大気をなぞる／Open-Meteo Forecast API | 球面上へ均等配置した全球240サンプル点から風速、風向、地表気圧を取得。風向を光跡の進行方向、風速を移動速度と線長、気圧を色へ変換 | 48地点ずつ5リクエストに分け、取得値はセッション中だけ5分キャッシュ。ファイル書き出しは行わず、通信失敗時はコード内の保存値へ切り替え | **条件付可**。Open-Meteoおよび元モデル提供者を表示し、格子モデル値を観測所実測や補間済み連続場と誤認させない。無料APIの非商用条件と呼出上限を守る |
+| 28 大気の散乱／Open-Meteo Air Quality API / CAMS | 同じ全球240サンプル点のPM2.5と550 nmエアロゾル光学的厚さをCAMS Globalから取得。値を光環の半径、色、浮遊粒子密度へ変換 | 同上 | **条件付可**。Open-MeteoとCAMSを表示し、11〜45 km級の格子モデル値であることを維持する |
+| 29 地殻の波紋／USGS All Earthquakes Past Day GeoJSON Feed | 全球の直近24時間に収録された全規模イベントを最大1,000件取得。緯度経度を震源位置、マグニチュードを波紋半径、発生時刻を表示順へ変換 | 取得値はセッション中だけ5分キャッシュ。再配布用ファイルは生成しない | **可**。USGS、取得条件、加工内容を表示し、波紋を震度分布や被害範囲と誤認させない |
+| 30 雲を透る光／Open-Meteo Forecast API | MAP 27と同じ全球240サンプル点の雲量と短波放射を取得。雲量を光点の開き、短波放射を光量と半径へ変換 | MAP 27の5分キャッシュを共有し、追加取得とファイル書き出しは行わない | **条件付可**。格子モデル値であること、地点間を補間した連続分布ではないことを表示する |
 
-5展示はいずれもAPIキーをクライアントへ埋め込まない。外部取得値は表示と描画にだけ用い、ダウンロード機能や永続保存を提供しない。画面には提供元、データ時刻、ライブ／キャッシュ／保存値の状態を常設する。
+4展示はいずれもAPIキーをクライアントへ埋め込まない。外部取得値は表示と描画にだけ用い、ダウンロード機能や永続保存を提供しない。画面には提供元、データ時刻、ライブ／キャッシュ／保存値の状態を常設する。
 
 ## 4. 宇宙展示の外部データ一覧
 
@@ -251,7 +250,6 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 - [NASA FIRMS Active Fire Data](https://firms.modaps.eosdis.nasa.gov/active_fire/)
 - [NASA FIRMS MODIS Fire / Hotspot field descriptions](https://firms.modaps.eosdis.nasa.gov/content/descriptions/FIRMS_MODIS_Firehotspots.html)
 - [Open-Meteo Forecast API](https://open-meteo.com/en/docs)
-- [Open-Meteo Marine Weather API](https://open-meteo.com/en/docs/marine-weather-api)
 - [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api)
 - [USGS Earthquake GeoJSON Summary Feed](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php)
 - [NOAA SWPC Real-Time Solar Wind](https://www.swpc.noaa.gov/products/real-time-solar-wind)

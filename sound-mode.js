@@ -19,18 +19,20 @@
   const openButtons = Array.from(document.querySelectorAll("[data-sound-gallery-open]"));
 
   const constellationPatterns = Object.freeze([
-    { paths: [[[5, 40], [15, 12], [29, 23], [43, 8], [55, 29]], [[29, 23], [35, 43]]], faint: [[9, 21], [48, 39], [22, 6]] },
-    { paths: [[[5, 17], [17, 7], [31, 18], [52, 11]], [[31, 18], [42, 41], [19, 35], [5, 17]]], faint: [[9, 31], [55, 26], [29, 42]] },
-    { paths: [[[5, 35], [13, 11], [31, 6], [49, 18], [55, 39]], [[31, 6], [29, 31], [13, 39]]], faint: [[6, 8], [42, 34], [53, 6]] },
-    { paths: [[[5, 11], [22, 7], [35, 20], [54, 13]], [[35, 20], [45, 43], [25, 36], [10, 42]]], faint: [[14, 22], [51, 31], [34, 4]] },
-    { paths: [[[4, 25], [15, 8], [30, 15], [51, 7]], [[30, 15], [47, 32], [36, 44], [18, 36], [4, 25]]], faint: [[7, 41], [25, 29], [55, 20]] },
-    { paths: [[[5, 18], [20, 7], [35, 13], [53, 31]], [[20, 7], [28, 31], [45, 42]], [[28, 31], [11, 39]]], faint: [[51, 12], [6, 29], [35, 42]] },
-    { paths: [[[5, 39], [11, 13], [29, 6], [51, 19], [43, 41]], [[11, 13], [29, 29], [43, 41]]], faint: [[5, 7], [54, 37], [24, 43]] },
-    { paths: [[[4, 23], [16, 7], [32, 14], [53, 9]], [[32, 14], [51, 34], [34, 43], [14, 35], [4, 23]]], faint: [[7, 40], [43, 24], [25, 4]] },
-    { paths: [[[5, 39], [17, 8], [35, 13], [52, 6]], [[17, 8], [25, 27], [43, 41], [55, 25]]], faint: [[7, 18], [35, 32], [50, 43]] },
-    { paths: [[[5, 14], [24, 6], [43, 13], [55, 30]], [[24, 6], [31, 27], [45, 43]], [[31, 27], [12, 38]]], faint: [[7, 28], [52, 6], [27, 42]] },
-    { paths: [[[4, 35], [10, 11], [28, 6], [49, 17], [55, 36]], [[28, 6], [36, 29], [22, 42], [4, 35]]], faint: [[5, 6], [48, 41], [16, 25]] },
-    { paths: [[[4, 19], [18, 7], [36, 11], [54, 27]], [[18, 7], [24, 31], [43, 42]], [[24, 31], [8, 41]]], faint: [[7, 29], [49, 8], [33, 35]] },
+    // Original asterisms, not astronomical identifications. The last coordinate
+    // is visual magnitude: 2 = principal star, 1 = companion, 0 = distant star.
+    { name: "dawn-wing", stars: [[12,61,2],[23,31,1],[39,43,0],[54,18,2],[70,34,1],[87,28,0],[64,64,0],[81,60,1]], paths: [[0,1,2,3,4,5],[2,6,7]] },
+    { name: "window-lyre", stars: [[12,29,1],[28,12,2],[47,27,0],[76,18,1],[66,47,0],[45,68,2],[24,55,0],[47,45,1]], paths: [[0,1,2,3],[2,7,5,6,0],[7,4,3]] },
+    { name: "quiet-swan", stars: [[13,50,1],[32,42,0],[49,31,2],[56,12,1],[64,45,0],[88,57,2],[50,63,1],[30,67,0]], paths: [[0,1,2,3],[2,4,5],[2,6,7]] },
+    { name: "first-light", stars: [[12,62,1],[16,39,0],[34,19,1],[56,12,2],[77,23,1],[88,45,0],[80,63,2],[54,44,0]], paths: [[0,1,2,3,4,5,6],[3,7]] },
+    { name: "folded-wind", stars: [[11,25,1],[40,16,0],[59,30,2],[84,12,1],[75,48,0],[88,67,1],[52,60,2],[32,45,0]], paths: [[0,1,2,3],[2,4,5,6,7,0],[7,2]] },
+    { name: "snow-flame", stars: [[21,64,1],[40,47,2],[29,26,0],[54,10,2],[73,29,1],[61,47,0],[82,62,1]], paths: [[0,1,2,3,4,5,6],[1,5]] },
+    { name: "departing-orbit", stars: [[10,59,0],[29,47,1],[42,27,2],[60,16,0],[79,24,1],[87,45,2],[67,64,0],[50,51,1]], paths: [[0,1,2,3,4,5],[2,7,6]] },
+    { name: "moon-notebook", stars: [[75,12,2],[49,10,0],[27,22,1],[16,43,2],[28,63,0],[54,70,1],[74,56,0],[43,43,1]], paths: [[0,1,2,3,4,5,6],[3,7,0]] },
+    { name: "woven-world", stars: [[49,10,2],[77,29,1],[86,54,0],[60,68,2],[27,60,0],[12,38,1],[32,30,0],[52,42,1]], paths: [[0,1,2,3,4,5,6,0],[6,7,3]] },
+    { name: "blue-tide", stars: [[14,59,2],[26,36,0],[43,24,1],[35,10,0],[68,18,2],[82,38,0],[63,55,1],[85,66,0]], paths: [[0,1,2,4,5,6,7],[2,3]] },
+    { name: "afterglow", stars: [[15,19,1],[45,11,2],[68,23,0],[78,52,1],[56,68,2],[24,62,1],[35,42,0]], paths: [[0,1,2,6,0],[6,3,4,5,6]] },
+    { name: "horizon-bird", stars: [[10,49,1],[31,26,0],[52,32,2],[74,15,1],[91,26,0],[72,49,2],[58,67,0],[36,60,1]], paths: [[0,1,2,3,4],[2,5,6,7],[5,4]] },
   ]);
 
   const setupSoundMorphPrototype = () => {
@@ -83,44 +85,58 @@
       title.classList.add("sound-track-name");
       meta?.classList.add("sound-track-meta");
       button.setAttribute("aria-label", `${number.textContent?.trim() || ""} ${title.textContent?.trim() || ""}`.trim());
-      const titleCharacters = Array.from(title.textContent?.trim() || "");
-      const titleContainsJapanese = titleCharacters.some((character) => /[\u3040-\u30ff\u3400-\u9fff]/u.test(character));
-      const focusWidth = Math.max(520, Math.min(850, (titleContainsJapanese ? titleCharacters.length * 76 : titleCharacters.length * 32) + 72));
-      button.style.setProperty("--sound-focus-width", `${Math.round(focusWidth)}px`);
 
       const glyph = document.createElement("span");
       glyph.className = "sound-track-constellation";
       glyph.setAttribute("aria-hidden", "true");
-      glyph.style.setProperty("--constellation-drift-duration", `${6.8 + (index % 5) * 0.73}s`);
+      glyph.style.setProperty("--constellation-drift-duration", `${9.2 + (index % 5) * 0.83}s`);
       glyph.style.setProperty("--constellation-drift-delay", `${-0.61 * index}s`);
-      glyph.style.setProperty("--constellation-twinkle-duration", `${4.35 + (index % 4) * 0.46}s`);
-      glyph.style.setProperty("--constellation-twinkle-slow", `${5.8 + (index % 4) * 0.54}s`);
-      glyph.style.setProperty("--constellation-twinkle-fast", `${3.55 + (index % 4) * 0.38}s`);
-      glyph.style.setProperty("--constellation-line-duration", `${6.2 + (index % 5) * 0.61}s`);
-      glyph.style.setProperty("--constellation-twinkle-delay", `${-0.29 * index}s`);
       const glyphSvg = document.createElementNS(svgNamespace, "svg");
-      glyphSvg.setAttribute("viewBox", "0 0 60 48");
+      glyphSvg.setAttribute("viewBox", "0 0 100 80");
       const pattern = constellationPatterns[index % constellationPatterns.length];
-      pattern.paths.forEach((path) => {
-        const trace = document.createElementNS(svgNamespace, "polyline");
-        trace.setAttribute("points", path.map(([x, y]) => `${x},${y}`).join(" "));
-        glyphSvg.append(trace);
+      glyph.dataset.asterism = pattern.name;
+      const makeSvg = (tag, attributes) => {
+        const element = document.createElementNS(svgNamespace, tag);
+        Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, String(value)));
+        return element;
+      };
+      const defs = makeSvg("defs", {});
+      const haloId = `sound-star-halo-${index}`;
+      const halo = makeSvg("radialGradient", { id: haloId });
+      [[0,.95],[.12,.62],[.34,.2],[.66,.045],[1,0]].forEach(([offset, opacity]) => {
+        halo.append(makeSvg("stop", { offset, "stop-color": "currentColor", "stop-opacity": opacity }));
       });
-      const points = pattern.paths.flat();
-      points.forEach(([cx, cy], pointIndex) => {
-        const star = document.createElementNS(svgNamespace, "circle");
-        star.setAttribute("cx", String(cx));
-        star.setAttribute("cy", String(cy));
-        star.setAttribute("r", pointIndex % 5 === 0 ? "2.45" : "1.65");
+      const inkId = `sound-star-ink-${index}`;
+      const ink = makeSvg("linearGradient", { id: inkId, gradientUnits: "userSpaceOnUse", x1: 12, y1: 0, x2: 80, y2: 80 });
+      [[0,.4],[.4,.95],[1,.45]].forEach(([offset, opacity]) => {
+        ink.append(makeSvg("stop", { offset, "stop-color": "currentColor", "stop-opacity": opacity }));
+      });
+      defs.append(halo, ink); glyphSvg.append(defs);
+      pattern.paths.forEach((indices, pathIndex) => {
+        const points = indices.map(i => pattern.stars[i].slice(0, 2).join(",")).join(" ");
+        const trace = makeSvg("polyline", { points, stroke: `url(#${inkId})`, "vector-effect": "non-scaling-stroke", class: `sound-star-trace${pathIndex ? " is-branch" : ""}` });
+        const glow = makeSvg("polyline", { points, "vector-effect": "non-scaling-stroke", class: "sound-star-thread-light" });
+        glyphSvg.append(glow, trace);
+      });
+      let glintIndex = 0;
+      pattern.stars.forEach(([cx, cy, magnitude], pointIndex) => {
+        const principal = magnitude === 2;
+        const star = makeSvg("g", { transform: `translate(${cx} ${cy})`, class: `sound-constellation-star${principal ? " is-principal" : magnitude === 0 ? " is-distant" : ""}` });
+        star.style.setProperty("--star-period", `${5.4 + ((index * 3 + pointIndex * 2) % 9) * .47}s`);
+        star.style.setProperty("--star-delay", `${-((index * 1.31 + pointIndex * 1.79) % 9)}s`);
+        star.append(makeSvg("circle", { r: principal ? 12.5 : magnitude === 1 ? 6.5 : 3.4, fill: `url(#${haloId})`, class: "sound-star-halo" }));
+        if (principal) {
+          star.append(makeSvg("path", { d: "M0-4.3 .42-.45 3.2 0 .42.45 0 4.3-.42.45-3.2 0-.42-.45Z", class: "sound-star-rays" }));
+          const glint = makeSvg("path", { d: "M0-6.5C.4-1 .7-.5 4.5 0C.7.5 .4 1 0 6.5C-.4 1-.7.5-4.5 0C-.7-.5-.4-1 0-6.5Z", class: "sound-constellation-glint" });
+          glint.style.setProperty("--glint-duration", `${6.4 + ((index * 3 + glintIndex * 5) % 9) * .43}s`);
+          glint.style.setProperty("--glint-delay", `${-((index * 1.73 + glintIndex * 3.19) % 9)}s`);
+          star.append(glint); glintIndex++;
+        }
+        star.append(makeSvg("circle", { r: principal ? 1.5 : magnitude === 1 ? 1.03 : .66, class: "sound-star-core" }));
         glyphSvg.append(star);
       });
-      pattern.faint.forEach(([cx, cy]) => {
-        const star = document.createElementNS(svgNamespace, "circle");
-        star.classList.add("is-faint");
-        star.setAttribute("cx", String(cx));
-        star.setAttribute("cy", String(cy));
-        star.setAttribute("r", "0.75");
-        glyphSvg.append(star);
+      [[12 + index % 4 * 4, 11], [88, 67 - index % 3 * 4]].forEach(([cx, cy]) => {
+        glyphSvg.append(makeSvg("circle", { cx, cy, r: .45, class: "sound-star-background" }));
       });
       glyph.append(glyphSvg);
 
@@ -132,716 +148,26 @@
       button.prepend(glyph);
     });
 
-    const clamp = (value, minimum = 0, maximum = 1) => Math.max(minimum, Math.min(maximum, value));
-    const easeOutCubic = (value) => 1 - Math.pow(1 - clamp(value), 3);
-    const easeInOutCubic = (value) => {
-      const t = clamp(value);
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    };
-    const morphGeometryCache = new WeakMap();
-
-    const simplifyPath = (points, tolerance = 1.15) => {
-      if (points.length < 3) return points;
-      const first = points[0];
-      const last = points[points.length - 1];
-      const dx = last.x - first.x;
-      const dy = last.y - first.y;
-      const lengthSquared = dx * dx + dy * dy;
-      let furthestDistance = 0;
-      let furthestIndex = 0;
-      for (let index = 1; index < points.length - 1; index += 1) {
-        const point = points[index];
-        const ratio = lengthSquared > 0
-          ? clamp(((point.x - first.x) * dx + (point.y - first.y) * dy) / lengthSquared)
-          : 0;
-        const projectedX = first.x + ratio * dx;
-        const projectedY = first.y + ratio * dy;
-        const distance = Math.hypot(point.x - projectedX, point.y - projectedY);
-        if (distance > furthestDistance) {
-          furthestDistance = distance;
-          furthestIndex = index;
-        }
-      }
-      if (furthestDistance <= tolerance) return [first, last];
-      return [
-        ...simplifyPath(points.slice(0, furthestIndex + 1), tolerance).slice(0, -1),
-        ...simplifyPath(points.slice(furthestIndex), tolerance),
-      ];
-    };
-
-    const buildGlyphGeometry = (canvas, width, height, title) => {
-      const cached = morphGeometryCache.get(canvas);
-      const cacheKey = `${width}:${height}:${title}`;
-      if (cached?.key === cacheKey) return cached;
-
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = width;
-      maskCanvas.height = height;
-      const mask = maskCanvas.getContext("2d", { willReadFrequently: true });
-      const maxWidth = Math.max(40, width - 34);
-      const fontFamily = '"Yu Gothic UI", "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", sans-serif';
-      let fontSize = Math.min(82, Math.max(42, height * 0.68));
-      mask.font = `300 ${fontSize}px ${fontFamily}`;
-      const characters = Array.from(title);
-      const measureCharacters = () => characters.reduce((total, character) => total + mask.measureText(character).width, 0);
-      const initialWidth = Math.max(1, measureCharacters());
-      if (initialWidth > maxWidth) fontSize *= maxWidth / initialWidth;
-      mask.font = `300 ${fontSize}px ${fontFamily}`;
-      mask.textAlign = "left";
-      mask.textBaseline = "middle";
-      mask.fillStyle = "#fff";
-      const textLeft = 17;
-      const textY = height * 0.46;
-      const naturalWidth = measureCharacters();
-      const containsJapanese = /[\u3040-\u30ff\u3400-\u9fff]/u.test(title);
-      const trackingLimit = containsJapanese ? 18 : 3.5;
-      const tracking = characters.length > 1
-        ? clamp((maxWidth * 0.96 - naturalWidth) / (characters.length - 1), 0, trackingLimit)
-        : 0;
-      let textCursor = textLeft;
-      const characterBoxes = [];
-      characters.forEach((character) => {
-        const characterWidth = mask.measureText(character).width;
-        characterBoxes.push({ character, x: textCursor, width: characterWidth });
-        mask.fillText(character, textCursor, textY);
-        textCursor += characterWidth + tracking;
-      });
-
-      const alpha = mask.getImageData(0, 0, width, height).data;
-      const pixels = new Uint8Array(width * height);
-      for (let index = 0; index < pixels.length; index += 1) {
-        pixels[index] = alpha[index * 4 + 3] > 32 ? 1 : 0;
-      }
-
-      const removals = new Uint32Array(width * height);
-      let changed = true;
-      let iterations = 0;
-      while (changed && iterations < 48) {
-        changed = false;
-        for (let phase = 0; phase < 2; phase += 1) {
-          let removalCount = 0;
-          for (let y = 1; y < height - 1; y += 1) {
-            for (let x = 1; x < width - 1; x += 1) {
-              const index = y * width + x;
-              if (!pixels[index]) continue;
-              const p2 = pixels[index - width];
-              const p3 = pixels[index - width + 1];
-              const p4 = pixels[index + 1];
-              const p5 = pixels[index + width + 1];
-              const p6 = pixels[index + width];
-              const p7 = pixels[index + width - 1];
-              const p8 = pixels[index - 1];
-              const p9 = pixels[index - width - 1];
-              const neighbours = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
-              if (neighbours < 2 || neighbours > 6) continue;
-              const transitions = Number(!p2 && p3) + Number(!p3 && p4) + Number(!p4 && p5)
-                + Number(!p5 && p6) + Number(!p6 && p7) + Number(!p7 && p8)
-                + Number(!p8 && p9) + Number(!p9 && p2);
-              if (transitions !== 1) continue;
-              const firstCondition = phase === 0 ? p2 * p4 * p6 === 0 : p2 * p4 * p8 === 0;
-              const secondCondition = phase === 0 ? p4 * p6 * p8 === 0 : p2 * p6 * p8 === 0;
-              if (firstCondition && secondCondition) removals[removalCount++] = index;
-            }
-          }
-          if (removalCount) changed = true;
-          for (let index = 0; index < removalCount; index += 1) pixels[removals[index]] = 0;
-        }
-        iterations += 1;
-      }
-
-      const plotLine = (from, to) => {
-        let x = Math.round(from.x);
-        let y = Math.round(from.y);
-        const endX = Math.round(to.x);
-        const endY = Math.round(to.y);
-        const deltaX = Math.abs(endX - x);
-        const stepX = x < endX ? 1 : -1;
-        const deltaY = -Math.abs(endY - y);
-        const stepY = y < endY ? 1 : -1;
-        let error = deltaX + deltaY;
-        while (true) {
-          if (x >= 0 && x < width && y >= 0 && y < height) pixels[y * width + x] = 1;
-          if (x === endX && y === endY) break;
-          const doubledError = error * 2;
-          if (doubledError >= deltaY) {
-            error += deltaY;
-            x += stepX;
-          }
-          if (doubledError <= deltaX) {
-            error += deltaX;
-            y += stepY;
-          }
-        }
-      };
-
-      const customKanaGuides = [];
-      characterBoxes.filter(({ character }) => character === "の").forEach((box) => {
-        const top = textY - fontSize * 0.52;
-        const glyphHeight = fontSize * 0.95;
-        const left = Math.max(0, Math.floor(box.x - 2));
-        const right = Math.min(width - 1, Math.ceil(box.x + box.width + 2));
-        const upper = Math.max(0, Math.floor(top - 2));
-        const lower = Math.min(height - 1, Math.ceil(top + glyphHeight + 2));
-        for (let y = upper; y <= lower; y += 1) {
-          for (let x = left; x <= right; x += 1) pixels[y * width + x] = 0;
-        }
-        const guide = [
-          [0.48, 0.45], [0.29, 0.37], [0.12, 0.46], [0.08, 0.62],
-          [0.18, 0.79], [0.41, 0.88], [0.66, 0.82], [0.85, 0.66],
-          [0.91, 0.46], [0.8, 0.27], [0.58, 0.16], [0.35, 0.22],
-          [0.22, 0.39], [0.38, 0.52], [0.72, 0.6],
-        ].map(([x, y]) => ({ x: box.x + x * box.width, y: top + y * glyphHeight }));
-        for (let segment = 0; segment < guide.length - 1; segment += 1) {
-          const point0 = guide[Math.max(0, segment - 1)];
-          const point1 = guide[segment];
-          const point2 = guide[segment + 1];
-          const point3 = guide[Math.min(guide.length - 1, segment + 2)];
-          let previous = point1;
-          for (let step = 1; step <= 8; step += 1) {
-            const t = step / 8;
-            const t2 = t * t;
-            const t3 = t2 * t;
-            const point = {
-              x: 0.5 * ((2 * point1.x) + (-point0.x + point2.x) * t + (2 * point0.x - 5 * point1.x + 4 * point2.x - point3.x) * t2 + (-point0.x + 3 * point1.x - 3 * point2.x + point3.x) * t3),
-              y: 0.5 * ((2 * point1.y) + (-point0.y + point2.y) * t + (2 * point0.y - 5 * point1.y + 4 * point2.y - point3.y) * t2 + (-point0.y + 3 * point1.y - 3 * point2.y + point3.y) * t3),
-            };
-            plotLine(previous, point);
-            previous = point;
-          }
-        }
-        customKanaGuides.push({ box, guide, top, glyphHeight });
-      });
-
-      const neighboursOf = (index) => {
-        const x = index % width;
-        const y = Math.floor(index / width);
-        const neighbours = [];
-        for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-          for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-            if ((!offsetX && !offsetY) || x + offsetX < 0 || x + offsetX >= width || y + offsetY < 0 || y + offsetY >= height) continue;
-            const neighbour = (y + offsetY) * width + x + offsetX;
-            if (!pixels[neighbour]) continue;
-            if (offsetX && offsetY && (pixels[y * width + x + offsetX] || pixels[(y + offsetY) * width + x])) continue;
-            neighbours.push(neighbour);
-          }
-        }
-        return neighbours;
-      };
-
-      const skeletonIndices = [];
-      const special = new Set();
-      for (let index = 0; index < pixels.length; index += 1) {
-        if (!pixels[index]) continue;
-        skeletonIndices.push(index);
-        if (neighboursOf(index).length !== 2) special.add(index);
-      }
-      const edgeKey = (first, second) => first < second ? first * pixels.length + second : second * pixels.length + first;
-      const visitedEdges = new Set();
-      const tracedPaths = [];
-      const tracePath = (start, next) => {
-        const path = [start, next];
-        visitedEdges.add(edgeKey(start, next));
-        let previous = start;
-        let current = next;
-        let guard = 0;
-        while (guard++ < pixels.length) {
-          if (current !== start && special.has(current)) break;
-          const candidates = neighboursOf(current).filter((candidate) => candidate !== previous && !visitedEdges.has(edgeKey(current, candidate)));
-          if (!candidates.length) break;
-          const candidate = candidates[0];
-          visitedEdges.add(edgeKey(current, candidate));
-          path.push(candidate);
-          previous = current;
-          current = candidate;
-          if (current === start) break;
-        }
-        if (path.length > 1) tracedPaths.push(path);
-      };
-      special.forEach((start) => {
-        neighboursOf(start).forEach((next) => {
-          if (!visitedEdges.has(edgeKey(start, next))) tracePath(start, next);
-        });
-      });
-      skeletonIndices.forEach((start) => {
-        neighboursOf(start).forEach((next) => {
-          if (!visitedEdges.has(edgeKey(start, next))) tracePath(start, next);
-        });
-      });
-
-      const paths = tracedPaths
-        .map((path) => simplifyPath(path.map((index) => ({ x: index % width, y: Math.floor(index / width) }))))
-        .filter((path) => path.length > 1 && Math.hypot(path.at(-1).x - path[0].x, path.at(-1).y - path[0].y) > 1.8);
-
-      const pathLengthOf = (path) => path.slice(1).reduce((length, point, pointIndex) => {
-        const previous = path[pointIndex];
-        return length + Math.hypot(point.x - previous.x, point.y - previous.y);
-      }, 0);
-      const sequencePaths = paths
-        .map((sourcePath) => {
-          const first = sourcePath[0];
-          const last = sourcePath.at(-1);
-          const points = first.x > last.x || (first.x === last.x && first.y > last.y)
-            ? sourcePath.slice().reverse()
-            : sourcePath;
-          const offsets = [0];
-          for (let index = 1; index < points.length; index += 1) {
-            offsets.push(offsets.at(-1) + Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y));
-          }
-          return {
-            points,
-            offsets,
-            length: Math.max(2, offsets.at(-1)),
-            minX: Math.min(...points.map((point) => point.x)),
-            centerY: points.reduce((sum, point) => sum + point.y, 0) / points.length,
-          };
-        })
-        .sort((first, second) => first.minX - second.minX || first.centerY - second.centerY);
-      let sequenceLength = 0;
-      sequencePaths.forEach((path) => {
-        path.sequenceStart = sequenceLength;
-        sequenceLength += path.length;
-        path.sequenceEnd = sequenceLength;
-      });
-
-      const nodes = [];
-      const addNode = (point, strength = 0.72) => {
-        const nearby = nodes.find((node) => Math.hypot(node.x - point.x, node.y - point.y) < 6.5);
-        if (nearby) {
-          nearby.strength = Math.max(nearby.strength, strength);
-          return;
-        }
-        if (nodes.length < 62) nodes.push({ x: point.x, y: point.y, strength, phase: nodes.length * 1.713 });
-      };
-      special.forEach((index) => {
-        const degree = neighboursOf(index).length;
-        if (degree === 1 || degree >= 3) addNode({ x: index % width, y: Math.floor(index / width) }, degree >= 3 ? 1 : 0.84);
-      });
-      paths.forEach((path) => {
-        addNode(path[0], 0.84);
-        addNode(path.at(-1), 0.84);
-        for (let index = 1; index < path.length - 1; index += 1) {
-          const before = path[index - 1];
-          const point = path[index];
-          const after = path[index + 1];
-          const firstLength = Math.max(0.001, Math.hypot(point.x - before.x, point.y - before.y));
-          const secondLength = Math.max(0.001, Math.hypot(after.x - point.x, after.y - point.y));
-          const direction = ((point.x - before.x) * (after.x - point.x) + (point.y - before.y) * (after.y - point.y)) / (firstLength * secondLength);
-          if (direction < 0.72) addNode(point, 0.62);
-        }
-      });
-      customKanaGuides.forEach(({ box, guide, top, glyphHeight }) => {
-        for (let index = nodes.length - 1; index >= 0; index -= 1) {
-          const node = nodes[index];
-          if (node.x >= box.x - 2 && node.x <= box.x + box.width + 2 && node.y >= top - 2 && node.y <= top + glyphHeight + 2) nodes.splice(index, 1);
-        }
-        addNode(guide[0], 0.82);
-        addNode(guide[5], 0.72);
-        addNode(guide.at(-1), 0.9);
-      });
-
-      const locateNodeInSequence = (node) => {
-        let nearestDistance = Number.POSITIVE_INFINITY;
-        let sequencePosition = 0;
-        sequencePaths.forEach((path) => {
-          for (let index = 1; index < path.points.length; index += 1) {
-            const start = path.points[index - 1];
-            const end = path.points[index];
-            const deltaX = end.x - start.x;
-            const deltaY = end.y - start.y;
-            const segmentLengthSquared = deltaX * deltaX + deltaY * deltaY;
-            const ratio = segmentLengthSquared > 0
-              ? clamp(((node.x - start.x) * deltaX + (node.y - start.y) * deltaY) / segmentLengthSquared)
-              : 0;
-            const projectedX = start.x + deltaX * ratio;
-            const projectedY = start.y + deltaY * ratio;
-            const distance = Math.hypot(node.x - projectedX, node.y - projectedY);
-            if (distance >= nearestDistance) continue;
-            nearestDistance = distance;
-            const segmentLength = Math.sqrt(segmentLengthSquared);
-            sequencePosition = (path.sequenceStart + path.offsets[index - 1] + segmentLength * ratio) / Math.max(1, sequenceLength);
-          }
-        });
-        return clamp(sequencePosition);
-      };
-      nodes.forEach((node) => {
-        node.sequencePosition = locateNodeInSequence(node);
-      });
-
-      const skeletonCanvas = document.createElement("canvas");
-      skeletonCanvas.width = width;
-      skeletonCanvas.height = height;
-      const skeletonContext = skeletonCanvas.getContext("2d");
-      const skeletonImage = skeletonContext.createImageData(width, height);
-      for (let index = 0; index < pixels.length; index += 1) {
-        if (!pixels[index]) continue;
-        const pixel = index * 4;
-        skeletonImage.data[pixel] = 211;
-        skeletonImage.data[pixel + 1] = 255;
-        skeletonImage.data[pixel + 2] = 247;
-        skeletonImage.data[pixel + 3] = 255;
-      }
-      skeletonContext.putImageData(skeletonImage, 0, 0);
-
-      const measuredWidth = Math.min(maxWidth, naturalWidth + Math.max(0, characters.length - 1) * tracking);
-      const geometry = { key: cacheKey, paths, sequencePaths, sequenceLength, nodes, textLeft, textWidth: measuredWidth, skeletonCanvas };
-      morphGeometryCache.set(canvas, geometry);
-      return geometry;
-    };
-
-    const renderMorphTitle = (button, reveal = 1, clock = 0) => {
-      const canvas = button.querySelector(".sound-track-morph-canvas");
-      if (!(canvas instanceof HTMLCanvasElement)) return;
-      if (canvas.clientWidth < 1 || canvas.clientHeight < 1) return;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const width = Math.round(canvas.clientWidth);
-      const height = Math.round(canvas.clientHeight);
-      const pixelWidth = Math.max(1, Math.round(width * dpr));
-      const pixelHeight = Math.max(1, Math.round(height * dpr));
-      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-        canvas.width = pixelWidth;
-        canvas.height = pixelHeight;
-        morphGeometryCache.delete(canvas);
-      }
-
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      context.clearRect(0, 0, width, height);
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      const title = canvas.dataset.title || "";
-      const geometry = buildGlyphGeometry(canvas, width, height, title);
-      const linePhase = easeInOutCubic(clamp((reveal - 0.05) / 0.83));
-      const starPhase = linePhase;
-      const settlePhase = easeInOutCubic(clamp((reveal - 0.86) / 0.12));
-
-      context.save();
-      context.globalCompositeOperation = "lighter";
-      context.setLineDash([1, 7]);
-      context.lineWidth = 0.55;
-      context.strokeStyle = "rgba(122, 232, 214, 0.12)";
-      for (let x = 18; x < width; x += 48) {
-        context.beginPath();
-        context.moveTo(x, 3);
-        context.lineTo(x, height - 3);
-        context.stroke();
-      }
-      for (let y = 16; y < height; y += 24) {
-        context.beginPath();
-        context.moveTo(3, y);
-        context.lineTo(width - 3, y);
-        context.stroke();
-      }
-      context.setLineDash([]);
-      context.strokeStyle = "rgba(153, 255, 235, 0.18)";
-      context.lineWidth = 0.7;
-      context.beginPath();
-      context.moveTo(2, height * 0.77);
-      context.lineTo(width - 2, height * 0.77);
-      context.stroke();
-      context.restore();
-
-      const drawGlyphPaths = (strokeStyle, lineWidth, shadowBlur, progress) => {
-        context.save();
-        context.globalCompositeOperation = "lighter";
-        context.strokeStyle = strokeStyle;
-        context.lineWidth = lineWidth;
-        context.shadowColor = "rgba(105, 255, 224, 0.96)";
-        context.shadowBlur = shadowBlur;
-        const drawnLength = geometry.sequenceLength * progress;
-        geometry.sequencePaths.forEach((sequencePath) => {
-          const localProgress = clamp((drawnLength - sequencePath.sequenceStart) / sequencePath.length);
-          if (localProgress <= 0) return;
-          context.setLineDash([sequencePath.length + 2, sequencePath.length + 2]);
-          context.lineDashOffset = sequencePath.length * (1 - localProgress);
-          context.beginPath();
-          sequencePath.points.forEach((point, pointIndex) => {
-            if (pointIndex) context.lineTo(point.x, point.y);
-            else context.moveTo(point.x, point.y);
-          });
-          context.stroke();
-        });
-        context.setLineDash([]);
-        context.restore();
-      };
-
-      if (linePhase > 0) {
-        drawGlyphPaths(`rgba(70, 237, 207, ${0.12 + linePhase * 0.1})`, 3.1, 9, linePhase);
-        drawGlyphPaths(`rgba(213, 255, 247, ${0.48 + linePhase * 0.18})`, 0.86, 3.4, linePhase);
-      }
-
-      if (settlePhase > 0) {
-        context.save();
-        context.globalCompositeOperation = "lighter";
-        context.imageSmoothingEnabled = true;
-        context.globalAlpha = 0.075 * settlePhase;
-        context.filter = "blur(2.4px)";
-        context.drawImage(geometry.skeletonCanvas, 0, 0);
-        context.restore();
-      }
-
-      const scanX = geometry.textLeft + geometry.textWidth * linePhase;
-      let strokeHead = null;
-      if (linePhase > 0 && linePhase < 1) {
-        const drawnLength = geometry.sequenceLength * linePhase;
-        const activePath = geometry.sequencePaths.find((path) => drawnLength <= path.sequenceEnd) || geometry.sequencePaths.at(-1);
-        if (activePath) {
-          const localDistance = clamp(drawnLength - activePath.sequenceStart, 0, activePath.length);
-          let segmentIndex = activePath.offsets.findIndex((offset) => offset >= localDistance);
-          if (segmentIndex <= 0) segmentIndex = Math.min(1, activePath.points.length - 1);
-          const segmentStart = activePath.points[segmentIndex - 1];
-          const segmentEnd = activePath.points[segmentIndex];
-          const segmentOffset = activePath.offsets[segmentIndex - 1];
-          const segmentLength = Math.max(0.001, activePath.offsets[segmentIndex] - segmentOffset);
-          const segmentProgress = clamp((localDistance - segmentOffset) / segmentLength);
-          strokeHead = {
-            x: segmentStart.x + (segmentEnd.x - segmentStart.x) * segmentProgress,
-            y: segmentStart.y + (segmentEnd.y - segmentStart.y) * segmentProgress,
-          };
-        }
-
-        context.save();
-        context.globalCompositeOperation = "lighter";
-        const scanGlow = context.createLinearGradient(scanX - 42, 0, scanX + 11, 0);
-        scanGlow.addColorStop(0, "rgba(91, 242, 215, 0)");
-        scanGlow.addColorStop(0.72, "rgba(111, 255, 229, 0.035)");
-        scanGlow.addColorStop(0.94, "rgba(220, 255, 249, 0.22)");
-        scanGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
-        context.fillStyle = scanGlow;
-        context.fillRect(Math.max(0, scanX - 42), 8, 54, height - 20);
-        context.strokeStyle = "rgba(218, 255, 248, 0.42)";
-        context.lineWidth = 0.72;
-        context.shadowColor = "rgba(105, 255, 224, 0.9)";
-        context.shadowBlur = 8;
-        context.beginPath();
-        context.moveTo(scanX, 12);
-        context.lineTo(scanX, height - 16);
-        context.stroke();
-        if (strokeHead) {
-          const headPulse = 0.86 + Math.sin(clock * 18) * 0.14;
-          const ray = 7 * headPulse;
-          context.strokeStyle = "rgba(237, 255, 251, 0.9)";
-          context.lineWidth = 0.7;
-          context.shadowBlur = 12;
-          context.beginPath();
-          context.moveTo(strokeHead.x - ray, strokeHead.y);
-          context.lineTo(strokeHead.x + ray, strokeHead.y);
-          context.moveTo(strokeHead.x, strokeHead.y - ray);
-          context.lineTo(strokeHead.x, strokeHead.y + ray);
-          context.stroke();
-          context.beginPath();
-          context.arc(strokeHead.x, strokeHead.y, 2.1 * headPulse, 0, Math.PI * 2);
-          context.fillStyle = "rgba(247, 255, 253, 0.98)";
-          context.fill();
-        }
-        context.restore();
-      }
-
-      const analysis = window.GaiaOpeningAudio?.getAnalysisFrame?.();
-      const waveform = analysis?.waveform;
-      const waveformAt = (position, phaseOffset = 0) => {
-        if (analysis?.active && waveform?.length) {
-          const sample = Number(waveform[Math.min(waveform.length - 1, Math.floor(position * waveform.length))]) || 0;
-          return Math.abs(sample) <= 1 ? sample : (sample - 128) / 128;
-        }
-        const carrier = Math.sin(position * 54 + clock * 4.7 + phaseOffset) * 0.52;
-        const overtone = Math.sin(position * 127 - clock * 2.4 + phaseOffset * 0.7) * 0.21;
-        const slowDrift = Math.sin(position * 21 + clock * 1.15) * 0.14;
-        const pulse = Math.exp(-Math.pow(((position * 7.2 + clock * 0.44) % 1) - 0.5, 2) * 42) * Math.sin(position * 188 + clock * 5.1) * 0.34;
-        return carrier + overtone + slowDrift + pulse;
-      };
-      const beamX = linePhase < 0.995 ? scanX : ((clock % 4.8) / 4.8) * width;
-      context.beginPath();
-      for (let x = 0; x <= width; x += 2.5) {
-        const position = x / width;
-        const envelope = 0.5 + 0.5 * Math.sin(position * Math.PI);
-        const y = height * 0.77 + waveformAt(position) * (8 + 11 * envelope);
-        if (x) context.lineTo(x, y);
-        else context.moveTo(x, y);
-      }
-      context.strokeStyle = "rgba(76, 197, 177, 0.075)";
-      context.lineWidth = 0.7;
-      context.shadowBlur = 0;
-      context.stroke();
-      for (let trail = 4; trail >= 0; trail -= 1) {
-        const trailOffset = trail * 0.06;
-        const waveGradient = context.createLinearGradient(Math.max(0, beamX - 390), 0, Math.max(1, beamX), 0);
-        waveGradient.addColorStop(0, `rgba(72, 221, 194, ${0.018 + (4 - trail) * 0.01})`);
-        waveGradient.addColorStop(0.66, `rgba(81, 231, 204, ${0.08 + (4 - trail) * 0.025})`);
-        waveGradient.addColorStop(0.94, `rgba(187, 255, 242, ${0.32 + (4 - trail) * 0.075})`);
-        waveGradient.addColorStop(1, "rgba(239, 255, 251, 0.82)");
-        context.save();
-        context.beginPath();
-        context.rect(0, 0, Math.max(0, beamX + 2), height);
-        context.clip();
-        context.beginPath();
-        for (let x = 0; x <= width; x += 2.5) {
-          const position = x / width;
-          const envelope = 0.5 + 0.5 * Math.sin(position * Math.PI);
-          const y = height * 0.77 + waveformAt(position, trailOffset) * (8 + 11 * envelope) + trail * 0.65;
-          if (x) context.lineTo(x, y);
-          else context.moveTo(x, y);
-        }
-        context.strokeStyle = waveGradient;
-        context.lineWidth = trail ? 0.72 : 1.45;
-        context.shadowColor = "rgba(108, 255, 224, 0.86)";
-        context.shadowBlur = trail ? 2 : 7;
-        context.stroke();
-        context.restore();
-      }
-
-      const headPosition = clamp(beamX / Math.max(1, width));
-      const headEnvelope = 0.5 + 0.5 * Math.sin(headPosition * Math.PI);
-      const headY = height * 0.77 + waveformAt(headPosition) * (8 + 11 * headEnvelope);
-      const headTail = context.createLinearGradient(Math.max(0, beamX - 34), 0, beamX + 1, 0);
-      headTail.addColorStop(0, "rgba(123,255,228,0)");
-      headTail.addColorStop(1, "rgba(225,255,249,0.72)");
-      context.strokeStyle = headTail;
-      context.lineWidth = 1.25;
-      context.shadowColor = "rgba(119,255,229,0.9)";
-      context.shadowBlur = 7;
-      context.beginPath();
-      context.moveTo(Math.max(0, beamX - 34), headY);
-      context.lineTo(beamX, headY);
-      context.stroke();
-      context.beginPath();
-      context.arc(beamX, headY, 1.8, 0, Math.PI * 2);
-      context.fillStyle = "rgba(239,255,252,0.96)";
-      context.shadowBlur = 10;
-      context.fill();
-
-      let litNodeCount = 0;
-      let twinkleTotal = 0;
-      if (starPhase > 0) {
-        context.save();
-        context.globalCompositeOperation = "lighter";
-        geometry.nodes.forEach((node, nodeIndex) => {
-          const birthPosition = node.sequencePosition * 0.985;
-          const birth = easeOutCubic(clamp((linePhase - birthPosition) / 0.055));
-          if (birth <= 0) return;
-          litNodeCount += 1;
-          const age = clamp((linePhase - birthPosition) / 0.055);
-          const firstFlash = 1 + Math.sin(age * Math.PI) * (1.1 + node.strength * 0.9);
-          const slowGlow = 0.5 + Math.sin(clock * (0.72 + (nodeIndex % 7) * 0.075) + node.phase) * 0.5;
-          const quickSpark = Math.pow(Math.max(0, Math.sin(clock * (1.7 + (nodeIndex % 5) * 0.21) + node.phase * 1.91)), 12);
-          const dimBeat = Math.pow(Math.max(0, Math.sin(clock * (0.41 + (nodeIndex % 3) * 0.045) + node.phase * 0.63)), 8);
-          const twinkle = clamp(0.44 + slowGlow * 0.32 + quickSpark * 0.56 - dimBeat * 0.18, 0.28, 1.24);
-          twinkleTotal += twinkle;
-          const radius = (0.82 + node.strength * 0.94) * (0.72 + twinkle * 0.38) * firstFlash;
-          const ray = (2.8 + node.strength * 5.8) * (0.58 + twinkle * 0.56) * firstFlash;
-          context.globalAlpha = birth * (0.48 + twinkle * 0.52);
-          context.strokeStyle = `rgba(225, 255, 249, ${0.24 + node.strength * 0.58})`;
-          context.lineWidth = 0.55;
-          context.shadowColor = "rgba(120, 255, 228, 0.98)";
-          context.shadowBlur = (4 + node.strength * 8) * (0.64 + twinkle * 0.62) * firstFlash;
-          context.beginPath();
-          context.moveTo(node.x - ray, node.y);
-          context.lineTo(node.x + ray, node.y);
-          context.moveTo(node.x, node.y - ray);
-          context.lineTo(node.x, node.y + ray);
-          context.stroke();
-          context.beginPath();
-          context.arc(node.x, node.y, radius, 0, Math.PI * 2);
-          context.fillStyle = node.strength > 0.82 ? "rgba(255,255,246,0.98)" : "rgba(205,255,246,0.9)";
-          context.fill();
-        });
-        context.restore();
-      }
-
-      context.shadowBlur = 0;
-      canvas.dataset.rendered = "true";
-      canvas.dataset.reveal = reveal.toFixed(3);
-      canvas.dataset.nodes = String(geometry.nodes.length);
-      canvas.dataset.paths = String(geometry.paths.length);
-      canvas.dataset.scope = "phosphor-waveform-trace";
-      canvas.dataset.sequence = "left-to-right-single-stroke";
-      canvas.dataset.starPhase = starPhase.toFixed(3);
-      canvas.dataset.linePhase = linePhase.toFixed(3);
-      canvas.dataset.settlePhase = settlePhase.toFixed(3);
-      canvas.dataset.scanProgress = linePhase.toFixed(3);
-      canvas.dataset.litNodes = String(litNodeCount);
-      canvas.dataset.twinkle = (twinkleTotal / Math.max(1, litNodeCount)).toFixed(4);
-      canvas.dataset.strokeHeadX = strokeHead ? strokeHead.x.toFixed(2) : "";
-    };
-
-    const morphAnimations = new WeakMap();
-    const morphStartedAt = new WeakMap();
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let activeMorphButton = null;
-    const isMorphActive = (button) => button.classList.contains("is-morph-focus");
-    const stopMorphTitle = (button) => {
-      if (!(button instanceof HTMLElement)) return;
-      button.classList.remove("is-morph-focus");
-      cancelAnimationFrame(morphAnimations.get(button) || 0);
-      morphAnimations.delete(button);
-      morphStartedAt.delete(button);
-      if (activeMorphButton === button) activeMorphButton = null;
-    };
-    const animateMorphTitle = (button) => {
-      if (morphAnimations.has(button)) return;
-      if (reducedMotion) {
-        renderMorphTitle(button, 1, 0);
-        return;
-      }
-      // Build the font skeleton before starting the clock. Otherwise the
-      // first expensive geometry pass is counted as animation time and the
-      // trace appears to jump forward by several frames.
-      renderMorphTitle(button, 0, performance.now() / 1000);
-      morphStartedAt.set(button, performance.now());
-      const draw = (now) => {
-        const progress = Math.min(1, (now - morphStartedAt.get(button)) / 2400);
-        renderMorphTitle(button, progress, now / 1000);
-        if (isMorphActive(button)) morphAnimations.set(button, requestAnimationFrame(draw));
-        else morphAnimations.delete(button);
-      };
-      morphAnimations.set(button, requestAnimationFrame(draw));
-    };
-    const activateMorphTitle = (button) => {
-      if (!(button instanceof HTMLElement)) return;
-      if (activeMorphButton && activeMorphButton !== button) stopMorphTitle(activeMorphButton);
-      trackButtons.forEach((candidate) => {
-        if (candidate !== button && candidate.classList.contains("is-morph-focus")) stopMorphTitle(candidate);
-      });
-      activeMorphButton = button;
-      button.classList.add("is-morph-focus");
-      animateMorphTitle(button);
-    };
-    const restoreFocusedMorphTitle = () => {
-      const focusedTrack = document.activeElement?.closest?.("[data-sound-track]");
-      if (focusedTrack instanceof HTMLElement) activateMorphTitle(focusedTrack);
-    };
-
-    trackButtons.forEach((button) => {
-      button.addEventListener("focus", () => activateMorphTitle(button));
-      button.addEventListener("pointerenter", () => activateMorphTitle(button));
-      button.addEventListener("pointerleave", () => {
-        if (document.activeElement === button) return;
-        stopMorphTitle(button);
-        restoreFocusedMorphTitle();
-      });
-      button.addEventListener("blur", () => {
-        if (button.matches(":hover")) return;
-        stopMorphTitle(button);
-      });
-    });
-    window.addEventListener("resize", () => {
-      trackButtons.forEach((button) => {
-        const canvas = button.querySelector(".sound-track-morph-canvas");
-        if (canvas) morphGeometryCache.delete(canvas);
-        if (isMorphActive(button)) animateMorphTitle(button);
-      });
-    });
-    document.fonts?.ready?.then(() => {
-      trackButtons.forEach((button) => {
-        const canvas = button.querySelector(".sound-track-morph-canvas");
-        if (canvas) morphGeometryCache.delete(canvas);
-        if (isMorphActive(button)) animateMorphTitle(button);
-      });
-    });
+    window.GaiaSoundConstellation.mount(layer, trackButtons, trackPanel);
   };
 
   setupSoundMorphPrototype();
   const signalRibbonCanvas = layer.querySelector(".sound-player-signal");
+  let signalLayout = null;
+  const measureSignalLayout = () => {
+    if (!signalRibbonCanvas || !progress) return;
+    const canvasRect = signalRibbonCanvas.getBoundingClientRect();
+    const inputRect = progress.getBoundingClientRect();
+    signalLayout = {
+      width: Math.round(canvasRect.width), height: Math.round(canvasRect.height),
+      start: inputRect.left - canvasRect.left + 8.5,
+      end: inputRect.right - canvasRect.left - 8.5,
+      centerY: inputRect.top - canvasRect.top + inputRect.height / 2,
+    };
+  };
+  const signalResizeObserver = new ResizeObserver(measureSignalLayout);
+  if (signalRibbonCanvas) signalResizeObserver.observe(signalRibbonCanvas);
+  if (progress) signalResizeObserver.observe(progress);
 
   const tracks = Object.freeze({
     opening: {
@@ -929,10 +255,14 @@
       signal: "SENSORY HORIZON",
     },
   });
+  const trackKeys = Object.freeze(Object.keys(tracks));
 
   let isOpen = false;
   let isScrubbing = false;
   let animationFrame = 0;
+  let lastInterfaceRenderAt = -Infinity;
+  let lastSignalRibbonDrawAt = -Infinity;
+  let visualizerVisibleUntil = 0;
   let lastFocused = null;
   let visualizerRuntime = null;
   let visualizerState = {
@@ -1670,13 +1000,33 @@
     return { draw };
   };
 
+  const signalRibbonMotion = {
+    energy: 0,
+    bass: 0,
+    mid: 0,
+    high: 0,
+  };
+  // Reuse a tiny light texture instead of blurring individual particles per frame.
+  const signalGlow = document.createElement("canvas");
+  signalGlow.width = signalGlow.height = 64;
+  const signalGlowContext = signalGlow.getContext("2d");
+  const signalGlowGradient = signalGlowContext.createRadialGradient(32, 32, 0, 32, 32, 32);
+  signalGlowGradient.addColorStop(0, "rgba(214,255,246,.85)");
+  signalGlowGradient.addColorStop(.08, "rgba(172,248,233,.5)");
+  signalGlowGradient.addColorStop(.3, "rgba(108,220,205,.15)");
+  signalGlowGradient.addColorStop(1, "rgba(90,210,199,0)");
+  signalGlowContext.fillStyle = signalGlowGradient;
+  signalGlowContext.fillRect(0, 0, 64, 64);
+
   const drawSignalRibbon = (state, now = performance.now()) => {
     if (!(signalRibbonCanvas instanceof HTMLCanvasElement)) return;
-    const rect = signalRibbonCanvas.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2) return;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const width = Math.round(rect.width);
-    const height = Math.round(rect.height);
+    const frameInterval = state?.playing ? 33 : 66;
+    if (now - lastSignalRibbonDrawAt < frameInterval) return;
+    lastSignalRibbonDrawAt = now;
+    if (!signalLayout) measureSignalLayout();
+    if (!signalLayout || signalLayout.width < 2 || signalLayout.height < 2) return;
+    const dpr = Math.min(1.25, window.devicePixelRatio || 1);
+    const { width, height } = signalLayout;
     const pixelWidth = Math.max(1, Math.round(width * dpr));
     const pixelHeight = Math.max(1, Math.round(height * dpr));
     if (signalRibbonCanvas.width !== pixelWidth || signalRibbonCanvas.height !== pixelHeight) {
@@ -1694,47 +1044,157 @@
     const clock = now * 0.001;
     const waveform = state?.waveform;
     const active = Boolean(state?.analysisActive && waveform?.length);
-    const energy = Math.max(0, Math.min(1, state?.rms ? state.rms * 3.4 : 0));
-    const bandLift = Math.max(0, Math.min(1, Math.max(...(state?.bands || [0, 0, 0])) * 1.8));
-    const sampleAt = (position, phase = 0) => {
-      if (active) {
-        const sampleIndex = Math.min(waveform.length - 1, Math.floor(position * waveform.length));
-        const raw = Number(waveform[sampleIndex]) || 0;
-        return Math.abs(raw) <= 1 ? raw : (raw - 128) / 128;
-      }
-      return Math.sin(position * 13.6 + clock * 0.52 + phase) * 0.32
-        + Math.sin(position * 31.0 - clock * 0.34 + phase * 0.7) * 0.12;
+    const playing = Boolean(state?.playing);
+    const bands = Array.isArray(state?.bands) ? state.bands : [0, 0, 0];
+    const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+    const targets = {
+      energy: active && playing ? Math.max(0.1, clamp01((state?.rms || 0) * 5.6)) : 0.055,
+      bass: active && playing ? clamp01((bands[0] || 0) * 2.8) : 0.08,
+      mid: active && playing ? clamp01((bands[1] || 0) * 3.1) : 0.06,
+      high: active && playing ? clamp01((bands[2] || 0) * 3.8) : 0.04,
     };
-    const drawWave = ({ baseline, amplitude, alpha, width: strokeWidth, phase = 0, frequency = 1 }) => {
+    const response = playing ? 0.075 : 0.035;
+    Object.keys(signalRibbonMotion).forEach((key) => {
+      signalRibbonMotion[key] += (targets[key] - signalRibbonMotion[key]) * response;
+    });
+    const { energy, bass, mid, high } = signalRibbonMotion;
+    const fract = (value) => value - Math.floor(value);
+    const seeded = (index, salt = 0) => fract(Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453);
+    const sampleAt = (position) => {
+      if (active) {
+        const cursor = Math.max(0, Math.min(1, position)) * (waveform.length - 1);
+        const sampleIndex = Math.floor(cursor);
+        const fraction = cursor - sampleIndex;
+        let weighted = 0;
+        let weights = 0;
+        for (let offset = -2; offset <= 2; offset += 1) {
+          const index = Math.min(waveform.length - 1, Math.max(0, sampleIndex + offset));
+          const weight = 3 - Math.abs(offset);
+          const next = Math.min(waveform.length - 1, index + 1);
+          const value = (Number(waveform[index]) || 0) * (1 - fraction) + (Number(waveform[next]) || 0) * fraction;
+          weighted += (Math.abs(value) <= 1 ? value : (value - 128) / 128) * weight;
+          weights += weight;
+        }
+        return weighted / Math.max(1, weights);
+      }
+      return Math.sin(position * 17.4 + clock * 0.38) * 0.12
+        + Math.sin(position * 39.0 - clock * 0.21) * 0.04;
+    };
+
+    const waveY = (position, { baseline, amplitude, phase = 0, speed = 1, density = 1, signal = 1 }) => {
+      const edgeEase = 0.56 + Math.sin(Math.max(0, Math.min(1, position)) * Math.PI) * 0.44;
+      const slow = Math.sin(position * Math.PI * 2 * (1.72 + mid * 0.42) * density + clock * 0.34 * speed + phase);
+      const crossing = Math.sin(position * Math.PI * 2 * (4.12 + high * 0.88) * density - clock * 0.19 * speed + phase * 1.61);
+      const undertow = Math.sin(position * Math.PI * 2 * 0.57 + clock * 0.12 * speed - phase * 0.34);
+      const signalPacket = Math.sin(position * Math.PI * 2 * (7.4 + high * 1.8) - clock * 0.72 * speed + phase * 2.3)
+        * Math.pow(Math.sin(Math.max(0, Math.min(1, position)) * Math.PI), 2)
+        * (0.035 + high * 0.14);
+      const liveSignal = sampleAt(position) * signal * (0.08 + energy * 0.18);
+      const body = slow * (0.5 + bass * 0.32) + crossing * (0.19 + mid * 0.16) + undertow * 0.12 + signalPacket + liveSignal;
+      return baseline + body * amplitude * edgeEase;
+    };
+
+    const drawWave = (options) => {
+      const {
+        alpha,
+        width: strokeWidth,
+        hue = "126, 242, 220",
+        glow = false,
+      } = options;
       const gradient = context.createLinearGradient(0, 0, width, 0);
-      gradient.addColorStop(0, `rgba(110, 236, 215, ${alpha * 0.12})`);
-      gradient.addColorStop(0.16, `rgba(172, 255, 239, ${alpha})`);
-      gradient.addColorStop(0.58, `rgba(121, 229, 209, ${alpha * 0.72})`);
-      gradient.addColorStop(1, `rgba(91, 194, 182, ${alpha * 0.08})`);
+      gradient.addColorStop(0, `rgba(${hue}, 0)`);
+      gradient.addColorStop(0.12, `rgba(${hue}, .8)`);
+      gradient.addColorStop(0.3, "rgba(206,255,246,1)");
+      gradient.addColorStop(0.68, `rgba(${hue}, .8)`);
+      gradient.addColorStop(0.92, `rgba(${hue}, .3)`);
+      gradient.addColorStop(1, `rgba(${hue}, 0)`);
       context.beginPath();
-      for (let x = -8; x <= width + 8; x += 2) {
+      // Bounded geometry, even on 4K. Broad curves do not need a vertex per pixel.
+      const step = Math.max(3, width / 240);
+      for (let x = -step; x <= width + step; x += step) {
         const position = Math.max(0, Math.min(1, x / Math.max(1, width)));
-        const envelope = Math.sin(position * Math.PI);
-        const drift = Math.sin(position * Math.PI * 4.4 * frequency + clock * 0.46 + phase) * amplitude * 0.34;
-        const signal = sampleAt(position, phase) * amplitude * (0.34 + energy * 0.56 + bandLift * 0.24) * envelope;
-        const y = baseline + drift + signal;
-        if (x > -8) context.lineTo(x, y);
+        const y = waveY(position, options);
+        if (x > -step) context.lineTo(x, y);
         else context.moveTo(x, y);
       }
       context.strokeStyle = gradient;
+      context.shadowBlur = 0;
+      if (glow) {
+        // A few translucent strokes give the ribbon a soft halo without a live blur.
+        for (const [spread, opacity] of [[22, .02], [10, .045], [3, .1]]) {
+          context.globalAlpha = alpha * opacity;
+          context.lineWidth = strokeWidth * spread;
+          context.stroke();
+        }
+      }
+      context.globalAlpha = alpha;
       context.lineWidth = strokeWidth;
-      context.shadowColor = "rgba(123, 255, 231, 0.58)";
-      context.shadowBlur = strokeWidth > 1 ? 8 : 3;
       context.stroke();
+      context.globalAlpha = 1;
     };
 
-    drawWave({ baseline: height * 0.43, amplitude: 13, alpha: 0.58, width: 1.25 });
-    drawWave({ baseline: height * 0.43, amplitude: 18, alpha: 0.16, width: 0.7, phase: 1.7, frequency: 0.78 });
-    drawWave({ baseline: height * 0.72, amplitude: 9, alpha: 0.13, width: 0.65, phase: 3.2, frequency: 0.62 });
+    const ribbonScale = Math.max(.65, Math.min(1.7, width / 900));
+    const primary = {
+      baseline: signalLayout.centerY,
+      amplitude: (12 + energy * 12 + bass * 4) * ribbonScale,
+      alpha: playing ? 0.92 : 0.48,
+      width: playing ? 1.15 : 0.85,
+      phase: 0.1,
+      speed: 1,
+      density: 1,
+      signal: 0.42,
+      glow: true,
+    };
+
+    drawWave({ baseline: primary.baseline - 3, amplitude: (23 + energy * 12) * ribbonScale, alpha: playing ? 0.17 : 0.065, width: 0.65, phase: 1.84, speed: 0.58, density: 0.76, signal: 0.18 });
+    drawWave({ baseline: primary.baseline + 4, amplitude: (19 + mid * 12) * ribbonScale, alpha: playing ? 0.2 : 0.08, width: 0.72, phase: 3.18, speed: 0.74, density: 1.08, signal: 0.2 });
+    drawWave(primary);
+    const lowerBaseline = Math.min(height - 22, primary.baseline + 94 * ribbonScale);
+    drawWave({ baseline: lowerBaseline, amplitude: (12 + bass * 10) * ribbonScale, alpha: playing ? 0.19 : 0.07, width: 0.75, phase: 4.46, speed: 0.43, density: 0.64, signal: 0.2, hue: "117, 214, 203" });
+    drawWave({ baseline: lowerBaseline + 7, amplitude: (8 + mid * 8) * ribbonScale, alpha: playing ? 0.055 : 0.025, width: 0.55, phase: 2.38, speed: 0.31, density: 0.91, signal: 0.1, hue: "94, 182, 184" });
+
+    const particleCount = playing ? 48 : 18;
+    for (let index = 0; index < particleCount; index += 1) {
+      const driftSpeed = 0.008 + seeded(index, 1) * 0.021;
+      const position = Math.pow(fract(seeded(index, 2) + clock * driftSpeed), 1.65);
+      const x = position * width;
+      const spread = (seeded(index, 3) - 0.5) * (24 + seeded(index, 4) * 46);
+      const orbit = Math.sin(clock * (0.52 + seeded(index, 5) * 1.12) + seeded(index, 6) * Math.PI * 2) * (2 + seeded(index, 7) * 6);
+      const y = waveY(position, primary) + spread + orbit;
+      const twinkle = 0.28 + Math.pow((Math.sin(clock * (1.1 + seeded(index, 8) * 2.6) + seeded(index, 9) * 12) + 1) * 0.5, 3) * 0.72;
+      const proximity = Math.max(0.16, 1 - Math.abs(spread) / 54);
+      const particleAlpha = (playing ? 0.48 : 0.1) * twinkle * proximity;
+      const radius = 0.3 + seeded(index, 10) * .55;
+      context.globalAlpha = particleAlpha;
+      const lightSize = 6 + radius * 5;
+      context.drawImage(signalGlow, x - lightSize / 2, y - lightSize / 2, lightSize, lightSize);
+      context.fillStyle = "rgba(199,255,244,.7)";
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.globalAlpha = 1;
+
+    const progressRatio = isScrubbing ? Number(progress.value) / 1000 : state?.duration > 0 ? clamp01(state.currentTime / state.duration) : 0;
+    const headStart = signalLayout.start;
+    const headEnd = signalLayout.end;
+    const headX = headStart + (headEnd - headStart) * progressRatio;
+    const headY = waveY(headX / Math.max(1, width), primary);
+    progress.style.setProperty("--sound-wave-y", `${(headY - signalLayout.centerY).toFixed(2)}px`);
+    if (playing) {
+      const haloSize = 74 + energy * 18;
+      context.globalAlpha = .6;
+      context.drawImage(signalGlow, headX - haloSize / 2, headY - haloSize / 2, haloSize, haloSize);
+      context.globalAlpha = 1;
+    }
 
     signalRibbonCanvas.dataset.active = String(active);
     signalRibbonCanvas.dataset.frame = String((Number(signalRibbonCanvas.dataset.frame) || 0) + 1);
     signalRibbonCanvas.dataset.waveform = "live-signal-ribbon";
+    signalRibbonCanvas.dataset.layers = "5";
+    signalRibbonCanvas.dataset.particles = String(particleCount);
+    signalRibbonCanvas.dataset.energy = energy.toFixed(3);
+    signalRibbonCanvas.dataset.progress = progressRatio.toFixed(4);
   };
 
   const formatTime = (seconds) => {
@@ -1744,7 +1204,7 @@
     return `${minutes}:${String(remainder).padStart(2, "0")}`;
   };
 
-  const render = (state = getAudio()?.getPlaybackState?.()) => {
+  const render = (state = getAudio()?.getPlaybackState?.(), updateInterface = true) => {
     const activeTrack = tracks[state?.track] ? state.track : "opening";
     const metadata = tracks[activeTrack];
     const volumePercent = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -1769,18 +1229,22 @@
       analysisSupported: Boolean(analysis?.supported),
     };
 
-    layer.dataset.playing = String(isPlaying);
-    layer.dataset.analysis = analysis?.active ? "live" : (analysis?.supported ? "ready" : "unavailable");
-    layer.dataset.track = activeTrack;
-    playButton?.setAttribute("aria-pressed", String(isPlaying));
-    playButton?.setAttribute("aria-label", isPlaying ? "一時停止する" : "再生する");
-    if (trackNumber) trackNumber.textContent = metadata.number;
-    if (trackTitle) trackTitle.textContent = metadata.title;
-    if (description) description.textContent = metadata.description;
-    if (currentTime) currentTime.textContent = formatTime(elapsed);
-    if (duration) duration.textContent = formatTime(trackDuration);
+    if (!updateInterface) return;
+
+    const setAttribute = (element, name, value) => { if (element && element.getAttribute(name) !== value) element.setAttribute(name, value); };
+    const setText = (element, value) => { if (element && element.textContent !== value) element.textContent = value; };
+    setAttribute(layer, "data-playing", String(isPlaying));
+    setAttribute(layer, "data-analysis", analysis?.active ? "live" : (analysis?.supported ? "ready" : "unavailable"));
+    setAttribute(layer, "data-track", activeTrack);
+    setAttribute(playButton, "aria-pressed", String(isPlaying));
+    setAttribute(playButton, "aria-label", isPlaying ? "一時停止する" : "再生する");
+    setText(trackNumber, metadata.number);
+    setText(trackTitle, metadata.title);
+    setText(description, metadata.description);
+    setText(currentTime, formatTime(elapsed));
+    setText(duration, trackDuration > 0 ? formatTime(trackDuration) : "—:—");
     if (volume instanceof HTMLInputElement) volume.value = String(volumePercent);
-    if (volumeValue) volumeValue.textContent = `${volumePercent}%`;
+    setText(volumeValue, `${volumePercent}%`);
 
     if (!isScrubbing && progress instanceof HTMLInputElement) {
       progress.value = trackDuration > 0 ? String(Math.round((elapsed / trackDuration) * 1000)) : "0";
@@ -1788,14 +1252,17 @@
     }
 
     trackButtons.forEach((button) => {
-      button.setAttribute("aria-current", String(button.dataset.soundTrack === activeTrack));
+      setAttribute(button, "aria-current", String(button.dataset.soundTrack === activeTrack));
     });
   };
 
-  const tick = () => {
-    render();
-    visualizerRuntime?.draw?.(visualizerState);
-    drawSignalRibbon(visualizerState);
+  const tick = (now = performance.now()) => {
+    const shouldUpdateInterface = now - lastInterfaceRenderAt >= 100;
+    render(undefined, shouldUpdateInterface);
+    if (shouldUpdateInterface) lastInterfaceRenderAt = now;
+    if (visualizerState.playing) visualizerVisibleUntil = now + 2400;
+    if (visualizerState.playing || now < visualizerVisibleUntil) visualizerRuntime?.draw?.(visualizerState, now);
+    drawSignalRibbon(visualizerState, now);
     if (isOpen) animationFrame = requestAnimationFrame(tick);
   };
 

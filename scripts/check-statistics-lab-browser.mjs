@@ -105,7 +105,7 @@ try {
     }
     await setDatasetForTest("co2-trend");
     await setControlValue("#gaia-statistics-lectures", "01");
-    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING"
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中"
       && document.querySelector("#gaia-statistics-canvas")?.dataset.axisX === "CO₂ (ppm)");
     const co2Chart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
       axisX: element.dataset.axisX,
@@ -135,7 +135,7 @@ try {
     );
     assert.equal(co2BusinessSummary.coverage, 1, `${viewport.name}: CO2 coverage KPI is wrong`);
     assert.ok(co2BusinessSummary.primary && co2BusinessSummary.primary !== "—", `${viewport.name}: primary KPI is empty`);
-    assert.match(co2BusinessSummary.filter, /SOURCE ONLY.*2016-08–2026-07.*BROWSER LOCAL/u, `${viewport.name}: filter lineage is not visible`);
+    assert.match(co2BusinessSummary.filter, /観測値のみ.*2016-08–2026-07.*この端末で計算/u, `${viewport.name}: filter lineage is not visible`);
     const takeaway = await page.locator("#gaia-statistics-takeaway").evaluate((element) => ({
       visible: Boolean(element.offsetWidth || element.offsetHeight || element.getClientRects().length),
       state: element.dataset.state,
@@ -157,7 +157,7 @@ try {
     assert.equal(await page.locator("#gaia-statistics-record-x-heading").textContent(), "観測月", `${viewport.name}: record table X heading is wrong`);
     assert.equal(await page.locator("#gaia-statistics-record-y-heading").textContent(), "CO₂", `${viewport.name}: record table Y heading is wrong`);
     await page.locator('#gaia-statistics-methods [data-method="summary"]').evaluate((element) => element.click());
-    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     await page.waitForTimeout(620);
     const keyboardChart = await page.locator("#gaia-statistics-canvas").evaluate((element) => {
       element.focus();
@@ -192,7 +192,7 @@ try {
       path: path.join(outputDir, `${viewport.name}-co2-chart.png`),
     });
     await setDatasetForTest("rainfall");
-    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");
     assert.equal(await page.locator("#gaia-statistics-lectures option").count(), 15);
     assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
@@ -237,14 +237,14 @@ try {
 
     for (let lecture = 0; lecture < 15; lecture += 1) {
       await setControlValue("#gaia-statistics-lectures", String(lecture + 1).padStart(2, "0"));
-      await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+      await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
       assert.equal(await page.locator(".gaia-statistics-insight").count(), 4, `${viewport.name}: lecture ${lecture + 1} insight cards`);
       const cards = await page.locator(".gaia-statistics-insight").allTextContents();
       cards.forEach((text, index) => assert.ok(text.trim().length > 18, `${viewport.name}: lecture ${lecture + 1}, card ${index + 1} empty`));
       const methodButtons = page.locator("#gaia-statistics-methods button");
       for (let method = 1; method < await methodButtons.count(); method += 1) {
         await methodButtons.nth(method).evaluate((element) => element.click());
-        await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+        await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
         assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
       }
     }
@@ -252,7 +252,7 @@ try {
     await setDatasetForTest("waste");
     await setControlValue("#gaia-statistics-lectures", "01");
     await page.waitForFunction(() => document.querySelectorAll("#gaia-statistics-metrics tr").length >= 6
-      && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+      && document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     const readMean = () => page.evaluate(() => [...document.querySelectorAll("#gaia-statistics-metrics tr")]
       .find((row) => row.cells[0]?.textContent === "平均")?.textContent || "");
     const sourceMean = await readMean();
@@ -264,7 +264,7 @@ try {
       element.checked = true;
       element.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     await page.waitForTimeout(80);
     const combinedMean = await readMean();
     const combinedWasteKpis = await page.locator("#gaia-statistics-kpis").evaluate((element) => ({
@@ -319,7 +319,7 @@ try {
 
     await setDatasetForTest("co2-trend");
     await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().datasetId === "co2-trend"
-      && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+      && document.querySelector("#gaia-statistics-status")?.textContent !== "計算中");
     await page.locator("#gaia-statistics-saved-view").evaluate((element, value) => {
       element.value = value;
       element.dispatchEvent(new Event("change", { bubbles: true }));

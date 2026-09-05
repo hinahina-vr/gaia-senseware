@@ -85,8 +85,8 @@ try {
   monitor(page);
   await openMap(page);
 
-  assert.equal(await page.locator(".map-mode-bank").getAttribute("aria-label"), "地図の31展示を選ぶ");
-  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—31");
+  assert.equal(await page.locator(".map-mode-bank").getAttribute("aria-label"), "地図の30展示を選ぶ");
+  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—30");
   assert.equal(await page.locator(".map-dock-bank-trigger > i").count(), 0, "obsolete downward bank chevron was still present");
   assert.equal(await page.locator("#japan-estat-mode-list .map-mode-button").count(), 10);
   assert.equal(await page.locator(".gaia-estat-marker").count(), 47);

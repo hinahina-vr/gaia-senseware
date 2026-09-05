@@ -115,11 +115,12 @@ if (!lab || !openButton) {
     "three-ecologies": "Three Ecologies / 生態・社会・文化",
     "earth-organ": "Earth Organ / 再生可能エネルギー",
     "estat-prefecture": "公的統計 / 47都道府県",
+    "nasa-firms": "燃える惑星 / NASA FIRMS",
   };
 
   const METHOD_GROUPS = [
     { id: "01", name: "記述統計", methods: [
-      ["summary", "要約統計・ヒストグラム・箱ひげ", "中心、広がり、歪み、外れ値を同時に読みます。"],
+      ["summary", "値の分布を見る", "値がどこに集まり、どこから外れているかを見る。"],
       ["scatter", "散布図・共分散・Pearson相関", "2変数の方向と強さを、点の配置から確認します。"],
     ] },
     { id: "02", name: "確率分布", methods: [
@@ -336,21 +337,21 @@ if (!lab || !openButton) {
     const period = dataset.periodStart && dataset.periodEnd ? `${dataset.periodStart}–${dataset.periodEnd}` : "SAVED SNAPSHOT";
 
     ui.kpiRows.textContent = format(usedRows.length, 0);
-    ui.kpiRowsNote.textContent = `${usedRows.length} / ${totalRows} ROWS`;
+    ui.kpiRowsNote.textContent = `表示 ${usedRows.length} / 全 ${totalRows}件`;
     ui.kpiCoverage.textContent = `${format(coverage * 100, 1)}%`;
-    ui.kpiCoverageNote.textContent = state.recordQuery ? "QUERY SEGMENT" : (state.includeDerived ? "SOURCE + DERIVED" : "SOURCE FILTER");
-    ui.kpiPrimaryLabel.textContent = primary?.[0] || "PRIMARY KPI";
+    ui.kpiCoverageNote.textContent = state.recordQuery ? "検索結果" : (state.includeDerived ? "観測値＋補完値" : "観測値のみ");
+    ui.kpiPrimaryLabel.textContent = primary?.[0] || "代表値";
     ui.kpiPrimary.textContent = primary ? `${format(primary[1])}${primary[2] || ""}` : "—";
-    ui.kpiPrimaryNote.textContent = primary ? `${METHOD_LOOKUP.get(state.methodId)?.group.id || "--"} / LIVE RESULT` : "数値指標なし";
-    ui.kpiQuality.textContent = sourceRows === usedRows.length ? "SOURCE ONLY" : `${format(sourceShare * 100, 1)}% SOURCE`;
-    ui.kpiQualityNote.textContent = `${sourceRows} SOURCE / ${usedRows.length - sourceRows} DERIVED`;
+    ui.kpiPrimaryNote.textContent = primary ? "現在の条件で再計算" : "数値指標なし";
+    ui.kpiQuality.textContent = sourceRows === usedRows.length ? "観測値のみ" : `観測値 ${format(sourceShare * 100, 1)}%`;
+    ui.kpiQualityNote.textContent = `観測 ${sourceRows} / 補完 ${usedRows.length - sourceRows}件`;
     ui.kpis.dataset.usedRows = String(usedRows.length);
     ui.kpis.dataset.totalRows = String(totalRows);
     ui.kpis.dataset.sourceRows = String(sourceRows);
     ui.kpis.dataset.coverage = String(coverage);
     ui.kpis.dataset.quality = sourceRows === usedRows.length ? "source-only" : "mixed";
     const querySummary = state.recordQuery ? ` · QUERY “${state.recordQuery}”` : "";
-    ui.filterSummary.textContent = `FILTER / ${state.includeDerived ? "SOURCE + DERIVED" : "SOURCE ONLY"}${querySummary} · ${period} · BROWSER LOCAL`;
+    ui.filterSummary.textContent = `${state.includeDerived ? "観測値＋補完値" : "観測値のみ"}${querySummary}　/　${period}　/　この端末で計算`;
 
     const comparisonLabel = document.createElement("span"); comparisonLabel.textContent = "SEGMENT / ALL ELIGIBLE";
     const comparisonValue = document.createElement("strong");
@@ -999,7 +1000,11 @@ if (!lab || !openButton) {
     (insight?.evidence || []).slice(0, 3).forEach((metric) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = metricText(metric);
+      const label = document.createElement("span");
+      label.textContent = metric[0] === "n" ? "観測数" : metric[0];
+      const value = document.createElement("strong");
+      value.textContent = `${format(metric[1])}${metric[2] || ""}`;
+      button.append(label, value);
       button.title = "計算結果を開いて根拠を確認";
       button.addEventListener("click", () => {
         const details = q(".gaia-statistics-values");
@@ -1068,7 +1073,7 @@ if (!lab || !openButton) {
       const factor = state.recordSortDirection === "descending" ? -1 : 1;
       displayRows.sort((left, right) => factor * compareRecordValues(left.values[state.recordSortKey], right.values[state.recordSortKey]) || left.sourceIndex - right.sourceIndex);
     }
-    ui.recordCount.textContent = `${rows.length} ROWS`;
+    ui.recordCount.textContent = `${format(rows.length, 0)}件`;
     ui.recordXHeading.textContent = categorical ? "カテゴリ" : (dataset.xLabel || "説明変数");
     ui.recordYHeading.textContent = categorical ? "グループ" : (dataset.yLabel || `値${dataset.unit ? ` (${dataset.unit})` : ""}`);
     updateRecordSortHeaders();
@@ -1304,8 +1309,12 @@ if (!lab || !openButton) {
       maxY = Math.max(maxY, ...chart.bins.map((bin) => bin.count));
     }
     if (minX === maxX) { minX -= 1; maxX += 1; } if (minY === maxY) { minY -= 1; maxY += 1; }
-    const xMargin = (maxX - minX) * 0.035;
-    minX -= xMargin; maxX += xMargin;
+    const nonNegativeX = minX >= 0;
+    const xRange = maxX - minX;
+    const anchorAtZero = frequencyChart && nonNegativeX && minX <= xRange * 0.05;
+    const xMargin = xRange * 0.035;
+    minX = anchorAtZero ? 0 : minX - xMargin;
+    maxX += xMargin;
     if (frequencyChart) minY = 0;
     else {
       const yMargin = (maxY - minY) * 0.08;
@@ -1388,12 +1397,18 @@ if (!lab || !openButton) {
       targets.forEach((target, id) => {
         const from = starts.get(id); const x = from.sx + (target.sx - from.sx) * eased; const y = from.sy + (target.sy - from.sy) * eased;
         const colors = ["#82e8ff", "#679dff", "#94f2d8", "#f2d59b", "#b692ff"];
-        ctx.fillStyle = colors[target.group % colors.length]; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(x, y, chart.type === "categorical" ? Math.min(12, 4 + Math.sqrt(Math.max(0, target.y))) : 4.2, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        const densePlot = points.length >= 500;
+        const pointRadius = chart.type === "categorical" ? Math.min(12, 4 + Math.sqrt(Math.max(0, target.y))) : densePlot ? 2.15 : points.length >= 160 ? 3 : 4.2;
+        ctx.fillStyle = colors[target.group % colors.length];
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = densePlot ? 0 : 7;
+        ctx.beginPath(); ctx.arc(x, y, pointRadius, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
         liveTargets.push({ ...target, sx: x, sy: y });
         if (t === 1) state.points.set(id, { sx: target.sx, sy: target.sy, group: target.group });
       });
       state.chartTargets = liveTargets;
-      ctx.fillStyle = "rgba(226,247,255,.68)"; ctx.font = "10px var(--font-ja), sans-serif"; ctx.textAlign = "right"; ctx.fillText(`${points.length} PLOTS / ${(result.insight?.provenance || dataset.provenance).join(" + ")}`, width - pad.right, 18);
+      const sourceLabel = (result.insight?.provenance || dataset.provenance).every((kind) => kind === "SOURCE") ? "観測値" : "観測値＋補完値";
+      ctx.fillStyle = "rgba(226,247,255,.68)"; ctx.font = "10px var(--font-ja), sans-serif"; ctx.textAlign = "right"; ctx.fillText(`観測 ${format(points.length, 0)}件 / ${sourceLabel}`, width - pad.right, 18);
       if (t < 1) state.animation = requestAnimationFrame(paint);
     };
     state.animation = requestAnimationFrame(paint);
@@ -1426,7 +1441,7 @@ if (!lab || !openButton) {
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
-    ui.number.textContent = `${method.group.id} / ${method.group.name.toUpperCase()}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "CALCULATING";
+    ui.number.textContent = `${method.group.id} / ${method.group.name}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "計算中";
     const token = ++state.renderToken;
     requestAnimationFrame(async () => {
       if (token !== state.renderToken) return;
@@ -1435,7 +1450,7 @@ if (!lab || !openButton) {
         if (token !== state.renderToken) return;
         state.result = result;
         renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset);
-        ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : `${rowsFor(dataset).length}件`;
+        ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : "解析済み";
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
         const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); ui.status.textContent = "条件不足";
@@ -1464,7 +1479,7 @@ if (!lab || !openButton) {
     if (!supportsDerived) state.includeDerived = false;
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
     state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
-    ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}`;
+    ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId}　/　${dataset.title}`;
     if (chooseDefault) { const method = dataset.defaultMethod || DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
     render();
   };

@@ -25,6 +25,7 @@
     "audio:map": "node scripts/build-map-ambient-score.mjs",
     "check:audio-map": "node scripts/check-map-ambient-score.mjs",
     "preview:novel": "node scripts/serve-novel-preview.mjs 4173",
+    "check:sound-constellation": "node --check sound-constellation.js && node scripts/capture-sound-morph-prototype.mjs",
     "check:ending-data-skip": "node --check scripts/check-ending-data-skip-browser.mjs",
     "check:trueend": "node --check scripts/check-true-end-browser.mjs",
     "check:title-gate": "node --check scripts/check-novel-title-gate-browser.mjs",

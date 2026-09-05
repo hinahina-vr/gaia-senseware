@@ -289,11 +289,11 @@ try {
       assert.notEqual(card.backgroundImage, "none", `${viewport.name}: ${card.id} is transparent while unfocused`);
       assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
       if (!viewport.reduced && card.id === "gaia-opening-route-story") {
-        assert.equal(card.glintAnimationName, "opening-choice-glint", `${viewport.name}: focused-card glint did not run`);
-        assert.equal(card.glintAnimationDuration, "0.24s", `${viewport.name}: focused-card glint is not three times faster`);
+        assert.equal(card.glintAnimationName, "opening-route-glint", `${viewport.name}: focused-card glint did not run`);
+        assert.equal(card.glintAnimationDuration, "0.68s", `${viewport.name}: focused-card glint is mistimed`);
         assert.equal(card.focusFlashDisplay, "block", `${viewport.name}: focused-card reflection layer is hidden`);
         assert.equal(card.focusFlashAnimationName, "opening-route-focus-flash", `${viewport.name}: focused-card reflection did not run`);
-        assert.equal(card.focusFlashAnimationDuration, "0.52s", `${viewport.name}: focused-card reflection is mistimed`);
+        assert.equal(card.focusFlashAnimationDuration, "0.78s", `${viewport.name}: focused-card reflection is mistimed`);
       }
       if (viewport.reduced) assert.equal(card.focusFlashDisplay, "none", `${viewport.name}: reduced-motion focus flash remains visible`);
       assert.equal(overlapArea(card.labelRect, card.symbolRect), 0, `${viewport.name}: ${card.id} label overlaps its icon`);

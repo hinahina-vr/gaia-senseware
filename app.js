@@ -6201,13 +6201,20 @@
     ctx.restore();
   };
 
-  window.addEventListener("gaia:live-exhibit-change", () => {
+  const syncExclusiveMapExhibit = () => {
     if (japanIsOpen) {
       clearJapanPoiHover();
+      closeJapanPoi();
       restartMapPlotReveal("exhibit-change");
     }
     renderJapanOverlay(performance.now());
-  });
+  };
+  [
+    "gaia:live-exhibit-change",
+    "gaia:estat-exhibit-change",
+    "gaia:firms-exhibit-change",
+    "gaia:planet-signals-change",
+  ].forEach((eventName) => window.addEventListener(eventName, syncExclusiveMapExhibit));
   window.addEventListener("gaia:signals-ready", () => {
     if (japanIsOpen) restartMapPlotReveal("data-ready");
   });
@@ -6729,6 +6736,9 @@
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
     if (!selectedJapanPoi) {
+      japanPoiCard.hidden = true;
+      japanPoiCard.setAttribute("aria-hidden", "true");
+      japanLayer.classList.remove("japan-poi-open");
       return;
     }
     selectedJapanPoi = null;
@@ -9356,12 +9366,19 @@ for (const country of countryValues) {
         anthropocenePeelUntil = performance.now() + 6000;
         japanMapStatus.textContent = "NIGHT LIGHT PEELED / EMISSIONS LAYER REMAINS";
       } else if (createPulse && !japanView.dragged && !japanView.gesture) {
-        const poi = findJapanPoiAt(event.clientX, event.clientY, event.pointerType);
-        if (poi) {
-          openJapanPoi(poi, event.clientX, event.clientY);
-        } else {
+        const exclusiveExhibit = japanLayer.classList.contains("is-live-exhibit")
+          || japanLayer.classList.contains("is-estat-exhibit")
+          || japanLayer.classList.contains("is-firms-exhibit");
+        if (exclusiveExhibit) {
           closeJapanPoi();
-          addJapanPulse(event.clientX, event.clientY);
+        } else {
+          const poi = findJapanPoiAt(event.clientX, event.clientY, event.pointerType);
+          if (poi) {
+            openJapanPoi(poi, event.clientX, event.clientY);
+          } else {
+            closeJapanPoi();
+            addJapanPulse(event.clientX, event.clientY);
+          }
         }
       }
     }

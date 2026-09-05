@@ -2045,6 +2045,16 @@ body.gaia-opening-active:not(.novel-open) .novel-layer {
   text-wrap: balance;
 }
 
+.gaia-vn-character-copy strong .gaia-vn-quote-keep {
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .gaia-vn-character-copy strong .gaia-vn-quote-break {
+    display: none;
+  }
+}
+
 .gaia-vn-character-reply {
   margin-top: 9px;
   color: rgba(var(--opening-paper), 0.7);
@@ -3909,7 +3919,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Sound confirmation opens on the story's first key visual. */
+/* The sound setup is a small, still surface: no animated backdrop or live blur. */
 .gaia-opening-sound-modal {
   --sound-accent: var(--opening-mint);
   --sound-secondary: var(--opening-blue);
@@ -3918,683 +3928,332 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   inset: 0;
   display: grid;
   overflow: hidden;
-  padding:
-    max(clamp(28px, 5vh, 58px), env(safe-area-inset-top))
-    max(clamp(28px, 5vw, 76px), env(safe-area-inset-right))
-    max(clamp(28px, 6vh, 68px), env(safe-area-inset-bottom))
-    max(clamp(28px, 5vw, 76px), env(safe-area-inset-left));
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   isolation: isolate;
   place-items: center;
   background: #0a1a2a;
-  transition: opacity 320ms ease, visibility 320ms ease;
+  transition: opacity 240ms ease, visibility 240ms ease;
 }
 
-.gaia-opening-sound-modal::before,
-.gaia-opening-sound-modal::after,
 .gaia-opening-sound-scene,
 .gaia-opening-sound-scene > span {
   position: absolute;
-  inset: -3%;
+  inset: 0;
   pointer-events: none;
 }
 
-.gaia-opening-sound-modal::before,
-.gaia-opening-sound-modal::after {
-  content: "";
-}
-
-.gaia-opening-sound-scene {
-  z-index: -3;
-  overflow: hidden;
-  filter: saturate(0.88) contrast(1.02);
-}
-
+.gaia-opening-sound-scene { z-index: -3; overflow: hidden; }
 .gaia-opening-sound-scene > span {
-  display: block;
   background:
     linear-gradient(180deg, rgba(8, 24, 40, 0.02), rgba(5, 17, 30, 0.24)),
     var(--opening-keyvisual-image) 54% center / cover no-repeat;
-  transform: scale(1.035);
 }
 
-.gaia-opening-sound-modal.is-visible .gaia-opening-sound-scene > span {
-  animation: opening-sound-scene-drift 16s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.gaia-opening-sound-modal::after {
-  display: none;
-}
-
-.gaia-opening-sound-modal[hidden] {
-  display: none;
-}
-
-.gaia-opening-sound-modal.is-visible {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
+.gaia-opening-sound-modal[hidden] { display: none; }
+.gaia-opening-sound-modal.is-visible { opacity: 1; visibility: visible; pointer-events: auto; }
 
 .gaia-opening-sound-modal-scrim {
   position: absolute;
   z-index: -2;
   inset: 0;
   background: rgba(0, 0, 0, 0.68);
-  -webkit-backdrop-filter: blur(2px) saturate(0.72);
-  backdrop-filter: blur(2px) saturate(0.72);
 }
 
 .gaia-opening-sound-dialog {
   position: relative;
-  width: min(720px, calc(100vw - 56px));
-  overflow: hidden;
-  padding: clamp(26px, 3vw, 36px);
-  border: 1px solid rgba(var(--opening-mint), 0.24);
-  border-radius: 18px;
-  color: rgba(var(--opening-paper), 0.96);
-  background:
-    radial-gradient(circle at 82% 8%, rgba(var(--opening-mint), 0.07), transparent 36%),
-    linear-gradient(128deg, rgba(5, 20, 34, 0.92), rgba(8, 29, 45, 0.82));
-  -webkit-backdrop-filter: blur(20px) saturate(0.96);
-  backdrop-filter: blur(20px) saturate(0.96);
-  box-shadow:
-    0 28px 90px rgba(0, 7, 18, 0.46),
-    inset 0 1px rgba(var(--opening-paper), 0.07);
-  transform: translateY(16px);
-  transition: transform 440ms cubic-bezier(0.2, 0.76, 0.2, 1);
+  width: min(640px, 100%);
+  padding: 32px;
+  border: 1px solid #354b54;
+  border-radius: 20px;
+  color: #e5ede9;
+  background: radial-gradient(ellipse at 100% 0%, #18323a 0%, transparent 60%), #0b1c25;
+  box-shadow: 0 24px 72px #0006, inset 0 1px #ebfff510;
+  transform: translateY(8px);
+  transition: transform 240ms ease-out;
 }
 
-.gaia-opening-sound-modal.is-visible .gaia-opening-sound-dialog {
-  transform: none;
-}
-
-.gaia-opening-sound-dialog::before {
-  position: absolute;
-  top: 0;
-  right: 22px;
-  left: 22px;
-  height: 1px;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgba(var(--opening-mint), 0.62) 18%, rgba(var(--opening-blue), 0.32) 72%, transparent);
-  box-shadow: 0 0 18px rgba(var(--opening-mint), 0.13);
-}
-
-.gaia-opening-sound-dialog::after {
-  display: none;
-}
+.gaia-opening-sound-modal.is-visible .gaia-opening-sound-dialog { transform: none; }
+.gaia-opening-sound-dialog::after { display: none; }
 
 .gaia-opening-sound-heading > h2 {
   margin: 0;
-  max-width: 13em;
-  color: rgba(var(--opening-paper), 0.96);
+  color: #e5ede9;
   font-family: var(--font-ja);
-  font-size: clamp(26px, 2.8vw, 37px);
+  font-size: 30px;
   font-weight: 460;
-  letter-spacing: 0.055em;
-  line-height: 1.34;
-  text-shadow: 0 2px 26px rgba(1, 8, 17, 0.48);
+  letter-spacing: 0.06em;
+  line-height: 1.4;
 }
 
 .gaia-opening-sound-heading > span {
   display: block;
-  margin-top: 10px;
-  color: rgba(var(--opening-paper), 0.58);
+  margin-top: 8px;
+  color: #a1b3b7;
   font-family: var(--font-ja);
-  font-size: 10px;
-  letter-spacing: 0.09em;
-  line-height: 1.7;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  line-height: 1.8;
 }
 
-.gaia-opening-language {
-  margin-top: 22px;
-}
-
+/* Native names are enough; the selected language has both a surface and a tick. */
+.gaia-opening-language { margin-top: 24px; }
 .gaia-opening-language-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #52646b48;
+  border-radius: 10px;
+  background: #06151c80;
 }
-
 .gaia-opening-language-options button {
   position: relative;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  display: flex;
   align-items: center;
-  gap: 11px;
-  overflow: hidden;
+  justify-content: center;
+  gap: 9px;
   min-width: 0;
-  min-height: 70px;
-  padding: 11px 12px;
-  border: 1px solid rgba(var(--opening-paper), 0.14);
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #a9b9bf;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.gaia-opening-language-options button:hover { color: #f0f7f3; background-color: #e5fff508; }
+.gaia-opening-language-options button[aria-pressed="true"] {
+  border-color: #cee7d224;
+  color: #eff8ed;
+  background: #2a4647;
+  box-shadow: inset 0 1px #ebfff514, 0 2px 4px #0002;
+}
+.gaia-opening-language-options button:focus-visible {
+  outline: 2px solid #b1dccf;
+  outline-offset: 2px;
+}
+.gaia-opening-language-name {
+  min-width: 0;
+  font-family: var(--font-ja);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.gaia-opening-language-check {
+  width: 12px;
+  opacity: 0;
+  color: #b5e0cd;
+  font: 500 13px/1 sans-serif;
+}
+.gaia-opening-language-options button[aria-pressed="true"] .gaia-opening-language-check { opacity: 1; }
+
+/* Matched actions, with a flowing signal for sound and a quiet line for silence.
+   The sheen and line art are static; only a small highlight fades on hover. */
+.gaia-opening-sound-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.gaia-opening-sound-option { min-width: 0; }
+.gaia-opening-sound-option-button {
+  --option-accent: 180, 226, 210;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  grid-template-rows: 1fr auto;
+  gap: 22px 12px;
+  align-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: 138px;
+  padding: 20px 22px;
+  border: 1px solid #a3d6c759;
   border-radius: 12px;
-  color: rgba(var(--opening-paper), 0.68);
+  color: #edf6ed;
   text-align: left;
   background:
-    linear-gradient(135deg, rgba(var(--opening-paper), 0.035), transparent 54%),
-    rgba(3, 14, 25, 0.3);
-  box-shadow: inset 0 1px rgba(var(--opening-paper), 0.035);
+    radial-gradient(ellipse at 0% 0%, #9ddcce20, transparent 70%),
+    linear-gradient(155deg, #285854, #183a39 65%, #12312f);
+  box-shadow: inset 0 1px #d9ffef29, inset 0 -1px #001c2359, 0 4px 9px #0002;
   cursor: pointer;
-  isolation: isolate;
   touch-action: manipulation;
-  transition: color 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
 }
-
-.gaia-opening-language-options button::before {
+.gaia-opening-sound-option--off .gaia-opening-sound-option-button {
+  --option-accent: 172, 192, 211;
+  border-color: #869dac45;
+  color: #cbd9df;
+  background:
+    radial-gradient(ellipse at 0% 0%, #a0c8e113, transparent 70%),
+    linear-gradient(155deg, #213542, #162832 65%, #12212b);
+  box-shadow: inset 0 1px #deefff12, inset 0 -1px #001c2329, 0 4px 9px #0001;
+}
+.gaia-opening-sound-option-button::before {
   position: absolute;
   z-index: -1;
   inset: 0;
   content: "";
-  opacity: 0;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(var(--opening-mint), 0.22), transparent 48%),
-    linear-gradient(118deg, rgba(var(--opening-mint), 0.12), rgba(var(--opening-blue), 0.055));
-  transition: opacity 190ms ease;
-}
-
-.gaia-opening-language-options button:is(:hover, :focus-visible) {
-  border-color: rgba(var(--opening-mint), 0.5);
-  color: rgba(var(--opening-paper), 0.96);
-  outline: 0;
-  box-shadow: 0 12px 28px rgba(0, 8, 20, 0.24), 0 0 22px rgba(var(--opening-mint), 0.07);
-  transform: translateY(-2px);
-}
-
-.gaia-opening-language-options button[aria-pressed="true"] {
-  border-color: rgba(var(--opening-mint), 0.68);
-  color: rgba(var(--opening-paper), 0.98);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--opening-mint), 0.08),
-    0 10px 32px rgba(0, 8, 20, 0.28),
-    0 0 28px rgba(var(--opening-mint), 0.12);
-}
-
-.gaia-opening-language-options button:is(:hover, :focus-visible)::before,
-.gaia-opening-language-options button[aria-pressed="true"]::before {
-  opacity: 1;
-}
-
-.gaia-opening-language-glyph {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgba(var(--opening-paper), 0.16);
-  border-radius: 50%;
-  color: rgba(var(--opening-paper), 0.74);
-  background: rgba(1, 12, 23, 0.32);
-  font-family: var(--font-ja);
-  font-size: 17px;
-  line-height: 1;
-  box-shadow: inset 0 0 18px rgba(var(--opening-mint), 0.035);
-  transition: color 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
-}
-
-.gaia-opening-language-options button:is(:hover, :focus-visible, [aria-pressed="true"]) .gaia-opening-language-glyph {
-  border-color: rgba(var(--opening-mint), 0.72);
-  color: rgb(var(--opening-mint));
-  background: rgba(var(--opening-mint), 0.12);
-  box-shadow: 0 0 20px rgba(var(--opening-mint), 0.18), inset 0 0 18px rgba(var(--opening-mint), 0.06);
-  transform: scale(1.04);
-}
-
-.gaia-opening-language-copy {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.gaia-opening-language-name {
-  overflow: hidden;
-  font-family: var(--font-ja);
-  font-size: 12px;
-  font-weight: 560;
-  letter-spacing: 0.035em;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gaia-opening-language-copy small {
-  color: rgba(var(--opening-mint), 0.48);
-  font: 700 7px/1 Consolas, "Courier New", monospace;
-  letter-spacing: 0.17em;
-}
-
-.gaia-opening-language-check {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid rgba(var(--opening-paper), 0.14);
-  border-radius: 50%;
-  opacity: 0.28;
-  color: transparent;
-  font: 700 10px/1 Consolas, "Courier New", monospace;
-  transform: scale(0.82);
-  transition: color 190ms ease, opacity 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
-}
-
-.gaia-opening-language-options button[aria-pressed="true"] .gaia-opening-language-check {
-  border-color: rgba(var(--opening-mint), 0.86);
-  opacity: 1;
-  color: #062330;
-  background: rgb(var(--opening-mint));
-  box-shadow: 0 0 16px rgba(var(--opening-mint), 0.3);
-  transform: scale(1);
-}
-
-.gaia-opening-sound-choices {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  margin-top: 14px;
-  border-top: 1px solid rgba(var(--opening-paper), 0.18);
-  border-bottom: 1px solid rgba(var(--opening-paper), 0.14);
-}
-
-.gaia-opening-sound-option {
-  --option-accent: var(--opening-mint);
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: rgba(5, 19, 32, 0.16);
-  transition: background 180ms ease, box-shadow 180ms ease;
-}
-
-.gaia-opening-sound-option::after {
-  position: absolute;
-  top: 9px;
-  right: 10px;
-  color: rgba(var(--opening-paper), 0.34);
-  font: 700 8px/1 Consolas, "Courier New", monospace;
-  letter-spacing: 0.1em;
   pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(125deg, #d6ffed15, #d6ffed03 72%);
+  transition: opacity 160ms ease;
 }
-
-.gaia-opening-sound-option--on::after { content: "01 / LISTEN"; }
-.gaia-opening-sound-option--off::after { content: "02 / SILENT"; }
-
-.gaia-opening-sound-option--on {
-  background: rgba(5, 19, 32, 0.16);
-}
-
-.gaia-opening-sound-option--off {
-  --option-accent: var(--opening-blue);
-  border-left: 1px solid rgba(var(--opening-paper), 0.14);
-}
-
-.gaia-opening-sound-option:focus-within,
-.gaia-opening-sound-option:hover {
-  background: linear-gradient(90deg, rgba(var(--option-accent), 0.09), rgba(var(--option-accent), 0.018) 74%, transparent);
-  box-shadow: inset 0 0 0 1px rgba(var(--option-accent), 0.25);
-}
-
-.gaia-opening-sound-option:has(.gaia-opening-sound-option-button[aria-pressed="true"]) {
-  background: linear-gradient(90deg, rgba(var(--option-accent), 0.11), rgba(var(--option-accent), 0.025) 76%, transparent);
-}
-
-.gaia-opening-sound-option-button {
-  position: relative;
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  min-height: 86px;
-  padding: 22px 15px 15px;
-  border: 0;
-  color: rgba(var(--opening-paper), 0.92);
-  text-align: left;
-  background: transparent;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.gaia-opening-sound-option--off .gaia-opening-sound-option-button {
-  height: 100%;
-}
-
-.gaia-opening-sound-option-button:focus-visible {
-  outline: 1px solid rgba(var(--option-accent), 0.72);
-  outline-offset: -1px;
-}
-
-.gaia-opening-sound-option-button:disabled {
-  opacity: 0.58;
-  cursor: wait;
-}
-
-.gaia-opening-sound-option-button .gaia-opening-sound-icon-shell {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid rgba(var(--option-accent), 0.42);
-  border-radius: 50%;
-  color: rgba(var(--option-accent), 0.9);
-  background: rgba(var(--option-accent), 0.055);
-  box-shadow: inset 0 0 16px rgba(var(--option-accent), 0.04);
-  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-}
-
-.gaia-opening-sound-option-button:is(:hover, :focus-visible) .gaia-opening-sound-icon-shell {
-  background: rgba(var(--option-accent), 0.13);
-  box-shadow: 0 0 18px rgba(var(--option-accent), 0.15);
-  transform: scale(1.04);
-}
-
-.gaia-opening-sound-option-button[aria-pressed="true"] .gaia-opening-sound-icon-shell {
-  border-color: rgba(var(--option-accent), 0.74);
-  background: rgba(var(--option-accent), 0.13);
-  box-shadow: 0 0 18px rgba(var(--option-accent), 0.12);
-}
-
-.gaia-opening-sound-option-button .gaia-opening-sound-icon {
-  width: 23px;
-  height: 23px;
-}
-
-.gaia-opening-sound-option-label {
-  font-family: var(--font-ja);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.065em;
-  line-height: 1.45;
-}
-
-.gaia-opening-sound-option-arrow {
-  color: rgba(var(--option-accent), 0.7);
-  font: 400 17px/1 Consolas, "Courier New", monospace;
-}
-
-.gaia-opening-sound-option .gaia-opening-volume-choice {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 38px;
-  align-items: center;
-  gap: 9px;
-  width: auto;
-  margin: 0 14px;
-  padding: 10px 2px 13px;
-  border-top: 1px solid rgba(var(--opening-paper), 0.12);
-}
-
-.gaia-opening-volume-icon {
-  display: grid;
-  place-items: center;
-  color: rgba(var(--opening-mint), 0.72);
-}
-
-.gaia-opening-volume-icon svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
+.gaia-opening-sound-option-button:is(:hover, :focus-visible)::before { opacity: 1; }
+.gaia-opening-sound-option-button:focus-visible { outline: 2px solid #c2e9da; outline-offset: -2px; }
+.gaia-opening-sound-option-button:active::before { opacity: 0.35; }
+.gaia-opening-sound-option-button:disabled { opacity: 0.58; cursor: wait; }
+.gaia-opening-sound-option-wave {
+  position: absolute;
+  z-index: -1;
+  top: 10px;
+  right: -34px;
+  width: 78%;
+  height: 80px;
+  pointer-events: none;
+  color: rgba(var(--option-accent), 0.3);
   stroke: currentColor;
-  stroke-width: 1.5;
+  stroke-width: 0.9;
+  mask-image: linear-gradient(90deg, transparent, #000 24%, #000 75%, transparent);
+}
+.gaia-opening-sound-option-wave path:nth-child(2) { opacity: 0.4; }
+.gaia-opening-sound-option-wave path:nth-child(3) { opacity: 0.2; }
+.gaia-opening-sound-option--off .gaia-opening-sound-option-wave { opacity: 0.4; }
+.gaia-opening-sound-option-button .gaia-opening-sound-icon-shell {
+  display: block;
+  width: 30px;
+  height: 30px;
+  color: rgb(var(--option-accent));
+}
+.gaia-opening-sound-option-button .gaia-opening-sound-icon { width: 30px; height: 30px; stroke-width: 1.25; }
+.gaia-opening-sound-option-label {
+  grid-column: 1;
+  font-family: var(--font-ja);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  line-height: 1.5;
+}
+.gaia-opening-sound-option-arrow {
+  grid-column: 2;
+  grid-row: 2;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: rgba(var(--option-accent), 0.8);
+  stroke-width: 1.25;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transition: transform 160ms ease;
+}
+.gaia-opening-sound-option-button:is(:hover, :focus-visible) .gaia-opening-sound-option-arrow { transform: translateX(3px); }
+
+.gaia-opening-setup-volume {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid #b7d0d018;
+}
+.gaia-opening-setup-volume label {
+  margin: 0;
+  color: #a7bcbf;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.gaia-opening-setup-volume output { justify-self: end; color: #b5ceca; font-size: 11px; font-weight: 400; }
+.gaia-opening-setup-volume input[type="range"] { height: 32px; }
+.gaia-opening-setup-volume input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(90deg, #aadacb var(--volume-fill, 10%), #364d57 var(--volume-fill, 10%));
+  box-shadow: none;
+}
+.gaia-opening-setup-volume input[type="range"]::-moz-range-track { height: 2px; background: #364d57; box-shadow: none; }
+.gaia-opening-setup-volume input[type="range"]::-moz-range-progress { height: 2px; background: #aadacb; }
+.gaia-opening-setup-volume input[type="range"]::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 1px solid #e1f4e7;
+  background: #b9dfd0;
+  box-shadow: 0 0 0 4px #b2dacb0c, 0 2px 4px #0004;
+}
+.gaia-opening-setup-volume input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #e1f4e7;
+  background: #b9dfd0;
+  box-shadow: 0 0 0 4px #b2dacb0c, 0 2px 4px #0004;
 }
 
-.gaia-opening-sound-option .gaia-opening-volume-choice output {
-  justify-self: end;
-  font-size: 9px;
-  color: rgba(var(--opening-mint), 0.78);
-}
-
-.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-webkit-slider-runnable-track {
-  background: linear-gradient(90deg, rgba(var(--opening-mint), 0.74), rgba(var(--opening-blue), 0.52));
-  box-shadow: 0 0 12px rgba(var(--opening-mint), 0.1);
-}
-
-.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-moz-range-track {
-  background: linear-gradient(90deg, rgba(var(--opening-mint), 0.74), rgba(var(--opening-blue), 0.52));
-  box-shadow: 0 0 12px rgba(var(--opening-mint), 0.1);
-}
-
-.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-webkit-slider-thumb {
-  border-color: rgba(var(--opening-paper), 0.9);
-  background: rgb(var(--opening-mint));
-  box-shadow: 0 0 0 4px rgba(var(--opening-mint), 0.1), 0 0 16px rgba(var(--opening-mint), 0.32);
-}
-
-.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-moz-range-thumb {
-  border-color: rgba(var(--opening-paper), 0.9);
-  background: rgb(var(--opening-mint));
-  box-shadow: 0 0 0 4px rgba(var(--opening-mint), 0.1), 0 0 16px rgba(var(--opening-mint), 0.32);
-}
-
-@keyframes opening-sound-scene-drift {
-  from { transform: scale(1.035) translate3d(-0.25%, 0, 0); }
-  to { transform: scale(1.06) translate3d(0.35%, -0.4%, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gaia-opening-sound-modal.is-visible .gaia-opening-sound-scene > span {
-    animation: none;
-    will-change: auto;
-  }
-}
-
-@keyframes opening-sound-light-breathe {
-  from { opacity: 0.42; transform: rotate(-4deg) scale(1.01); }
-  to { opacity: 0.7; transform: rotate(3deg) scale(1.08); }
-}
-
-.gaia-opening.is-sound-modal-open .gaia-opening-final-menu.is-visible {
-  opacity: 0.4;
-  filter: blur(2px);
-  pointer-events: none;
-}
+.gaia-opening.is-sound-modal-open .gaia-opening-final-menu.is-visible { opacity: 0.4; pointer-events: none; }
 
 @media (max-width: 720px) {
   .gaia-opening-sound-modal {
-    padding:
-      max(20px, env(safe-area-inset-top))
-      max(14px, env(safe-area-inset-right))
-      max(18px, env(safe-area-inset-bottom))
-      max(14px, env(safe-area-inset-left));
+    padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+      max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
-
-  .gaia-opening-sound-modal::before {
-    background-position: 65% center;
-  }
-
-  .gaia-opening-sound-modal-scrim {
-    background: rgba(0, 0, 0, 0.68);
-  }
-
-  .gaia-opening-sound-dialog {
-    width: min(520px, calc(100vw - 28px));
-    padding: 20px 16px 15px;
-    border-radius: 14px;
-  }
-
-  .gaia-opening-sound-heading > h2 {
-    font-size: clamp(24px, 7.2vw, 31px);
-    line-height: 1.32;
-  }
-
-  .gaia-opening-sound-heading > span {
-    margin-top: 7px;
-    font-size: 9px;
-    letter-spacing: 0.055em;
-  }
-
-  .gaia-opening-language {
-    margin-top: 14px;
-  }
-
-  .gaia-opening-language-options {
-    gap: 7px;
-    width: 100%;
-  }
-
-  .gaia-opening-language-options button {
-    grid-template-columns: 36px minmax(0, 1fr) 18px;
-    gap: 8px;
-    min-height: 62px;
-    padding: 8px;
-    border-radius: 10px;
-  }
-
-  .gaia-opening-language-glyph { width: 36px; height: 36px; font-size: 15px; }
-  .gaia-opening-language-name { font-size: 10px; }
-  .gaia-opening-language-check { width: 16px; height: 16px; font-size: 9px; }
-
-  .gaia-opening-sound-choices {
-    gap: 0;
-    margin-top: 14px;
-  }
-
-  .gaia-opening-sound-option-button {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 8px;
-    min-height: 72px;
-    padding: 20px 9px 10px;
-  }
-
-  .gaia-opening-sound-option-button .gaia-opening-sound-icon-shell {
-    width: 42px;
-    height: 42px;
-  }
-
-  .gaia-opening-sound-option-button .gaia-opening-sound-icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .gaia-opening-sound-option-label {
-    font-size: 11px;
-    letter-spacing: 0.025em;
-  }
-
-  .gaia-opening-sound-option-arrow {
-    display: none;
-  }
-
-  .gaia-opening-sound-option .gaia-opening-volume-choice {
-    grid-template-columns: 18px minmax(0, 1fr) 32px;
-    gap: 7px;
-    margin-inline: 9px;
-    padding: 9px 1px 11px;
-  }
-
-  .gaia-opening-sound-option::after {
-    top: 7px;
-    right: 7px;
-    font-size: 6px;
-  }
+  .gaia-opening-sound-dialog { width: min(520px, 100%); padding: 26px 22px 20px; border-radius: 16px; }
+  .gaia-opening-sound-heading > h2 { font-size: 26px; }
+  .gaia-opening-sound-heading > span { font-size: 11px; }
+  .gaia-opening-language { margin-top: 20px; }
+  .gaia-opening-language-options button { padding: 8px 5px; gap: 5px; }
+  .gaia-opening-language-name { font-size: 12px; }
+  .gaia-opening-sound-choices { gap: 10px; margin-top: 16px; }
+  .gaia-opening-sound-option-button { min-height: 130px; padding: 17px 14px; gap: 20px 6px; }
+  .gaia-opening-sound-option-label { font-size: 15px; letter-spacing: 0.01em; }
+  .gaia-opening-sound-option-arrow { width: 17px; height: 17px; }
+  .gaia-opening-setup-volume { margin-top: 18px; gap: 12px; }
 }
 
-@media (max-width: 420px) {
-  .gaia-opening-language-options {
-    width: 100%;
-  }
-
-  .gaia-opening-language-options button {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 4px;
-    min-height: 78px;
-    padding: 7px 4px 8px;
-    text-align: center;
-  }
-
-  .gaia-opening-language-glyph { width: 30px; height: 30px; font-size: 13px; }
-  .gaia-opening-language-copy { gap: 2px; }
-  .gaia-opening-language-name { font-size: 9px; }
-  .gaia-opening-language-copy small { font-size: 5.5px; }
-  .gaia-opening-language-check {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 14px;
-    height: 14px;
-    font-size: 8px;
-  }
-
-  .gaia-opening-sound-choices {
-    grid-template-columns: 1fr;
-  }
-
-  .gaia-opening-sound-option--off {
-    border-top: 1px solid rgba(var(--opening-paper), 0.14);
-    border-left: 0;
-  }
+@media (max-width: 360px) {
+  .gaia-opening-sound-dialog { padding: 22px 16px 16px; }
+  .gaia-opening-sound-heading > h2 { font-size: 24px; }
+  .gaia-opening-language-options { gap: 2px; padding: 3px; }
+  .gaia-opening-language-options button { gap: 3px; }
+  .gaia-opening-language-name { font-size: 11px; }
+  .gaia-opening-language-check { width: 9px; font-size: 11px; }
+  .gaia-opening-sound-choices { grid-template-columns: 1fr; }
+  .gaia-opening-sound-option-button { grid-template-columns: 30px minmax(0, 1fr) 20px; grid-template-rows: auto; min-height: 76px; padding: 18px; gap: 14px; }
+  .gaia-opening-sound-option-label { grid-column: 2; }
+  .gaia-opening-sound-option-arrow { grid-column: 3; grid-row: 1; }
+  .gaia-opening-sound-option-wave { top: 0; right: 0; }
 }
 
 @media (orientation: landscape) and (max-width: 960px) and (max-height: 520px) {
-  .gaia-opening-sound-modal {
-    overflow-y: auto;
-    place-items: start center;
-  }
-
-  .gaia-opening-sound-dialog {
-    width: min(560px, calc(100vw - 48px));
-    padding: 15px 20px 13px;
-  }
-
-  .gaia-opening-sound-heading > h2 {
-    font-size: 22px;
-    line-height: 1.25;
-  }
-
-  .gaia-opening-sound-heading > span {
-    margin-top: 5px;
-  }
-
-  .gaia-opening-language { margin-top: 9px; }
-  .gaia-opening-language-options { gap: 7px; }
-  .gaia-opening-language-options button {
-    grid-template-columns: 30px minmax(0, 1fr) 14px;
-    gap: 7px;
-    min-height: 52px;
-    padding: 5px 8px;
-  }
-  .gaia-opening-language-glyph { width: 30px; height: 30px; font-size: 13px; }
-  .gaia-opening-language-name { font-size: 10px; }
-  .gaia-opening-language-copy small { display: none; }
-  .gaia-opening-language-check { width: 14px; height: 14px; font-size: 8px; }
-
-  .gaia-opening-sound-choices {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 12px;
-  }
-
-  .gaia-opening-sound-option--off {
-    border-top: 0;
-    border-left: 1px solid rgba(var(--opening-paper), 0.14);
-  }
-
-  .gaia-opening-sound-option-button {
-    min-height: 78px;
-    padding-block: 10px;
-  }
-
-  .gaia-opening-sound-option .gaia-opening-volume-choice {
-    padding-block: 7px 8px;
-  }
+  .gaia-opening-sound-modal { overflow-y: auto; place-items: start center; padding-block: 12px; }
+  .gaia-opening-sound-dialog { width: min(560px, 100%); padding: 16px 22px 12px; }
+  .gaia-opening-sound-heading > h2 { font-size: 23px; line-height: 1.2; }
+  .gaia-opening-sound-heading > span { margin-top: 4px; font-size: 11px; }
+  .gaia-opening-language { margin-top: 12px; }
+  .gaia-opening-sound-choices { margin-top: 12px; gap: 10px; }
+  .gaia-opening-sound-option-button { min-height: 72px; grid-template-columns: 26px minmax(0, 1fr) 18px; grid-template-rows: auto; padding: 14px; gap: 12px; }
+  .gaia-opening-sound-option-button .gaia-opening-sound-icon-shell,
+  .gaia-opening-sound-option-button .gaia-opening-sound-icon { width: 26px; height: 26px; }
+  .gaia-opening-sound-option-label { grid-column: 2; font-size: 15px; }
+  .gaia-opening-sound-option-arrow { grid-column: 3; grid-row: 1; }
+  .gaia-opening-sound-option-wave { top: 0; }
+  .gaia-opening-setup-volume { margin-top: 10px; padding-top: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gaia-opening-sound-modal,
   .gaia-opening-sound-dialog,
-  .gaia-opening-sound-modal::before,
-  .gaia-opening-sound-modal::after,
   .gaia-opening-language-options button,
-  .gaia-opening-language-options button::before,
-  .gaia-opening-language-glyph,
-  .gaia-opening-language-check {
-    transition-duration: 0.01ms;
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-  }
+  .gaia-opening-sound-option-button::before,
+  .gaia-opening-sound-option-arrow { transition: none; }
+  .gaia-opening-sound-option-button:is(:hover, :focus-visible) .gaia-opening-sound-option-arrow { transform: none; }
 }
 
 /* Keep the final illustration edge-to-edge. The typography-free artwork is
@@ -5452,9 +5111,17 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 .gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--story::after,
 .gaia-vn-panel-final .gaia-opening-route:hover::after,
+.gaia-vn-panel-final .gaia-opening-route:focus::after,
 .gaia-vn-panel-final .gaia-opening-route:focus-visible::after,
 .gaia-opening.is-route-guide-active .gaia-opening-route.is-route-guide-target::after {
-  animation: opening-choice-glint 240ms ease-out both;
+  animation: opening-route-glint 680ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
+}
+
+@keyframes opening-route-glint {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) skewX(-18deg); }
+  18% { opacity: 0.9; }
+  62% { opacity: 0.58; }
+  100% { opacity: 0; transform: translate3d(680%, 0, 0) skewX(-18deg); }
 }
 
 .gaia-vn-panel-final .gaia-opening-route-copy {
@@ -5799,22 +5466,23 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     rgba(var(--route-accent), 0.24) 76%,
     transparent 100%
   );
-  filter: blur(0.2px) drop-shadow(0 0 10px rgba(var(--route-accent), 0.78));
+  filter: none;
   mix-blend-mode: screen;
   pointer-events: none;
   transform: skewX(-19deg);
 }
 
 .gaia-vn-panel-final .gaia-opening-route:hover::before,
+.gaia-vn-panel-final .gaia-opening-route:focus::before,
 .gaia-vn-panel-final .gaia-opening-route:focus-visible::before {
-  animation: opening-route-focus-flash 520ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
+  animation: opening-route-focus-flash 780ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
 }
 
 @keyframes opening-route-focus-flash {
-  0% { left: -30%; opacity: 0; }
+  0% { opacity: 0; transform: translate3d(0, 0, 0) skewX(-19deg); }
   16% { opacity: 0.92; }
   58% { opacity: 0.72; }
-  100% { left: 124%; opacity: 0; }
+  100% { opacity: 0; transform: translate3d(1100%, 0, 0) skewX(-19deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {

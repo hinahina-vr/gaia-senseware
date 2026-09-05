@@ -133,6 +133,8 @@ try {
       return {
         mizu: read("みず"),
         ame: read("あめ"),
+        mizuQuoteBreak: Boolean(document.querySelector(".gaia-vn-panel-minamo .gaia-vn-quote-break")),
+        mizuQuoteLines: lineCount(document.querySelector(".gaia-vn-panel-minamo strong")),
         characterBands: [...document.querySelectorAll(".gaia-vn-character-band")].map((node) => node.textContent.trim()),
         montageNames: [...document.querySelectorAll(".gaia-vn-word-rails small")].map((node) => node.textContent.trim()),
         montageActions: [...document.querySelectorAll(".gaia-vn-word-rails strong")].map((node) => node.textContent.trim()),
@@ -170,6 +172,8 @@ try {
       quote: "「数値で見ると、地球が呼吸してるリズムがちゃんとわかるね。」",
       reply: "手元のマイコンとセンサーから、リアルタイムの地球データを追いかける。",
     });
+    assert.equal(opening.mizuQuoteBreak, true);
+    if (viewport.width >= 390) assert.equal(opening.mizuQuoteLines, 2, `${viewport.name}: Mizu quote did not keep its intended two-line phrasing`);
     assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
     assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);
     assert.deepEqual(opening.montageActions, ["感じる。", "測る。", "つなぐ。", "ともに選ぶ。"]);

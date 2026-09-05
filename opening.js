@@ -77,7 +77,10 @@
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
     const isMuted = state?.muted ?? true;
     const controlSoundEnabled = soundModalOpen ? pendingSoundEnabled : !isMuted;
-    if (openingVolume instanceof HTMLInputElement) openingVolume.value = String(volume);
+    if (openingVolume instanceof HTMLInputElement) {
+      openingVolume.value = String(volume);
+      openingVolume.style.setProperty("--volume-fill", `${volume}%`);
+    }
     if (audioVolume instanceof HTMLInputElement) audioVolume.value = String(volume);
     if (openingVolumeValue) openingVolumeValue.textContent = `${volume}%`;
     if (audioVolumeValue) audioVolumeValue.textContent = `${volume}%`;

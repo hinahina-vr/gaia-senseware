@@ -1466,11 +1466,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     left: 0;
     display: grid;
     grid-template-columns:
-      minmax(350px, 1.7fr)
-      minmax(450px, 4.7fr)
-      minmax(200px, 1.6fr)
-      minmax(112px, 0.9fr)
-      minmax(104px, 0.8fr);
+      minmax(240px, 1.4fr)
+      minmax(280px, 2.4fr)
+      minmax(320px, 3.2fr)
+      minmax(132px, 1.2fr)
+      minmax(132px, 1.2fr);
     gap: 0;
     height: var(--map-command-dock-height);
     padding: 9px clamp(10px, 0.8vw, 20px) 11px;
@@ -2066,16 +2066,44 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   body.map-grid-desktop .map-dock-action {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
+    gap: clamp(8px, 0.7vw, 14px);
     align-items: center;
     min-width: 0;
-    height: calc(100% - 14px) !important;
-    margin: 7px 5px !important;
-    padding: 0 clamp(10px, 0.8vw, 16px);
+    height: calc(100% - 12px) !important;
+    margin: 6px 5px !important;
+    padding: 0 clamp(12px, 0.9vw, 20px);
+    overflow: hidden;
     text-align: left;
-    transition: background-color 180ms ease, box-shadow 180ms ease;
+    isolation: isolate;
+    transition: border-color 180ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.map-grid-desktop .map-dock-action::before {
+    position: absolute;
+    z-index: -1;
+    inset: 1px;
+    border-radius: inherit;
+    content: "";
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.19), rgba(255, 255, 255, 0.035) 42%, transparent 64%);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.18);
+    pointer-events: none;
+  }
+
+  body.map-grid-desktop .map-dock-action::after {
+    position: absolute;
+    z-index: -1;
+    top: -65%;
+    bottom: -65%;
+    left: -42%;
+    width: 28%;
+    content: "";
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+    pointer-events: none;
+    transform: skewX(-18deg);
   }
 
   .map-dock-action > span {
@@ -2086,8 +2114,9 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .map-dock-action strong {
     overflow: hidden;
-    color: rgba(239, 252, 255, 0.9);
-    font: 650 clamp(11px, 0.72vw, 16px)/1.2 var(--font-ja);
+    color: rgba(251, 255, 255, 0.97);
+    font: 650 clamp(12px, 0.78vw, 17px)/1.2 var(--font-ja);
+    letter-spacing: 0.035em;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -2095,41 +2124,99 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .map-dock-action > i {
     display: grid;
     flex: 0 0 auto;
-    width: clamp(32px, 2.15vw, 46px);
-    height: clamp(32px, 2.15vw, 46px);
-    border: 1px solid currentColor;
-    border-radius: 50%;
+    width: clamp(38px, 2.5vw, 52px);
+    height: clamp(38px, 2.5vw, 52px);
+    border: 1px solid rgba(238, 255, 255, 0.42);
+    border-radius: 14px;
     place-items: center;
-    font: 400 17px/1 sans-serif;
     font-style: normal;
+    background:
+      radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.32), transparent 40%),
+      rgba(2, 19, 36, 0.3);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.18), 0 8px 20px rgba(0, 7, 22, 0.2);
   }
 
-  .map-dock-action--source {
-    color: #73efd0;
-    border: 1px solid rgba(91, 232, 196, 0.66) !important;
-    border-radius: 4px !important;
-    background: linear-gradient(115deg, rgba(21, 126, 101, 0.32), rgba(4, 48, 48, 0.5)) !important;
-    box-shadow: inset 3px 0 #73efd0, 0 0 18px rgba(82, 239, 199, 0.1) !important;
+  .map-dock-action > i svg {
+    width: 68%;
+    height: 68%;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.45;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  .map-dock-action--statistics {
-    color: #db91ff;
-    border: 1px solid rgba(205, 115, 244, 0.68) !important;
-    border-radius: 4px !important;
-    background: linear-gradient(115deg, rgba(105, 55, 154, 0.44), rgba(46, 26, 84, 0.56)) !important;
-    box-shadow: inset 3px 0 #db91ff, 0 0 18px rgba(218, 126, 255, 0.11) !important;
+  .map-dock-action > i svg circle {
+    fill: rgba(246, 255, 255, 0.92);
+    stroke-width: 1.15;
   }
 
-  .map-dock-action--source strong { color: #91f7dc; }
-  .map-dock-action--statistics strong { color: #e6b5ff; }
+  .map-dock-action > i .map-dock-icon-accent {
+    stroke: rgba(255, 255, 255, 0.96);
+    stroke-width: 2;
+  }
+
+  body.map-grid-desktop .map-command-dock > .map-dock-action.map-dock-action--source {
+    color: #b8fff0;
+    border: 1px solid rgba(114, 255, 224, 0.72) !important;
+    border-radius: 14px !important;
+    background:
+      radial-gradient(circle at 82% 4%, rgba(190, 255, 242, 0.28), transparent 35%),
+      linear-gradient(145deg, rgba(30, 167, 144, 0.96), rgba(11, 101, 105, 0.95) 52%, rgba(5, 49, 72, 0.98)) !important;
+    box-shadow:
+      inset 0 1px rgba(239, 255, 251, 0.38),
+      inset 0 -16px 28px rgba(0, 28, 47, 0.22),
+      0 9px 24px rgba(5, 113, 104, 0.24),
+      0 0 20px rgba(82, 239, 199, 0.14) !important;
+  }
+
+  body.map-grid-desktop .map-command-dock > .map-dock-action.map-dock-action--statistics {
+    color: #f2d6ff;
+    border: 1px solid rgba(226, 151, 255, 0.76) !important;
+    border-radius: 14px !important;
+    background:
+      radial-gradient(circle at 82% 4%, rgba(244, 218, 255, 0.26), transparent 35%),
+      linear-gradient(145deg, rgba(163, 78, 207, 0.96), rgba(92, 49, 160, 0.96) 52%, rgba(38, 29, 92, 0.98)) !important;
+    box-shadow:
+      inset 0 1px rgba(255, 245, 255, 0.38),
+      inset 0 -16px 28px rgba(31, 10, 65, 0.24),
+      0 9px 24px rgba(102, 44, 167, 0.28),
+      0 0 20px rgba(218, 126, 255, 0.15) !important;
+  }
+
+  .map-dock-action--source strong,
+  .map-dock-action--statistics strong { color: #fff; text-shadow: 0 1px 12px rgba(0, 16, 34, 0.32); }
+
+  .map-dock-action--source small { color: rgba(216, 255, 246, 0.78); }
+  .map-dock-action--statistics small { color: rgba(245, 222, 255, 0.8); }
 
   .map-dock-action:is(:hover, :focus-visible) {
     outline: none;
-    background: rgba(92, 200, 220, 0.08) !important;
+    transform: translateY(-2px);
   }
 
-  .map-dock-action--source:is(:hover, :focus-visible) { box-shadow: inset 3px 0 #91ffdf, 0 0 22px rgba(82, 239, 199, 0.12) !important; }
-  .map-dock-action--statistics:is(:hover, :focus-visible) { box-shadow: inset 3px 0 #edb5ff, 0 0 22px rgba(218, 126, 255, 0.12) !important; }
+  .map-dock-action:is(:hover, :focus-visible)::after {
+    animation: map-dock-action-sheen 720ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
+  }
+
+  body.map-grid-desktop .map-command-dock > .map-dock-action--source:is(:hover, :focus-visible) {
+    border-color: rgba(190, 255, 240, 0.94) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.48), inset 0 -16px 28px rgba(0, 28, 47, 0.18), 0 12px 30px rgba(5, 133, 121, 0.34), 0 0 28px rgba(82, 239, 199, 0.22) !important;
+  }
+
+  body.map-grid-desktop .map-command-dock > .map-dock-action--statistics:is(:hover, :focus-visible) {
+    border-color: rgba(244, 211, 255, 0.96) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.48), inset 0 -16px 28px rgba(31, 10, 65, 0.18), 0 12px 30px rgba(113, 50, 184, 0.38), 0 0 28px rgba(218, 126, 255, 0.22) !important;
+  }
+
+  .map-dock-action:active { transform: translateY(0) scale(0.985); }
+
+  @keyframes map-dock-action-sheen {
+    0% { opacity: 0; transform: translate3d(0, 0, 0) skewX(-18deg); }
+    22% { opacity: 0.78; }
+    100% { opacity: 0; transform: translate3d(560%, 0, 0) skewX(-18deg); }
+  }
 
   body.map-grid-desktop .map-grid-intro > .japan-data-button {
     display: none !important;
@@ -2211,7 +2298,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
 @media (min-width: 901px) and (max-width: 1180px) {
   body.map-grid-desktop .map-command-dock {
-    grid-template-columns: minmax(240px, 1.45fr) minmax(340px, 3.9fr) minmax(130px, 1.25fr) 80px 80px;
+    grid-template-columns: minmax(170px, 1.15fr) minmax(200px, 2.1fr) minmax(230px, 2.65fr) minmax(115px, 1.1fr) minmax(115px, 1.1fr);
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map {
@@ -2244,8 +2331,9 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   body.map-grid-desktop .map-dock-action > i {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
   }
 }
 

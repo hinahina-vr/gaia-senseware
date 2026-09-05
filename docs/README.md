@@ -6,7 +6,7 @@
 
 | 資料 | 役割 |
 |---|---|
-| [../README.md](../README.md) | 作品全体、31地図展示、各モード、起動・検査方法 |
+| [../README.md](../README.md) | 作品全体、30地図展示、各モード、起動・検査方法 |
 | [CONTEST_2026_SUBMISSION.md](CONTEST_2026_SUBMISSION.md) | コンテスト審査用のURL、確認順、技術・データ・権利の要約 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 遅延読込、データ経路、アダプター、イベント、フォールバック |
 | [DATA_SOURCES.md](DATA_SOURCES.md) | データ取得元、使用値、取得・加工方法、ライセンス、帰属表示、利用判定の一覧 |

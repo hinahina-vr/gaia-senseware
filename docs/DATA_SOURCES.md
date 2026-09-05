@@ -57,16 +57,14 @@ GAIA SENSEWAREは、広告・課金を伴わないコンテスト向け公開を
 
 NASA由来データは、個別制限が示されていない場合の一般方針として[NASA Earthdata Data Use and Citation Guidance](https://www.earthdata.nasa.gov/engage/open-data-services-software/data-use-policy)を参照し、データセットを特定できる引用と加工説明を付けます。NOAAとUSGSは[NOAAの免責・利用案内](https://oceanservice.noaa.gov/disclaimer.html)および[USGS Copyrights and Credits](https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits)を参照し、第三者著作物の表示がある場合は個別条件を優先します。
 
-## MAP 10—15、26—31のライブ／モデルデータ
+## MAP 10—15、26—30のライブ／モデルデータ
 
 | 展示 | 提供元・データセット | 使用データ | 取得・保存 | 利用条件・表示 | 判定 |
 |---|---|---|---|---|---|
-| 10、12—14、27 | [Open-Meteo Forecast API](https://open-meteo.com/en/docs) | 風速、風向、気圧、降水、気温、雲量、短波放射 | Pages APIまたはブラウザから取得。5〜30分キャッシュし、失敗時は同じ項目・単位の保存値へ切替 | [APIデータはCC BY 4.0](https://open-meteo.com/en/license)。Open-Meteoと元モデルを表示し、変更を明記。無料APIは非商用・呼出上限内で使用 | **条件付可** |
-| 11、15、29 | [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) / CAMS | 格子CO₂、PM2.5、550nmエアロゾル光学的厚さ | 5分〜3時間キャッシュ。格子・モデル値として表示 | Open-MeteoとCAMSを表示。CC BY 4.0、無料APIの非商用条件、元モデルの条件を守る | **条件付可** |
-| 28 | [Open-Meteo Marine API](https://open-meteo.com/en/docs/marine-weather-api) | 波高、周期、波向 | 世界8海域をブラウザから取得し、5分キャッシュ | Open-MeteoとDWD等の元モデルを表示。航海・安全判断に使わない | **条件付可** |
+| 10、12—14、27、30 | [Open-Meteo Forecast API](https://open-meteo.com/en/docs) | 風速、風向、気圧、降水、気温、雲量、短波放射 | MAP 27・30は球面上へ均等配置した全球240サンプル点を5分割してブラウザから取得。全体で5〜30分キャッシュし、失敗時は同じ項目・単位の保存値へ切替 | [APIデータはCC BY 4.0](https://open-meteo.com/en/license)。Open-Meteoと元モデルを表示し、変更を明記。無料APIは非商用・呼出上限内で使用 | **条件付可** |
+| 11、15、28 | [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) / CAMS | 格子CO₂、PM2.5、550nmエアロゾル光学的厚さ | MAP 28はCAMS Globalの全球240サンプル点を5分割してブラウザから取得。5分〜3時間キャッシュし、格子・モデル値として表示 | Open-MeteoとCAMSを表示。CC BY 4.0、無料APIの非商用条件、元モデルの条件を守る | **条件付可** |
 | 26 | [NASA LANCE FIRMS / MODIS C6.1 NRT](https://firms.modaps.eosdis.nasa.gov/active_fire/) | 全球・直近24時間の火災／熱異常 | Workerで15分キャッシュ。信頼度60以上を時空間セルで抽出し最大1,600点へ制限 | NASA LANCE FIRMS、データセット名、抽出条件を表示。点は火災境界や焼失面積ではない | **可** |
-| 30 | [USGS M2.5+ Past Day GeoJSON Feed](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) | 全球・直近24時間のM2.5以上 | ブラウザから最大240件取得し、5分キャッシュ | USGS、条件、時刻、加工を表示。波紋は震度分布・被害範囲ではない | **可** |
-| 31 | [NOAA SWPC Real-Time Solar Wind](https://www.swpc.noaa.gov/products/real-time-solar-wind) | 太陽風速度、磁場Bt・Bz | NOAA summary JSONを取得し、5分キャッシュ | NOAA SWPCを表示。オーロラ確率や警報そのものではない | **可** |
+| 29 | [USGS All Earthquakes Past Day GeoJSON Feed](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) | 全球・直近24時間の全規模イベント | ブラウザから最大1,000件取得し、5分キャッシュ | USGS、条件、時刻、加工を表示。波紋は震度分布・被害範囲ではない | **可** |
 
 [Open-Meteo Terms](https://open-meteo.com/en/terms)に基づき、無料APIは広告・課金を伴わない非商用公開でのみ使用します。商用化する場合は、有料API契約またはライセンス条件を満たすセルフホストへ切り替えます。
 
