@@ -58,6 +58,7 @@
     kind: layer.querySelector("#gx-kind"),
     index: layer.querySelector("#gx-phase-index"),
     title: layer.querySelector("#gx-phase-title"),
+    summary: layer.querySelector("#gx-phase-summary"),
     copy: layer.querySelector("#gx-phase-copy"),
     strataMarker: layer.querySelector("#gx-strata-marker"),
     guide: layer.querySelector("#gx-phase-guide"),
@@ -65,6 +66,8 @@
     storyCard: layer.querySelector("#gx-story-card"),
     mobileInfoToggle: layer.querySelector("#gx-mobile-info-toggle"),
     mobileInfoToggleIcon: layer.querySelector("#gx-mobile-info-toggle b"),
+    info: layer.querySelector("#gx-mobile-info"),
+    reading: layer.querySelector("#gx-reading"),
     next: layer.querySelector("#gx-next"),
     eraProgress: layer.querySelector("#gx-era-progress"),
     eraProgressLabel: layer.querySelector("#gx-era-progress-label"),
@@ -153,6 +156,7 @@
   const INTERACTION_STAGES = [
     {
       label: "HADEAN / ZIRCON RECORDS",
+      metric: "水の記録",
       pending: "地球をなぞり、8つの水の記憶を見つけてください。",
       complete: "水の記憶がそろいました。最初の生命へ移ります。",
       transition: "HADEAN → ARCHEAN",
@@ -160,6 +164,7 @@
     },
     {
       label: "CYANOBACTERIA / OCEAN COVERAGE",
+      metric: "海の生命",
       pending: "地球の海をなぞり、生命で満たしてください。",
       complete: "海が生命で満ちました。酸素が次の時代をひらきます。",
       transition: "ARCHEAN → PROTEROZOIC",
@@ -167,6 +172,7 @@
     },
     {
       label: "OXYGEN / IRON OXIDATION",
+      metric: "鉄の酸化",
       pending: "海をなぞり、溶けている鉄を酸化させてください。",
       complete: "鉄の酸化が完了しました。陸上の生命圏へ移ります。",
       transition: "PROTEROZOIC → PALEOZOIC",
@@ -174,6 +180,7 @@
     },
     {
       label: "CARBON / BURIAL RECORD",
+      metric: "炭素の埋没",
       pending: "湿地をなぞり、8つの炭素層を地中へ埋めてください。",
       complete: "炭素が地中へ渡されました。次の生命圏へ移ります。",
       transition: "PALEOZOIC → MESOZOIC",
@@ -181,6 +188,7 @@
     },
     {
       label: "K–PG / GLOBAL BOUNDARY",
+      metric: "境界層",
       pending: "地球の4地点へ触れ、同じ境界時刻を結んでください。",
       complete: "境界が地球を一周しました。次の時代へ移ります。",
       transition: "MESOZOIC → CENOZOIC",
@@ -188,6 +196,7 @@
     },
     {
       label: "CLIMATE / MULTI-PROXY ARCHIVE",
+      metric: "気候の記録",
       pending: "地球を上下になぞり、9つの気候記録を重ねてください。",
       complete: "異なる記録がひとつの気候史を描きました。",
       transition: "CENOZOIC → ANTHROPOCENE",
@@ -195,6 +204,7 @@
     },
     {
       label: "ANTHROPOCENE / SIGNAL DENSITY",
+      metric: "人工物の痕跡",
       pending: "都市をなぞり、人間活動の痕跡を地層へ重ねてください。",
       complete: "人間の痕跡が地層へ刻まれました。未来へ移ります。",
       transition: "ANTHROPOCENE → GX",
@@ -202,6 +212,7 @@
     },
     {
       label: "GAIA / MUTUAL RESONANCE",
+      metric: "地球との共鳴",
       pending: "地球へ大きな円を描き、共鳴を100%まで高めてください。",
       complete: "地球と人間の共鳴が、次の物語へつながります。",
       transition: "GX → STORY",
@@ -277,7 +288,7 @@
   const loadExhibit = async () => {
     if (loaded) return;
     try {
-      const response = await fetch("./data/gx-deep-time.json?v=gx-08", { cache: "no-store" });
+      const response = await fetch("./data/gx-deep-time.json?v=gx-reading-1", { cache: "no-store" });
       if (!response.ok) throw new Error(`GX data ${response.status}`);
       const data = await response.json();
       if (Array.isArray(data.phases) && data.phases.length) exhibit = data;
@@ -388,20 +399,34 @@
     const progress = interactionProgress();
     const percentage = Math.round(progress * 100);
     elements.eraProgress.hidden = false;
-    elements.eraProgressLabel.textContent = stage.label;
+    elements.eraProgressLabel.textContent = stage.metric;
+    elements.eraProgressLabel.title = stage.label;
+    elements.guide.textContent = stage.pending;
     elements.eraProgressValue.textContent = `${percentage}%`;
     elements.eraProgressBar.style.width = `${percentage}%`;
+    elements.eraProgressBar.parentElement.setAttribute("aria-valuenow", String(percentage));
+    elements.eraProgressCopy.hidden = progress < 1;
     elements.eraProgressCopy.textContent = progress >= 1
       ? stage.complete
-      : `${stage.pending}　残り${Math.max(0, 100 - percentage)}%。`;
+      : "";
     return progress;
   };
 
   const setMobileInfoExpanded = (expanded) => {
     const isExpanded = Boolean(expanded);
+    if (!isExpanded && elements.info.contains(document.activeElement)) {
+      elements.mobileInfoToggle.focus({ preventScroll: true });
+    }
     elements.storyCard.dataset.mobileInfoOpen = String(isExpanded);
+    layer.dataset.infoOpen = String(isExpanded);
+    elements.info.hidden = !isExpanded;
+    if (!isExpanded) {
+      elements.reading.scrollTop = 0;
+      elements.storyCard.scrollTop = 0;
+    }
     elements.mobileInfoToggle.setAttribute("aria-expanded", String(isExpanded));
     elements.mobileInfoToggleIcon.textContent = isExpanded ? "−" : "＋";
+    elements.mobileInfoToggle.querySelector("span").textContent = isExpanded ? "解説を閉じる" : "背景と地層の記録";
   };
 
   const emitStoryProgress = (complete = storySequenceComplete) => {
@@ -662,9 +687,9 @@
     );
     elements.index.textContent = phase.index;
     elements.title.textContent = phase.title;
+    elements.summary.textContent = phase.summary || phase.copy;
     elements.copy.textContent = phase.copy;
     elements.strataMarker.textContent = phase.marker || "—";
-    elements.guide.textContent = phase.guide;
     elements.close.hidden = true;
     elements.next.hidden = true;
     if (phaseIndex === PHASE.HADEAN) {
@@ -1099,6 +1124,15 @@
 
   const getPlanetGeometry = () => {
     const baseRadius = Math.min(width, height) * 0.34;
+    // Portrait reading stacks above/below the globe, in both entry modes.
+    if (width <= 620) {
+      const travel = phaseIndex === PHASE.GX ? 0.003 + transcendence * 0.004 : 0;
+      return {
+        centerX: width * (0.5 + Math.sin(gaiaOrbitPhase) * travel),
+        centerY: height * ((height <= 650 ? 0.3 : 0.36) + Math.cos(gaiaOrbitPhase * 1.31) * travel),
+        radius: width * 0.32 * (phaseIndex === PHASE.GX ? 0.98 + transcendence * 0.03 : 1),
+      };
+    }
     if (returnTo === "novel") {
       const storyRadius = Math.min(width, height) * (phaseIndex === PHASE.GX ? 0.39 : 0.37);
       const travel = phaseIndex === PHASE.GX ? 0.003 + transcendence * 0.004 : 0;

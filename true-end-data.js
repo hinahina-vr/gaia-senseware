@@ -17,7 +17,7 @@
 
   const source = {
   "storyVersion": "true-end-beyond-log-20260906-115607",
-  "approvedSourceSha256": "40f0e713e7794bcb4b2e92a3cd6022550c3085ef94b9629b0a30cfaed67fe2b0",
+  "approvedSourceSha256": "e14f88b9f269f30e23412d72d3678a97b8db96dc8c2cd64ca2d85aa297e2408a",
   "title": "APEIRONCENE",
   "subtitle": "惑星の放課後 / GAIA SENSATION — APEIRONCENE",
   "language": {
@@ -336,11 +336,7 @@
         },
         {
           "id": "beyond_01_028",
-          "text": "ルウが虚空を指で払うと、鉱物化しかけた緑色のガラスエポキシ基板が、土壌のホログラムから静かに浮かび上がってきた。",
-          "pages": [
-            "ルウが虚空を指で払うと、鉱物化しかけた緑色のガラスエポキ",
-            "シ基板が、土壌のホログラムから静かに浮かび上がってきた。"
-          ]
+          "text": "ルウが応じると、鉱物化しかけた緑色のガラスエポキシ基板が、土壌のホログラムから静かに浮かび上がってきた。"
         },
         {
           "id": "beyond_01_add_032",
@@ -1094,7 +1090,7 @@
         },
         {
           "id": "beyond_03_043",
-          "speaker": "mizuha",
+          "speaker": "lou",
           "text": "うん。この頃のやり方で、一緒に作ってみたい。"
         },
         {

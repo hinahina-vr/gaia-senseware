@@ -3480,6 +3480,28 @@ button {
   letter-spacing: 0.06em;
 }
 
+.architecture-data-policy {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.architecture-figure,
+#architecture-data-policy,
+#architecture-cache-guide {
+  scroll-margin-top: 84px;
+}
+
+.architecture-copy-grid .architecture-data-policy li p,
+.architecture-copy-grid .architecture-data-policy .regulation-note p {
+  color: rgba(221, 236, 240, 0.84);
+  font-size: 14px;
+}
+
+.architecture-copy-grid .architecture-data-policy strong {
+  font-size: 14px;
+}
+
 .architecture-story ol,
 .regulation-list {
   display: grid;
@@ -4892,7 +4914,6 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
     drop-shadow(0 0 8px rgba(var(--map-accent-rgb), 0.48));
 }
 .japan-layer.is-live-exhibit .japan-tiles { opacity: 0.82; }
-.japan-layer.is-live-exhibit .japan-map { cursor: crosshair; }
 .japan-layer.is-live-exhibit :is(.japan-observation, .signal-console-map, .map-reading-guide, .japan-layer-switch) {
   opacity: 0;
   visibility: hidden;

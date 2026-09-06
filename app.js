@@ -528,7 +528,7 @@
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-renewable-world-readout-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-country-coverage-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -551,15 +551,15 @@
     },
     {
       title: "森林と、雨の多い場所はどこで重なる？",
-      subject: "緑の森林分布と、31代表地点の平均降水量を同じ世界地図で見比べます。相関係数や、森林が雨を起こす因果関係を示す図ではありません。",
+      subject: "緑の森林分布と、世界の国・地域に広げた参照地点の平均降水量を見比べます。国平均や、森林が雨を起こす因果関係を示す図ではありません。",
       reading: "大きな水色円が降水量です。直径が大きいほど雨が多く、雨の多い円にはmm/日を直接表示します。ブラジルのアマゾン付近は5.33 mm/日です。",
-      action: "水色円を押すと自動走査が止まり、代表地点名と平均降水量をカードで読めます。円のない場所は『雨がない』のではなく、この31地点では測っていない場所です。",
+      action: "水色円を押すと自動走査が止まり、参照地点名と平均降水量をカードで読めます。円のない場所は『雨がない』のではなく、この資料では表示していない場所です。",
     },
     {
       title: "再資源化率は、国ごとにどう違うのか？",
       subject: "各国の都市ごみ100%を同じ大きさの円グラフにし、再資源化された割合と、それ以外を地図上で比べます。",
       reading: "緑の扇形が再資源化率、橙が再資源化として報告されなかった残りです。実線は国連の公開値、破線は近い5か国から補った値です。",
-      action: "左右ボタンかスライダーで31の国・地域を切り替えます。円グラフを押すと、再資源化率、報告年、国連公式値か補完値か、出典を確認できます。",
+      action: "左右ボタンかスライダーで収録した国・地域を切り替えます。円グラフを押すと、再資源化率、報告年、国連の出典を確認できます。未収録はゼロや近隣国の推定値で埋めません。",
     },
     {
       title: "化石燃料由来CO₂は、1945年からどこで増えたのか？",
@@ -575,7 +575,7 @@
     },
     {
       title: "都市人口率が高い国は、森が少ない？",
-      subject: "まず都市人口率が最も近い二国を比べ、31か国の傾向、文化・記憶の順に見ていきます。",
+      subject: "まず都市人口率が最も近い二国を比べ、両指標のある世界の国・地域の傾向、文化・記憶の順に見ていきます。",
       reading: "緑の棒は陸地に占める森林率、青の棒は人口に占める都市居住者の割合です。散布図・回帰線・相関係数rは「関係を見る」へ。文化・記憶は別タブです。",
       action: "地図の棒か国の選択欄で比較し、散布図の点からも選べます。国は自動では切り替わりません。自動で比べる場合は再生ボタンを押します。",
     },
@@ -2537,7 +2537,7 @@
     ctx.rect(originX, originY, width, height);
     ctx.clip();
     rows.forEach((row, index) => {
-      const path = getNaturalEarthCountryGeographicPath(row.iso3);
+      const path = getNaturalEarthCountryGeographicPath(row.mapIso3 || row.iso3);
       if (!path) return;
       const reveal = getMapPlotReveal(index, rows.length, now);
       if (reveal.progress <= 0) return;
@@ -3781,7 +3781,13 @@
     return `${strength}${value < 0 ? "負" : "正"}の相関`;
   };
 
+  const ecologiesComparisonCache = new WeakMap();
   const getThreeEcologiesComparison = (signals) => {
+    const cached = ecologiesComparisonCache.get(signals);
+    if (cached) {
+      const selectedIndex = getSequenceIndex(cached.rows.length);
+      return { ...cached, selectedIndex, selected: cached.rows[selectedIndex] };
+    }
     const pairedRows = (signals.pairedCountries || []).length
       ? signals.pairedCountries
       : (signals.social || []).map((urban) => {
@@ -3821,7 +3827,7 @@
       })
       .sort((a, b) => a.urbanPercent - b.urbanPercent);
     const selectedIndex = getSequenceIndex(rows.length);
-    return {
+    const comparison = {
       rows,
       selectedIndex,
       selected: rows[selectedIndex],
@@ -3832,6 +3838,8 @@
       meanUrban,
       meanForest,
     };
+    ecologiesComparisonCache.set(signals, comparison);
+    return comparison;
   };
 
   const populationYearCache = new WeakMap();
@@ -3860,7 +3868,7 @@
       if (!row) return null;
       return {
         kind: "forest",
-        phaseLabel: `31代表地点 / ${String(index + 1).padStart(2, "0")} / ${String(rows.length).padStart(2, "0")}`,
+        phaseLabel: `${rows.length}参照地点 / ${String(index + 1).padStart(2, "0")} / ${String(rows.length).padStart(2, "0")}`,
         yearLabel: row.precipitationMmDay?.toFixed(2) || "—",
         valueLabel: `mm/日 · ${getForestRainSiteName(row)}`,
         methodLabel: "大きな水色円＝降水量 × 緑＝森林分布",
@@ -3871,7 +3879,7 @@
           "大きな水色円 / 降水量",
           "緑の面 / 森林域",
           "円内の数字 / mm/日",
-          "31地点 / 標本",
+          `${rows.length}地点 / 国平均ではない`,
         ],
       };
     }
@@ -3962,18 +3970,17 @@
           "緑 / 再資源化",
           "橙 / それ以外",
           "実線 / 国連公式値",
-          "破線 / 近隣5か国から補完",
+          "無表示 / 未収録（ゼロではない）",
         ],
       };
     }
 
     if (signalMode.id === "anthropocene-scar") {
       const rows = signals.emissions || [];
-      const years = [...new Set(rows.map((row) => Number(row.year)).filter(Number.isFinite))]
-        .sort((a, b) => a - b);
+      const { years, byYear } = getPopulationYearIndex(rows);
       const yearIndex = getSequenceIndex(years.length);
       const selectedYear = years[yearIndex];
-      const yearRows = rows.filter((row) => Number(row.year) === selectedYear);
+      const yearRows = byYear.get(selectedYear) || [];
       const selected = yearRows.find((row) => row.iso3 === anthropoceneSelectedIso3)
         || yearRows.find((row) => row.iso3 === "JPN")
         || yearRows[0];
@@ -3985,7 +3992,7 @@
         phaseLabel: `化石燃料由来CO₂の推移 / ${String(yearIndex + 1).padStart(2, "0")} / ${String(years.length).padStart(2, "0")}`,
         yearLabel: String(selectedYear),
         valueLabel: `${getCountryNameJa(selected)} · ${selected.emissionsMtCo2.toFixed(1)} Mt CO₂`,
-        methodLabel: `GCP国別合計 / ${yearRows.length}か国 · 全年度共通の対数色尺度`,
+        methodLabel: `GCP国別合計 / ${yearRows.length}国・地域 · 年別欠測は非表示`,
         timeLabel: `年 / ${years[0]} → ${years.at(-1)}`,
         selectedIndex,
         selected,
@@ -4063,7 +4070,7 @@
           "緑の棒 / 森林率（陸地）",
           "青の棒 / 都市人口率（人）",
           "2つの割合 / 足して100%ではない",
-          "31か国 / 展示用の選択標本",
+          `${rows.length}国・地域 / 両指標のある範囲`,
         ],
       };
     }
@@ -4695,13 +4702,13 @@
       }
       const legendDock = mapSignalEncodingLegend?.closest(".signal-encoding-legend-dock");
       const legendRect = legendDock?.getClientRects().length ? legendDock.getBoundingClientRect() : null;
-      const alignWithLegend = rect.width > 900 && legendRect?.width > 0;
+      const storyMap = storyModeDetour?.kind === "map01";
+      const alignWithLegend = (rect.width > 900 || storyMap) && legendRect?.width > 0;
       const panelWidth = alignWithLegend ? legendRect.width : compact ? Math.min(216, rect.width - 28) : 330;
       const panelHeight = 102;
-      const storyMap = storyModeDetour?.kind === "map01";
       let panelX = alignWithLegend ? legendRect.left - rect.left : compact ? (storyMap ? 14 : rect.width - panelWidth - 14) : rect.width - panelWidth - 30;
       // On narrow layouts the title and timeline cards occupy the first ~210px.
-      // Keep this canvas legend below them while retaining the same top-right visual hierarchy.
+      // Story observations follow the left-hand key, including narrow dialogs.
       const compactPanelY = storyMap ? 76 : 228;
       let panelY = getLegendSafePanelY(panelX, panelWidth, defaultY ?? (compact ? compactPanelY : 54), 8);
       const draggedPanel = globalThis.GaiaMapLegendDrag?.placeMetric({
@@ -5130,7 +5137,7 @@
       if (sequence?.selected) drawRainCircle(sequence.selected, sequence.selectedIndex);
       drawQuantitativeLegendPanel({
         id: "precipitation",
-        title: "降水量 / 31代表地点",
+        title: `降水量 / ${precipitationRows.length}参照地点`,
         current: `選択地点 ${sequence?.selected?.precipitationMmDay?.toFixed(2) || "—"} mm/日`,
         value: Number(sequence?.selected?.precipitationMmDay),
         minimum: 0,
@@ -5785,7 +5792,7 @@
       japanOverlay.dataset.ecologiesSelectedCountry = selected ? getCountryNameJa(selected) : "";
       japanOverlay.dataset.ecologiesSelectedIso3 = selected?.iso3 || "";
       japanOverlay.dataset.ecologiesCultureCount = String(cultureView ? cultureRows.length : 0);
-      japanOverlay.dataset.ecologiesCountryDisplayMs = String(Math.round(ECOLOGIES_SEQUENCE_DURATION_MS / Math.max(1, rows.length)));
+      japanOverlay.dataset.ecologiesCountryDisplayMs = String(Math.round(Math.max(ECOLOGIES_SEQUENCE_DURATION_MS, rows.length * 3000) / Math.max(1, rows.length)));
       japanOverlay.dataset.ecologiesSelectionTransitionMs = String(ECOLOGIES_SELECTION_TRANSITION_MS);
       japanOverlay.dataset.ecologiesSelectionTransitionProgress = selectionTransition.progress.toFixed(3);
       japanOverlay.dataset.ecologiesPlaying = String(ecologiesPlaying);
@@ -6746,6 +6753,10 @@
   // Repeated source/POI updates and intermediate heading restores do not replay it.
   const mapTitleObserver = new MutationObserver(() => {
     const title = `${japanTitle.dataset.exhibitNumber}　${japanTitle.textContent}`;
+    // The persistent header and chapter separator share the same reason to look.
+    // Extension providers keep their measurements and source notes in the readout.
+    const subtitle = MAP_TITLE_SUBTITLES[japanTitle.dataset.exhibitNumber];
+    if (subtitle) japanDescription.textContent = subtitle;
     if (!japanIsOpen) {
       mapTitleTransitionTitle = title;
       return;
@@ -6775,11 +6786,11 @@
           "色付きの矢印が海流です。点から伸びる線は、その流れが変わらないと仮定した移動距離です。白い矢印は比較用の風で、距離計算には使いません。色付きの点を押すと詳しい数字が出ます。";
       } else if (signalMode) {
         const narratives = {
-          "forest-cloud-engine": ["森林 × 雨 / 森林域と31代表地点", "緑は森林域、大きな水色円は31代表地点の平均降水量です。直径が大きいほど雨が多く、ブラジルのアマゾン付近は5.33 mm/日です。円のない場所を雨量ゼロとは扱いません。"],
+          "forest-cloud-engine": ["森林 × 雨 / 世界の参照地点", "緑は森林域、水色円は世界の国・地域に置いた参照地点の平均降水量です。直径が大きいほど雨が多く、国平均ではありません。円のない場所を雨量ゼロとは扱いません。"],
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
-          "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公式値、破線は近隣5か国からの補完値。左右ボタンとスライダーで31の国・地域を切り替えます。"],
+          "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。国連の公表値がある国・地域を、左右ボタンとスライダーで切り替えます。報告年は国で異なり、未収録はゼロや推定値で埋めません。"],
           "anthropocene-scar": ["1945—2023年 化石燃料由来CO₂ × 2016年固定夜間光", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
-          "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、31か国の散布図、文化・記憶を順に切り替えて比較します。選択標本で基準年も異なるため、世界全体や因果関係の結論ではありません。"],
+          "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、収録国・地域の散布図、文化・記憶を切り替えて比較します。欠測を除外し基準年も異なるため、因果関係の結論ではありません。"],
           "earth-organ": ["再生可能エネルギー発電割合 / 世界の国・地域", "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。公表値のある国・地域を、高い国から低い国へ移動します。年は国ごとに異なります。日射・風は31代表地点のみの補足で、未収録値は補いません。"],
           "population-tide": ["1960—2025年 人口 / 世界の国・地域", "琥珀色の円は選択年の人口です。217の国・地域を対象に、円の面積が人口に比例する全年共通尺度で比較します。欠測年は非表示。点は代表位置で、都市の位置や人口密度ではありません。"],
         };
@@ -6825,12 +6836,11 @@
     japanLayer.dataset.mapScope = mapScope;
     mapScopeKicker.textContent = "Planetary lens / Open map";
     const mapHeadingNumber = formatMapModeNumber(mapModeIndex);
-    const mapHeadingTitle = modes[modeToIndex]?.titleJa || "地球の一呼吸";
+    const mapHeadingTitle = modes[modeToIndex]?.titleJa || "積み重なるCO₂";
     japanTitle.dataset.exhibitNumber = mapHeadingNumber;
     japanTitle.textContent = mapHeadingTitle;
     japanTitle.setAttribute("aria-label", `${mapHeadingNumber} ${mapHeadingTitle}`);
-    japanDescription.textContent =
-      "水、熱、生きもの、大地の動きは国境で止まりません。世界の観測記録を一枚の地図に重ねています。";
+    japanDescription.textContent = MAP_TITLE_SUBTITLES[mapHeadingNumber] || "暮らしと地球のつながりを、記録から確かめます。";
     updateMapBasisNote();
     japanMap.setAttribute(
       "aria-label",
@@ -7372,7 +7382,7 @@
       const projection = japanView.earthProjection || getEarthProjection(rect);
       const worldCopies = getEarthWorldCopies(projection);
       for (const [index, record] of modeDataPois.entries()) {
-        const path = getNaturalEarthCountryGeographicPath(record.iso3);
+        const path = getNaturalEarthCountryGeographicPath(record.mapIso3 || record.iso3);
         if (!path) continue;
         const countryHit = worldCopies.some((copy) => countryHitTestContext.isPointInPath(
           path,
@@ -7702,7 +7712,7 @@
       const state = getMapSequenceState(signalMode);
       const rain = state?.selected;
       return {
-        output: state?.phaseLabel || "世界31代表地点",
+        output: state?.phaseLabel || "世界の参照地点",
         location: getForestRainSiteName(rain),
         value: `降水量 ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/日`,
         note: "大きな水色円が降水量、緑が森林域です。円の直径で雨量を比べ、地点間は推測で埋めません。相関係数や因果関係を示す図ではありません。",
@@ -8257,7 +8267,9 @@
         : id === "rhythm-of-disaster"
           ? getGlobalEarthquakePlaybackSchedule(signalMode?.signals?.globalEvents || []).durationMs
           : id === "three-ecologies"
-            ? ECOLOGIES_SEQUENCE_DURATION_MS
+            ? Math.max(ECOLOGIES_SEQUENCE_DURATION_MS, (signalMode.signals.pairedCountries?.length || 0) * 3000)
+            : id === "forest-cloud-engine"
+              ? Math.max(MODE_SEQUENCE_DURATION_MS, (signalMode.signals.precipitation?.length || 0) * 2000)
             : id === "earth-organ"
               ? Math.max(1, signalMode.signals.current?.length || 0) * RENEWABLE_COUNTRY_DISPLAY_MS
               : MODE_SEQUENCE_DURATION_MS;
@@ -8512,7 +8524,7 @@ drawActualScaleTrack(lon, lat, lon + deltaLon, lat + deltaLat);
 const vaporDensity = normalize(selectedSite.precipitationMmDay, 0, 8);
 drawLargeRainCircle(selectedSite, vaporDensity); // larger diameter = more mm/day
 drawMercatorRaster(modisIgbpLandCover2023); // GLOBAL rendered classification
-// 31 representative points only: no interpolation, correlation coefficient, or causal claim.`,
+// Reference points across countries/territories, not national averages or a causal model.`,
     "pollination-protocol": `const stages = ["records", "sampling", "relations"];
 drawGbifObservationPoints(gbifOccurrences); // records, not a habitat map
 showSamplingRule("31 selected countries", "max 2 records per country");
@@ -8520,23 +8532,18 @@ showSamplingRule("31 selected countries", "max 2 records per country");
 const documented = globi.filter(row => row.interaction === "pollinates");
 drawNonGeographicRelationNetwork(documented); // no location, frequency, or strength
 // A blank map area is not absence. Never connect a GloBI relation to a GBIF point.`,
-    "nothing-is-waste": `const observed = unSdgCountryValues; // SOURCE / 17 reported regions
-const missingCountry = selectedSites.filter(site => !observed.has(site.iso3));
-for (const country of missingCountry) {
-  const donors = nearestCountriesWithOfficialValues(country, 5);
-  country.recyclePercent = median(donors.map(d => d.recyclePercent)); // DERIVED
-  country.valueStatus = "IMPUTED";
-}
-
-const country = allCountryValues[countrySelectorIndex]; // 01–31 / slider or arrow buttons
+    "nothing-is-waste": `const observed = latestPublishedCountryValues(unSdgAllPages); // SOURCE
+// Exclude regional aggregates; keep missing countries missing, never zero or neighbor-filled.
+// Percentages outside 0–100 remain in the source audit, not clamped into a pie.
+const country = observed[countrySelectorIndex]; // slider or arrow buttons
 drawFixedDiameterPie({ recycled: country.recyclePercent, other: 100 - country.recyclePercent });
-drawOutline(country.valueStatus === "IMPUTED" ? "DASHED" : "SOLID");
-// Geographic proximity does not explain policy or reporting-definition differences.
+drawOutline("SOLID");
+// Reporting years and definitions differ; source estimates retain Nature/footnotes.
 showCountryValue({
   country: country.country,
   recyclePercent: country.recyclePercent,
   year: country.year,
-  sourceStatus: country.valueStatus, // OFFICIAL or IMPUTED
+  sourceStatus: country.valueStatus, // Published by UN, not necessarily direct measurement
 });`,
     "anthropocene-scar": `const year = mix(1945, 2023, timelinePosition);
 const countryValues = gcpFossilCo2.filter(row => row.year === year);
@@ -9823,7 +9830,7 @@ for (const country of countryValues) {
   resetButton.addEventListener("click", clearSession);
 
   japanMap.addEventListener("pointerdown", (event) => {
-    if (!japanIsOpen || japanLayer.classList.contains("is-live-exhibit")) {
+    if (!japanIsOpen) {
       return;
     }
     clearJapanPoiHover();
@@ -10473,44 +10480,58 @@ for (const country of countryValues) {
 
   let mapModeGuideTimer = 0;
   const firstVisibleMapGuideTarget = (...selectors) => selectors
-    .map((selector) => document.querySelector(selector))
+    .flatMap((selector) => [...japanLayer.querySelectorAll(selector)])
     .find((element) => {
-      if (!(element instanceof HTMLElement)) return false;
+      if (!(element instanceof HTMLElement) || element.closest("[hidden], [inert]")) return false;
       const rect = element.getBoundingClientRect();
       const style = getComputedStyle(element);
       return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
     }) || null;
+  const mapGuideSelector = () => firstVisibleMapGuideTarget('[data-mobile-sheet="exhibits"]', '[data-map-bank-toggle]', ".map-dock-bank-trigger", ".gaia-live-deck-selector-toggle", ".gaia-estat-selector-toggle", "#map-mobile-bank-toggle");
   window.GaiaModeEntryGuide?.register?.("map", {
-    version: "v3",
+    version: "v4",
     kicker: "WORLD MAP / 操作ガイド",
-    avoid: ".gaia-live-exhibit-readout",
-    available: () => japanIsOpen && !japanLayer.hidden && !document.body.classList.contains("gaia-tour-open")
-      && !japanLayer.classList.contains("is-demo-running"),
+    finishLabel: "地図を楽しむ",
+    avoid: ".gaia-live-exhibit-readout, .gaia-firms-readout, .gaia-planet-signals-readout, .gaia-estat-readout, #map-mobile-toolbar",
+    available: () => japanIsOpen && !japanLayer.hidden && !japanLayer.dataset.storyMode
+      && !japanLayer.classList.contains("japan-data-open")
+      && !document.body.matches(".gaia-tour-open, .novel-open, .gaia-statistics-open"),
+    ready: () => Boolean(mapGuideSelector() && window.GaiaMapDemo),
     steps: [
       {
-        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="exhibits"]', ".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),
-        title: "展示を選ぶ",
-        copy: "展示一覧から、全30展示を選べます。「惑星のいま」をはじめ、気候・天気・暮らしなどテーマ別に並びます。今見ている展示名は画面上部で確認できます。",
+        target: mapGuideSelector,
+        title: "左下から、展示を選ぶ",
+        copy: "左下の展示名（スマホでは「展示一覧」）から全30展示を選べます。01〜05は、公開データでいまの地球を見るリアルタイム展示です。デモは初期オン。ガイド中は展示を切り替えません。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget('.gaia-firms-primary', '.gaia-planet-primary', '.gaia-estat-primary', '.gaia-live-exhibit-value', '.signal-console-map [data-signal-value]'),
+        title: "観測値と単位を読む",
+        copy: "下のパネルは、いま表示している展示の観測値です。数値だけでなく、単位・対象地域・観測時点を合わせて確認できます。",
       },
       {
         target: () => firstVisibleMapGuideTarget('.signal-console-map [data-signal-time]', '[data-estat-month]', '[data-firms-progress]'),
-        title: "年代をたどる",
+        title: "時間をたどる",
         copy: "スライダーを動かすと、表示する時点と地図の観測値が連動して変わります。対象期間は展示ごとに異なります。",
       },
       {
-        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="reading"]', "#map-reading-guide"),
-        title: "問いを読む",
-        copy: "この地図で何を見比べるのか、色や記号をどう読むのかを簡単に確認できます。",
-      },
-      {
-        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="tools"]', ".map-dock-action--source", "[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="tools"]', ".gaia-map-action--source", ".map-dock-action--source", "[data-live-deck-source]", "#japan-data-button"),
         title: "データの出典を確認する",
         copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。スマホでは「操作」から出典や統計分析を開きます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget(".map-dock-action--statistics", "[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="tools"]', ".gaia-map-action--analysis", ".map-dock-action--statistics", "[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),
         title: "データを詳しく分析する",
-        copy: "統計解析ラボでは、表示中のデータをチャート・数値一覧・元データ・解説の四つの視点から調べられます。",
+        copy: "「統計分析」から、グラフの見た目と調べたい問いを選べます。チャート・数値一覧・元データ・解説で詳しく確認できます。スマホでは「操作」内にあります。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="reading"]', '.gaia-firms-legend', '.gaia-planet-signals-legend', '.gaia-live-metric-legend', '.gaia-estat-heat-legend', '.signal-encoding-legend-dock', '#map-reading-guide'),
+        title: "色と記号の意味を知る",
+        copy: "凡例で、色や点の大きさが何を表すか確認できます。スマホでは下の「読み方・凡例」から開けます。地図はドラッグで移動し、ホイールや2本指で拡大・縮小できます。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget('#gaia-map-demo-toggle', '[data-mobile-sheet="tools"]'),
+        title: "デモモードで、地球を巡る",
+        copy: "地図を開くとデモはオン。全30展示を25秒ごとに巡ります。オンならガイドを閉じると再開。地図へのタッチ・クリックやキー操作で停止します。左上の「デモ」（スマホは「操作」内）で再開できます。",
       },
     ],
   });

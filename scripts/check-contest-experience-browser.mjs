@@ -442,7 +442,7 @@ try {
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
-  await directPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
+  await directPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen"));
   monitor(directPage, "entry-direct-routes");
   for (const hash of ["#earth", "#story"]) {
     await directPage.goto(new URL(`/${hash}`, baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
@@ -472,12 +472,12 @@ try {
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["15", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: /^Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["16", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: /^CAMSの.+格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。$/u, anchor: /CAMSモデル/u }],
-    ["17", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: /^Open-Meteoの.+降水モデル値を、雨線と水面の波紋密度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["18", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: /^Open-Meteoの.+気温モデル値を、暖気の等温線と光の色温度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["19", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: /^Open-Meteoの.+総雲量を、地図を流れる雲粒と透過する光の量へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["20", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: /^CAMSの.+格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。$/u, anchor: /CAMSモデル/u }],
+    ["15", { id: "wind-field", key: "weatherWindSpeed", title: "街を通る風", caption: /^Open-Meteoの47都道府県代表都市の風速モデル値を、同じ色尺度で比べます。光の線の色と太さが速さを表し、線の向きは風向ではありません。$/u, anchor: /Open-Meteo/u }],
+    ["16", { id: "carbon-pulse", key: "forecastCo2", title: "街の空気にある炭素", caption: /^CAMSの東京に対応する格子のCO₂濃度予測です。光の輪は濃度を表す演出で、東京の排出量、室内濃度、個人が吸った量を示しません。$/u, anchor: /CAMSモデル/u }],
+    ["17", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨と暮らす街", caption: /^Open-Meteoの東京の降水量モデル値を、雨粒と波紋で表します。値の対象時刻と単位を確かめてください。雨の筋や波紋は浸水域や洪水の予測ではありません。$/u, anchor: /Open-Meteo/u }],
+    ["18", { id: "temperature-field", key: "weatherTemperature", title: "街の暑さ、街の寒さ", caption: /^Open-Meteoの東京の地上2m気温のモデル値を、色と揺らぎで表します。室内温度、体感温度、個人の熱中症リスクを示す値ではありません。$/u, anchor: /Open-Meteo/u }],
+    ["19", { id: "cloud-drift", key: "cloudCover", title: "今日の空の覆い", caption: /^Open-Meteoの東京の総雲量を、空を覆う割合（0〜100%）として読みます。雲の重なりは演出で、衛星画像や日射量そのものではありません。$/u, anchor: /Open-Meteo/u }],
+    ["20", { id: "pm25-haze", key: "pm25", title: "吸い込む空気", caption: /^CAMSの東京に対応する格子のPM2.5濃度予測です。霞は値に応じた演出で、実測の煙、汚染源、個人の曝露量や健康被害を示しません。$/u, anchor: /CAMSモデル/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
@@ -544,7 +544,7 @@ try {
       assert.equal(await openData.isVisible(), true, "10: live SOURCE action is not visible");
       await openData.click();
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
-      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^15 風脈/u, "10: live source panel shows a standard exhibit ledger");
+      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^15 街を通る風/u, "15: live source panel shows a standard exhibit ledger");
       assert.match(await directPage.locator("#data-ledger-updated").textContent(), /(?:JST|取得日時：—)$/u, "10: source retrieval time or missing-time state is ambiguous");
       assert.match(await directPage.locator("#data-ledger-sources").textContent(), /Open-Meteo/u, "10: source provider is absent from the ledger");
       assert.match(
@@ -636,7 +636,7 @@ try {
 
   const live4kContext = await browser.newContext({ viewport: { width: 3840, height: 1960 } });
   const live4kPage = await live4kContext.newPage();
-  await live4kPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
+  await live4kPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen"));
   monitor(live4kPage, "live-4k");
   await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await live4kPage.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
@@ -711,7 +711,7 @@ try {
 
   const liveMobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const liveMobilePage = await liveMobileContext.newPage();
-  await liveMobilePage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
+  await liveMobilePage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen"));
   monitor(liveMobilePage, "live-mobile");
   await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await liveMobilePage.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-live-exhibit]").length === 6, null, { timeout: 30_000 });

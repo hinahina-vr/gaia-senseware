@@ -6,6 +6,53 @@
 
 #japan-layer .map-mode-groups.is-themed { gap: 14px; }
 
+#japan-layer .map-picker-profile-guide,
+#map-mobile-sheet .map-picker-profile-guide {
+  margin: 0 0 3px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #bbd5df21;
+  color: #a2b9c1;
+  font: 400 11px/1.75 var(--font-ui-ja);
+}
+
+/* Keep the original numbered buttons and their listeners. Captions add the
+   two independent axes without putting category text into the routing ID. */
+#japan-layer .map-mode-groups.is-themed .map-category-list {
+  grid-template-columns: repeat(var(--map-category-columns, 5), minmax(0, 1fr));
+}
+#japan-layer .map-mode-bank .map-mode-button[data-map-scope] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 76px;
+  height: auto;
+  padding: 8px 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+#japan-layer .map-mode-bank .map-mode-button[data-map-scope]::before {
+  order: 1;
+  content: attr(data-map-scope-label) "\a" attr(data-map-time-label);
+  color: #b9d0d4;
+  white-space: pre;
+  font: 400 11px/1.55 var(--font-ui-ja);
+  letter-spacing: 0;
+}
+#japan-layer .map-mode-bank .map-mode-button[data-map-time="realtime"]::before { color: #a3ded4; }
+#japan-layer .map-mode-bank .map-mode-button[data-map-time="series"]::before { color: #c9d3ed; }
+#japan-layer .map-mode-bank .map-mode-button[data-map-scope][aria-current="true"]::before { color: #effffb; }
+#map-mobile-sheet .map-exhibit-profile { display: flex; gap: 8px; margin-top: 7px; }
+#map-mobile-sheet .map-exhibit-profile > span {
+  color: #b9d0d4;
+  font: 400 11px/1.5 var(--font-ui-ja);
+}
+#map-mobile-sheet .map-exhibit-profile > span + span { padding-left: 8px; border-left: 1px solid #9ab7c14d; }
+#map-mobile-sheet [data-map-time="realtime"] .map-exhibit-profile > span + span { color: #a3ded4; }
+#map-mobile-sheet [data-map-time="series"] .map-exhibit-profile > span + span { color: #c9d3ed; }
+
 /* Provider/renderer colors belong to the exhibit, not to selection controls.
    Category headings identify the subject; one shared accent means selected. */
 #japan-layer {

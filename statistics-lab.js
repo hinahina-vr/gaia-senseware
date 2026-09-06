@@ -30,10 +30,12 @@ import {
   studentTQuantile,
   studentTCdf,
   varianceConfidenceInterval,
-} from "./statistics-lab-core.js";
-import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-statistical-categories-1";
-import { createStatisticsAi } from "./statistics-ai.js?v=gaia-ai-dialog-context-1";
-import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-data-insights-1";
+} from "./statistics-lab-core.js?v=gaia-analysis-guide-1";
+import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-analysis-guide-1";
+import { ANALYSIS_PURPOSES, ANALYSIS_CARDS, analysisIcon } from "./statistics-menu.js?v=gaia-analysis-guide-1";
+import { createStatisticsAi } from "./statistics-ai.js?v=gaia-observation-studio-1";
+import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-annual-history-1";
+import { analyzeDiscovery } from "./statistics-discovery.js?v=gaia-annual-history-1";
 
 const q = (selector) => document.querySelector(selector);
 const lab = q("#gaia-statistics-lab");
@@ -61,6 +63,7 @@ if (!lab || !openButton) {
     viewApply: q("#gaia-statistics-view-apply"),
     viewDelete: q("#gaia-statistics-view-delete"),
     lectures: q("#gaia-statistics-lectures"),
+    purposeGrid: q("#gaia-statistics-purpose-grid"),
     methods: q("#gaia-statistics-methods"),
     number: q("#gaia-statistics-method-number"),
     title: q("#gaia-statistics-method-title"),
@@ -296,7 +299,10 @@ if (!lab || !openButton) {
     const jma = (breathing.japanCo2 || []).filter((row) => [row.ryoriPpm, row.minamitorishimaPpm, row.yonagunijimaPpm].every((value) => finite(value) !== null)).map((row) => ({
       id: String(row.year), label: String(row.year), x: Number(row.ryoriPpm), y: Number(row.minamitorishimaPpm), value: Number(row.ryoriPpm), paired: Number(row.yonagunijimaPpm), provenance: "SOURCE",
     }));
-    const rainfall = (forest.precipitation || []).map((row) => ({ id: row.id, label: row.name, value: Number(row.precipitationMmDay), x: Number(row.lon), y: Number(row.precipitationMmDay), provenance: "SOURCE" }));
+    const rainfall = (forest.precipitation || []).map((row) => ({ ...row, id: row.id, label: row.name, value: Number(row.precipitationMmDay), x: Number(row.lon), y: Number(row.precipitationMmDay), provenance: "SOURCE" }));
+    const currents = (blue.currents || []).filter(row => Number.isFinite(row.uMs) && Number.isFinite(row.vMs)).map((row, index) => ({ ...row,
+      id: `current-${index}`, label: `${row.lat}°, ${row.lon}°`, x: row.uMs, y: row.vMs, value: Math.hypot(row.uMs, row.vMs), provenance: "SOURCE", valueKind: "derived-vector-speed",
+    }));
     const climate = (blue.climate || []).map((row) => ({ id: row.id, label: row.name, value: Number(row.windSpeedMs), x: Number(row.temperatureC), y: Number(row.windSpeedMs), provenance: "SOURCE", ...row }));
     const earthquakeEvents = (disaster.globalEvents || []).map((row) => ({ ...row, date: new Date(row.occurredAt) })).filter((row) => !Number.isNaN(row.date.valueOf()));
     const yearly = [];
@@ -326,12 +332,13 @@ if (!lab || !openButton) {
         missingPeriods: co2MissingMonths,
       },
       { id: "jma-co2", modeId: "breathing-earth", title: "JMA CO₂ 3観測所 共通期間", rows: jma, unit: "ppm", valueLabel: "綾里のCO₂", xLabel: "綾里", yLabel: "南鳥島", pairedLabel: "与那国島", provenance: ["SOURCE"] },
+      { id: "ocean-currents", modeId: "blue-circulation", title: `${currents.length}地点の表層海流（${currents[0]?.time?.slice(0, 10) || "収録時点"}）`, rows: currents, unit: "m/s", xLabel: "東西成分", yLabel: "南北成分", valueLabel: "流速", provenance: ["SOURCE"], insightContext: { measurementKind: "MODEL", axis: "locations" } },
       { id: "wind-climate", modeId: "blue-circulation", title: "31地点の風速と気温", rows: climate, unit: "m/s", xLabel: "気温", yLabel: "風速", provenance: ["SOURCE"] },
       { id: "rainfall", modeId: "forest-cloud-engine", title: "31地点の平均降水量", rows: rainfall, unit: "mm/day", xLabel: "経度", yLabel: "降水量", provenance: ["SOURCE"] },
       { id: "pollination", modeId: "pollination-protocol", title: "送粉相互作用と記録方式", rows: [...interactions, ...occurrences], categoricalSets: [interactions, occurrences], unit: "件", provenance: ["SOURCE"] },
       { id: "waste", modeId: "nothing-is-waste", title: "31か国の再資源化率", rows: wasteRows, unit: "%", xLabel: "経度", yLabel: "再資源化率", provenance: ["SOURCE", "IMPUTED"] },
       buildAnnualDataset(snapshot, "anthropocene-scar"),
-      { id: "earthquakes", modeId: "rhythm-of-disaster", title: "M7以上地震の年別件数（2001–2025）", rows: yearly, gaps, unit: "件/年", xLabel: "年", yLabel: "発生件数", provenance: ["SOURCE", "DERIVED"] },
+      { id: "earthquakes", modeId: "rhythm-of-disaster", title: "収録されたM7.5以上地震の年別件数（2001–2025）", rows: yearly, gaps, unit: "件/年", xLabel: "年", yLabel: "発生件数", provenance: ["SOURCE", "DERIVED"] },
       { id: "forest-urban", modeId: "three-ecologies", title: "31か国の森林率と都市化率", rows: forestUrban, unit: "%", valueLabel: "森林率", xLabel: "森林率", yLabel: "都市化率", provenance: ["SOURCE"] },
       { id: "culture", modeId: "three-ecologies", title: "文化遺産カテゴリと地域", rows: culture, unit: "件", provenance: ["SOURCE"] },
       { id: "renewables", modeId: "earth-organ", title: `${renewables.length}の国・地域の再生可能電力（各国の最新収録年）`, rows: renewables, unit: "%", valueLabel: "再生可能エネルギー発電割合", xLabel: "代表地点の日射（収録31地点）", yLabel: "再生可能エネルギー発電割合", provenance: ["SOURCE"] },
@@ -375,7 +382,7 @@ if (!lab || !openButton) {
   const renderBusinessSummary = (result, dataset) => {
     const usedRows = rowsFor(dataset);
     const eligibleRows = eligibleRowsFor(dataset);
-    const totalRows = dataset.rows.length;
+    const totalRows = dataset.coverage?.targetCount || dataset.rows.length;
     const sourceRows = usedRows.filter((row) => row.provenance === "SOURCE").length;
     const coverage = totalRows ? usedRows.length / totalRows : 0;
     const sourceShare = usedRows.length ? sourceRows / usedRows.length : 0;
@@ -385,7 +392,8 @@ if (!lab || !openButton) {
     ui.kpiRows.textContent = format(usedRows.length, 0);
     ui.kpiRowsNote.textContent = `表示 ${usedRows.length} / 全 ${totalRows}件`;
     ui.kpiCoverage.textContent = `${format(coverage * 100, 1)}%`;
-    ui.kpiCoverageNote.textContent = state.recordQuery ? "検索結果" : (state.includeDerived ? "観測値＋補完値" : "観測値のみ");
+    ui.kpiCoverageNote.textContent = dataset.coverage ? `47都道府県中・欠測${dataset.coverage.missingCount}地点${state.recordQuery ? "・検索適用" : ""}`
+      : state.recordQuery ? "検索結果" : (state.includeDerived ? "観測値＋補完値" : "観測値のみ");
     ui.kpiPrimaryLabel.textContent = primary?.[0] || "代表値";
     ui.kpiPrimary.textContent = primary ? `${format(primary[1])}${primary[2] || ""}` : "—";
     ui.kpiPrimaryNote.textContent = primary ? "現在の条件で再計算" : "数値指標なし";
@@ -595,10 +603,10 @@ if (!lab || !openButton) {
       chart: { type: "discrete", observed, expected, label: "年別件数" },
       formula: "Poisson: P(X=k)=e^(−λ)λ^k/k! / λ=標本平均",
       insight: customInsight({
-        headline: `M7以上の地震は年平均${format(stats.mean, 2)}件、分散/平均は${format(ratio, 2)}です。`,
+        headline: `収録された大地震は年平均${format(stats.mean, 2)}件、分散/平均は${format(ratio, 2)}です。`,
         meaning: "ポアソン分布は、一定の平均率で独立に起きる件数を表し、理論上は平均と分散が等しくなります。幾何分布は次の発生までの試行回数を表します。",
         evidence: [["期間", "2001–2025", ""], ["n", stats.n, "年"], ["平均", stats.mean, "件"], ["分散", stats.populationVariance, "件²"], ["分散/平均", ratio, ""], [`年${threshold}件以上`, successYears, "年"]],
-        interpretation: `分散/平均=${format(ratio, 2)}は1より小さく、この保存標本の年ごとの変動は単純ポアソンよりやや狭い傾向です。`,
+        interpretation: `分散/平均=${format(ratio, 2)}。この標本の年ごとの変動は、平均と分散が等しい単純ポアソンの目安と比べて${ratio > 1 ? "広い" : ratio < 1 ? "狭い" : "同じ"}値です。適合が確認されたわけではありません。`,
         limitations: ["独立かつ一定発生率という仮定は地震過程にそのまま成立しません。", "期待度数の小さい階級があるためχ²適合度の確定結論は出しません。"],
         nextActions: ["04 発生間隔", "06 平均件数の区間"], provenance: ["SOURCE", "DERIVED"],
       }),
@@ -897,7 +905,7 @@ if (!lab || !openButton) {
       const margin = studentTQuantile(0.975, model.df) * residualSe * Math.sqrt(1 + 1 / rows.length);
       metrics.push(["平均条件での予測", predicted, "%"], ["95%予測下限", predicted - margin, "%"], ["95%予測上限", predicted + margin, "%"]);
     }
-    return customResult({ kind: "regression", metrics, chart: { type: "scatter", pairs: rows.map((row) => ({ x: row.solarKwhM2Day, y: row.renewablePercent })), line: simpleRegression(rows.map((row) => row.solarKwhM2Day), y), xLabel: "太陽光", yLabel: "再生可能比率", unit: "%" }, formula: "y=β0+β1 solar+β2 wind+β3 rain+ε / β=(X'X)^−1X'y / VIF=1/(1−Rj²)", insight: customInsight({ headline: `3変数の重回帰R²は${format(model.rSquared)}、調整済みR²は${format(model.adjustedRSquared)}です。`, meaning: prediction ? "予測区間は係数推定と新しい観測の両方の不確実性を含みます。多重共線性は説明変数同士が似た情報を持つ状態で、VIFで確認します。" : "重回帰係数は、他の説明変数を一定としたときの1単位当たりの平均変化を表します。", evidence: [["n", model.n, "か国"], ["R²", model.rSquared, ""], ["最大VIF", Math.max(...vifs), ""], ["太陽光単相関", correlationSolar?.r ?? NaN, ""], ["風速単相関", correlationWind?.r ?? NaN, ""]], interpretation: `この保存標本では再生可能比率と太陽光の単相関は${format(correlationSolar?.r)}、風速とは${format(correlationWind?.r)}です。自然条件が高いほど導入率が高いとは限りません。最大VIFは${format(Math.max(...vifs))}です。`, limitations: ["係数は政策・経済・送電網など未収録要因の影響を受けます。", "31か国の観察標本から因果効果は判断できません。", prediction ? "標本範囲外への外挿は行いません。" : "係数の安定性には残差と共線性の追加診断が必要です。"], nextActions: prediction ? ["12 残差診断", "15 総合演習"] : ["12 R²・残差", "01 説明変数間相関"], provenance: ["SOURCE"] }) });
+    return customResult({ kind: "regression", metrics, chart: { type: "scatter", pairs: rows.map((row) => ({ x: row.solarKwhM2Day, y: row.renewablePercent })), line: simpleRegression(rows.map((row) => row.solarKwhM2Day), y), xLabel: "太陽光", yLabel: "再生可能比率", unit: "%" }, formula: "y=β0+β1 solar+β2 wind+β3 rain+ε / β=(X'X)^−1X'y / VIF=1/(1−Rj²)", insight: customInsight({ headline: `3変数の重回帰R²は${format(model.rSquared)}、調整済みR²は${format(model.adjustedRSquared)}です。`, meaning: prediction ? "予測区間は係数推定と新しい観測の両方の不確実性を含みます。多重共線性は説明変数同士が似た情報を持つ状態で、VIFで確認します。" : "重回帰係数は、他の説明変数を一定としたときの1単位当たりの平均変化を表します。", evidence: [["n", model.n, "か国"], ["R²", model.rSquared, ""], ["最大VIF", Math.max(...vifs), ""], ["太陽光単相関", correlationSolar?.r ?? NaN, ""], ["風速単相関", correlationWind?.r ?? NaN, ""]], interpretation: `この保存標本では再生可能比率と太陽光の単相関は${format(correlationSolar?.r)}、風速とは${format(correlationWind?.r)}です。自然条件が高いほど導入率が高いとは限りません。最大VIFは${format(Math.max(...vifs))}です。`, limitations: ["係数は政策・経済・送電網など未収録要因の影響を受けます。", "31か国の観察標本から因果効果は判断できません。", prediction ? "標本範囲外への外挿は行いません。" : "係数の安定性には残差と共線性の追加診断が必要です。"], nextActions: prediction ? ["12 残差診断", "15 分析の進め方"] : ["12 R²・残差", "01 説明変数間相関"], provenance: ["SOURCE"] }) });
   };
 
   const analyzeLogisticDataset = (dataset) => {
@@ -997,7 +1005,7 @@ if (!lab || !openButton) {
       const [categories, groups, categoryLabel, groupLabel] = categoricalRows(dataset);
       base = analyzeCategorical({ categories, groups, categoryLabel, groupLabel, provenance: dataset.provenance });
     } else base = analyzeSummary({ values: valuesFor(dataset), label: dataset.title, unit: dataset.unit, provenance: dataset.provenance });
-    base.insight.meaning = `総合演習は①問いを定める、②SOURCE/補完を分ける、③図にする、④推定する、⑤限界を読む、⑥次の分析を選ぶ、の6段階です。 ${base.insight.meaning}`;
+    base.insight.meaning = `分析の進め方：①問いを定める、②出典と補完データを確認する、③図にする、④推定する、⑤限界を読む、⑥次の分析を選ぶ。この6項目を、表示中の分析結果と照らし合わせて確認します。 ${base.insight.meaning}`;
     base.insight.nextActions = ["01 要約統計へ戻る", "データ区分を切り替えて再計算する", ...(base.insight.nextActions || []).slice(0, 2)];
     base.formula = `6 STEPS / QUESTION → PROVENANCE → VISUAL → ESTIMATE → LIMIT → NEXT / ${base.formula || "保存標本から再計算"}`;
     return base;
@@ -1013,6 +1021,7 @@ if (!lab || !openButton) {
     const pairRows = rows.filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
     if (!rows.length) return notApplicable("現在のデータ区分・絞り込み条件に合う観測値がありません。条件を変更してください。", ["01 要約統計"]);
     switch (methodId) {
+      case "discovery": return analyzeDiscovery({ dataset, rows, recordQuery: state.recordQuery });
       case "summary": return analyzeSummary({ values, label: dataset.valueLabel || dataset.yLabel || dataset.title, unit: dataset.unit, provenance: dataset.provenance });
       case "scatter": {
         if (pairRows.length < 3) return notApplicable("2変数の対応した有限値が3組以上必要です。", ["01 要約統計"]);
@@ -1088,6 +1097,8 @@ if (!lab || !openButton) {
       if (availability.available) availableCount += 1;
       applyAvailability(button, availability);
       button.setAttribute("aria-pressed", String(button.dataset.method === state.methodId));
+      const status = button.querySelector(".gaia-statistics-card-status");
+      if (status) status.textContent = !availability.available ? "条件不足 · 理由を見る" : button.dataset.method === state.methodId ? "選択中" : "この分析を開く →";
     });
     methodStatus.hidden = availableCount > 0 || !ui.methods.childElementCount;
     methodStatus.textContent = methodStatus.hidden ? "" : "この分類には、現在の条件で使える手法がありません。各項目から理由を確認できます。";
@@ -1101,7 +1112,7 @@ if (!lab || !openButton) {
     ui.takeawayEvidence.replaceChildren();
     ui.takeaway.dataset.state = insight ? "ready" : "empty";
     ui.takeawayHeadline.textContent = insight?.headline || "この条件では、まだ結論を表示できません。";
-    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = "データからみるインサイト";
+    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = insight.analysis ? `${insight.status === "needs-comparison" ? "比較を設計する" : "課題を発見する · 探索段階"} / ${insight.analysis.lens}` : "選択した分析から読めること";
     ui.takeawayBody.textContent = insight.summary;
     ui.takeawayCaveat.textContent = `注意：${insight.caveat}`;
     const evidence = insight.evidence.slice(0, 3);
@@ -1129,13 +1140,49 @@ if (!lab || !openButton) {
     ui.findings.replaceChildren();
     const heading = document.createElement("h4"); heading.textContent = insight.headline;
     const scope = document.createElement("p"); scope.className = "gaia-statistics-finding-scope"; scope.textContent = insight.scope;
-    ui.findings.append(heading, scope);
+    ui.findings.append(heading);
+    const conditions = document.createElement("details"); conditions.className = "gaia-statistics-discovery-alternatives";
+    const conditionsLabel = document.createElement("summary"); conditionsLabel.textContent = "対象範囲・探索方法を確認";
+    conditions.append(conditionsLabel, scope);
+    if (insight.analysis) {
+      const lens = document.createElement("p"); lens.className = "gaia-statistics-finding-scope";
+      lens.textContent = `今回の着眼点：${insight.analysis.method}。${insight.analysis.calculation}`; conditions.append(lens);
+    }
     insight.findings.forEach((finding) => {
       const article = document.createElement("article"); article.className = "gaia-statistics-finding";
       const title = document.createElement("h5"); title.textContent = finding.title;
       const body = document.createElement("p"); body.textContent = finding.body;
-      article.append(title, body); ui.findings.append(article);
+      article.dataset.kind = finding.kind || "reading";
+      article.append(title, body);
+      (finding.recordIds || []).slice(0, 3).forEach((recordId) => {
+        const row = rowsFor(dataset).find(row => String(row.id) === recordId);
+        if (!row) return;
+        const button = document.createElement("button"); button.type = "button"; button.className = "gaia-statistics-next-button";
+        button.textContent = `${row.countryJa || row.label || recordId}の記録を見る →`;
+        button.addEventListener("click", () => drillToRecord({ recordId, label: row.label })); article.append(button);
+      });
+      ui.findings.append(article);
     });
+    ui.findings.append(conditions);
+    const alternatives = (insight.candidates || []).filter(candidate => candidate.id !== insight.primaryId);
+    if (alternatives.length) {
+      const details = document.createElement("details"); details.className = "gaia-statistics-discovery-alternatives";
+      const summary = document.createElement("summary"); summary.textContent = `このデータで確かめたい、別の問い（${alternatives.length}）`; details.append(summary);
+      alternatives.forEach(candidate => {
+        const article = document.createElement("article"); article.className = "gaia-statistics-finding";
+        const title = document.createElement("h5"); title.textContent = candidate.title;
+        const observation = document.createElement("p"); observation.textContent = candidate.signal;
+        const question = document.createElement("p"); question.textContent = `問い：${candidate.question}`;
+        const test = document.createElement("p"); test.textContent = `確かめ方：${candidate.test}`;
+        article.append(title, observation, question, test); details.append(article);
+      }); ui.findings.append(details);
+    }
+    if (insight.statisticalReading) {
+      const details = document.createElement("details"); details.className = "gaia-statistics-discovery-alternatives";
+      const summary = document.createElement("summary"); summary.textContent = "選択した統計手法による読み取り";
+      const body = document.createElement("p"); body.textContent = `${insight.statisticalReading.headline} ${insight.statisticalReading.summary} ${insight.statisticalReading.caveat}`;
+      details.append(summary, body); ui.findings.append(details);
+    }
     const supporting = document.createElement("button"); supporting.type = "button"; supporting.className = "gaia-statistics-next-button"; supporting.textContent = "数値の内訳で裏付けを確認 →";
     supporting.addEventListener("click", () => { selectResultView("values"); ui.formula.focus({ preventScroll: true }); });
     ui.findings.append(supporting);
@@ -1287,10 +1334,10 @@ if (!lab || !openButton) {
       }
     };
     if (["scatter", "logistic"].includes(chart.type)) {
-      const pairedRows = rowsFor(dataset).filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
+      const pairedRows = chart.rows || rowsFor(dataset).filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
       (chart.pairs || []).forEach((point, index) => {
         const row = pairedRows[index] || {};
-        add(row.id || index, point.x ?? point[0], point.y ?? point[1], 0, row.label, row);
+        add(row.id || index, point.x ?? point[0], point.y ?? point[1], chart.highlightIds?.includes(String(row.id)) ? 1 : 0, row.label, row);
       });
     }
     else if (["histogram", "distribution"].includes(chart.type)) {
@@ -1308,7 +1355,7 @@ if (!lab || !openButton) {
     else if (chart.type === "sampling") (chart.sampleMeans || chart.bins || []).forEach((value, index) => add(index, value.center ?? ((value.x0 + value.x1) / 2), value.count ?? index % 8));
     else if (chart.type === "test") { (chart.left || []).forEach((value, index) => add(`l${index}`, value, index % 7, 0)); (chart.right || []).forEach((value, index) => add(`r${index}`, value, index % 7, 1)); }
     else if (chart.type === "anova") (chart.groups || []).forEach((group, gi) => group.forEach((value, index) => add(`${gi}-${index}`, gi, value, gi)));
-    else if (chart.type === "categorical") (chart.table || []).forEach((row, ri) => row.forEach((value, ci) => add(`${ri}-${ci}`, ci, value, ri)));
+    else if (chart.type === "categorical") (chart.table || []).forEach((row, ri) => row.forEach((value, ci) => add(`${ri}-${ci}`, ci, value, ri, `${chart.groupLevels?.[ri] || ""} / ${chart.categoryLevels?.[ci] || ""}`)));
     else if (chart.type === "bayes") (chart.curve || []).forEach((point, index) => add(index, point[0] ?? point.x, point[1] ?? point.y));
     else if (chart.type === "discrete") (chart.observed || []).forEach((value, index) => add(`o${index}`, index, value, 0));
     else (result.metrics || []).forEach((metric, index) => { if (Number.isFinite(metric[1])) add(index, index, metric[1], 0, metric[0]); });
@@ -1340,6 +1387,7 @@ if (!lab || !openButton) {
     ui.tooltip.style.top = `${target.sy}px`;
     ui.tooltip.dataset.side = target.sx > width * 0.62 ? "left" : "right";
     ui.tooltip.hidden = false;
+    ui.tooltip.dataset.recordId = target.recordId || "";
     state.chartActiveTarget = target;
     ui.tooltip.id ||= "gaia-statistics-chart-tooltip";
     ui.canvas.setAttribute("aria-describedby", `gaia-statistics-chart-help ${ui.tooltip.id}`);
@@ -1401,6 +1449,7 @@ if (!lab || !openButton) {
     const label = row.querySelector("th strong")?.textContent || target.label || recordId;
     ui.recordDrillStatus.textContent = `${label}の監査レコードを表示しました。`;
     requestAnimationFrame(() => {
+      if (!state.open || !ui.recordDetails.open || state.selectedRecordId !== recordId) return;
       row.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       row.focus({ preventScroll: true });
     });
@@ -1410,6 +1459,9 @@ if (!lab || !openButton) {
 
   const drawChart = (result, dataset) => {
     const canvas = ui.canvas; const rect = ui.visual.getBoundingClientRect();
+    canvas.dataset.chartReady = "false";
+    state.chartTargets = [];
+    state.chartActiveTarget = null;
     if (!rect.width || !rect.height) return;
     hideChartTooltip();
     state.chartKeyboardIndex = -1;
@@ -1477,14 +1529,18 @@ if (!lab || !openButton) {
         const xValue = minX + ratio * (maxX - minX);
         const yValue = maxY - ratio * (maxY - minY);
         ctx.textAlign = "center";
-        ctx.fillText(dataset.xKind === "month" && !frequencyChart ? String(Math.round(xValue)) : format(xValue, Math.abs(maxX - minX) < 12 ? 1 : 0), x, height - pad.bottom + (histogram ? 49 : 22));
+        if (chart.type !== "categorical") ctx.fillText(dataset.xKind === "month" && !frequencyChart ? String(Math.round(xValue)) : format(xValue, Math.abs(maxX - minX) < 12 ? 1 : 0), x, height - pad.bottom + (histogram ? 49 : 22));
         ctx.textAlign = "right";
         ctx.fillText(format(yValue, frequencyChart ? 0 : Math.abs(maxY - minY) < 12 ? 1 : 0), pad.left - 8, y + 3);
       }
-      const xAxisLabel = frequencyChart
+      if (chart.type === "categorical") {
+        ctx.textAlign = "center";
+        (chart.categoryLevels || []).forEach((label, index) => ctx.fillText(String(label), xScale(index), height - pad.bottom + 22, Math.max(20, (width - pad.left - pad.right) / chart.categoryLevels.length - 8)));
+      }
+      const xAxisLabel = chart.type === "categorical" ? chart.xLabel || "カテゴリ" : frequencyChart
         ? `${dataset.valueLabel || dataset.yLabel || "観測値"}${chart.unit || dataset.unit ? ` (${chart.unit || dataset.unit})` : ""}`
         : (chart.xLabel || dataset.xLabel || "OBSERVATION");
-      const yAxisLabel = frequencyChart ? "観測数" : (chart.yLabel || dataset.yLabel || dataset.unit || "VALUE");
+      const yAxisLabel = chart.type === "categorical" ? chart.yLabel || "記録数（件）" : frequencyChart ? "観測数" : (chart.yLabel || dataset.yLabel || dataset.unit || "VALUE");
       canvas.dataset.axisX = xAxisLabel;
       canvas.dataset.axisY = yAxisLabel;
       canvas.dataset.domainX = `${minX},${maxX}`;
@@ -1551,6 +1607,7 @@ if (!lab || !openButton) {
         if (t === 1) state.points.set(id, { sx: target.sx, sy: target.sy, group: target.group });
       });
       state.chartTargets = liveTargets;
+      canvas.dataset.chartReady = "true";
       const sourceLabel = (result.insight?.provenance || dataset.provenance).every((kind) => kind === "SOURCE") ? "観測値" : "観測値＋補完値";
       ctx.fillStyle = "#8ca6ae"; ctx.font = "10px 'Yu Gothic UI', sans-serif"; ctx.textAlign = "right";
       ctx.fillText(`${format(points.length, 0)}件 / ${sourceLabel}${histogram ? " · 下の点から詳細" : ""}`, width - pad.right, histogram ? pad.top - 12 : 22);
@@ -1628,7 +1685,11 @@ if (!lab || !openButton) {
         aiButton.title = aiButton.disabled ? "現在の条件に合う観測値がありません。" : "表示中の観測データを、ご自身のAPIで分析します。";
         state.result = result;
         renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset);
-        ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : "解析済み";
+        if (method.id === "discovery" && result.dataInsight?.analysis) {
+          ui.title.textContent = result.dataInsight.analysis.lens;
+          ui.copy.textContent = result.dataInsight.analysis.method;
+        }
+        ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : result.dataInsight?.status === "needs-comparison" ? "比較不足" : "解析済み";
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
         const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); ui.status.textContent = "条件不足";
@@ -1640,11 +1701,16 @@ if (!lab || !openButton) {
     const group = METHOD_GROUPS.find((candidate) => candidate.id === state.lectureId) || METHOD_GROUPS[0];
     hideMethodReason();
     ui.methods.replaceChildren();
+    ui.methods.dataset.tone = ANALYSIS_PURPOSES[group.id].tone;
     group.methods.forEach(([id, label]) => {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.method = id;
-      button.textContent = label;
+      button.innerHTML = `${analysisIcon(id)}<span class="gaia-statistics-card-copy"><strong></strong><span class="gaia-statistics-card-description"></span><small></small></span><span class="gaia-statistics-card-status"></span>`;
+      const [title, description] = ANALYSIS_CARDS[id];
+      button.querySelector("strong").textContent = title;
+      button.querySelector(".gaia-statistics-card-description").textContent = description;
+      button.querySelector("small").textContent = label;
       attachReasonEvents(button);
       button.addEventListener("click", () => {
         const availability = methodAvailability(id);
@@ -1653,6 +1719,8 @@ if (!lab || !openButton) {
         hideMethodReason();
         state.methodId = id;
         render();
+        selectResultView(id === "discovery" ? "findings" : "chart");
+        setMenuOpen(false, { restoreFocus: true });
       });
       ui.methods.append(button);
     });
@@ -1666,11 +1734,37 @@ if (!lab || !openButton) {
       || group.methods.find(([method]) => methodAvailability(method).available);
     // Browsing an unavailable category must not replace the current analysis.
     if (selected) state.methodId = selected[0];
-    ui.lectures.value = state.lectureId; renderMethods(); render();
+    ui.lectures.value = state.lectureId; syncPurposeCards(); renderMethods(); render();
   };
 
+  const syncPurposeCards = () => {
+    ui.purposeGrid.querySelectorAll("[data-analysis-group]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.analysisGroup === state.lectureId));
+    });
+  };
   const renderLectures = () => {
     ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const option = document.createElement("option"); option.value = group.id; option.textContent = group.name; ui.lectures.append(option); }); ui.lectures.value = state.lectureId;
+    ui.purposeGrid.replaceChildren(...METHOD_GROUPS.map(group => {
+      const purpose = ANALYSIS_PURPOSES[group.id];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.analysisGroup = group.id;
+      button.dataset.tone = purpose.tone;
+      button.setAttribute("aria-controls", ui.methods.id);
+      button.innerHTML = `${analysisIcon(purpose.icon)}<strong></strong><small></small>`;
+      button.querySelector("strong").textContent = purpose.title;
+      button.querySelector("small").textContent = group.name;
+      button.addEventListener("click", () => {
+        // Choosing a purpose browses its cards; the actual analysis changes only
+        // when an available method is explicitly selected.
+        state.lectureId = group.id;
+        ui.lectures.value = group.id;
+        syncPurposeCards();
+        renderMethods();
+      });
+      return button;
+    }));
+    syncPurposeCards();
   };
 
   const setDataset = (id, chooseDefault = false) => {
@@ -1679,7 +1773,9 @@ if (!lab || !openButton) {
     if (!supportsDerived) state.includeDerived = false;
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
     state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
-    ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId}　/　${dataset.title}`;
+    const exhibit = globalThis.GaiaAppContent?.modes?.find(mode => mode.id === dataset.modeId);
+    const contextTitle = exhibit ? `${exhibit.mapNumber} ${exhibit.titleJa}` : dataset.sourceName || MODE_TITLES[dataset.modeId] || "観測データ";
+    ui.context.textContent = `${contextTitle}　/　${dataset.title}`;
     if (chooseDefault) {
       // An entry from the map starts with this dataset, not a previous search.
       // Explicit saved views keep their own filters through chooseDefault=false.
@@ -1688,7 +1784,7 @@ if (!lab || !openButton) {
       state.selectedRecordId = "";
       ui.recordFilter.value = "";
       ui.filterClear.disabled = true;
-      const preferred = dataset.defaultMethod || DEFAULT_METHOD[dataset.modeId] || "summary";
+      const preferred = "discovery";
       const candidates = [...new Set([preferred, "summary", ...METHOD_LOOKUP.keys()])];
       // Use the same calculation guards as the method picker. Never turn on
       // imputed/derived data merely to make a suggested analysis work.
@@ -1698,6 +1794,7 @@ if (!lab || !openButton) {
       state.methodId = method;
       renderLectures();
       renderMethods();
+      selectResultView("findings");
     }
     render();
   };
@@ -1716,7 +1813,8 @@ if (!lab || !openButton) {
   };
 
   const focusables = () => [...lab.querySelectorAll("button:not([disabled]), select:not([disabled]), input:not([disabled]), details > summary, [tabindex]:not([tabindex='-1'])")]
-    .filter((element) => !element.hidden && !element.closest("[inert]") && element.getClientRects().length);
+    .filter((element) => !element.hidden && !element.closest("[inert]") && element.getClientRects().length
+      && (!lab.classList.contains("is-menu-open") || ui.controls.contains(element)));
   const trapFocus = (event) => {
     if (!state.open) return;
     if (statisticsAi.isOpen) {

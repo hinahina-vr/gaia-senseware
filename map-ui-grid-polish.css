@@ -2659,7 +2659,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 }
 
 .gaia-live-city-picker-controls > button,
-.gaia-live-deck-location-control > button {
+.gaia-live-deck-location-control > [data-live-poi-step] {
   display: grid;
   height: 34px;
   padding: 0;
@@ -2675,7 +2675,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 }
 
 .gaia-live-city-picker-controls > button:is(:hover, :focus-visible),
-.gaia-live-deck-location-control > button:is(:hover, :focus-visible) {
+.gaia-live-deck-location-control > [data-live-poi-step]:is(:hover, :focus-visible) {
   border-color: rgba(var(--map-accent-rgb), 0.88);
   color: #fff;
   background: rgba(var(--map-accent-rgb), 0.14);
@@ -3382,7 +3382,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     min-width: 0;
   }
 
-  .gaia-live-deck-location-control > button {
+  .gaia-live-deck-location-control > [data-live-poi-step] {
     height: 32px;
     border-radius: 50%;
     background: transparent;

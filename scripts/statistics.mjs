@@ -368,7 +368,7 @@ export const enrichSnapshotWithStatistics = (snapshot) => {
 
   const wasteMode = snapshot.modes.find((mode) => mode.id === "nothing-is-waste");
   const energyMode = snapshot.modes.find((mode) => mode.id === "earth-organ");
-  if (wasteMode?.signals?.countryWaste && energyMode?.signals?.potential) {
+  if (wasteMode?.signals?.countryWaste && energyMode?.signals?.potential && !wasteMode.signals.countryCoverage?.sourceOnly) {
     const waste = imputeWasteCountries(wasteMode.signals.countryWaste, energyMode.signals.potential, 5);
     wasteMode.signals.countryWaste = waste.combined;
     upsertDataset(wasteMode, {

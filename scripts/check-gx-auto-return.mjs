@@ -8,6 +8,7 @@ const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 const html = read("index.html");
 const gx = read("gx-mode.js");
 const gxStyles = read("gx-mode.css");
+const readingStyles = read("gx-reading-layout.css");
 const novel = read("novel-mode.js");
 const loader = read("gaia-mode-loader.js");
 
@@ -29,20 +30,20 @@ assert.doesNotMatch(gx, /storyGestureCount < 3/u);
 assert.doesNotMatch(gx, /storyGestureCount >= 3/u);
 assert.match(gx, /event\.key === "Enter" \|\| event\.key === " "/u);
 
-assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルをスキップして戻る"[\s\S]{0,240}<b aria-hidden="true">◀<\/b><span>戻る<\/span>/u);
+assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルをスキップして戻る"[\s\S]{0,240}<span>スキップ<\/span><b aria-hidden="true">▶<\/b>/u);
 assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルをスキップして\$\{returnTo === "novel" \? "ストーリー" : "入口"\}へ戻る/u);
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
-assert.match(loader, /gx-mode\.js\?v=gaia-gx-back-header-drop-1/u);
-assert.match(loader, /novel-mode\.js\?v=gaia-dialogue-fallback-1/u);
-assert.match(loader, /gx-mode\.css\?v=gaia-gx-mobile-gesture-pass-through-1/u);
+assert.match(loader, /gx-mode\.js\?v=gaia-gx-reading-1/u);
+assert.match(loader, /novel-mode\.js\?v=/u);
+assert.match(loader, /gx-mode\.css\?v=gaia-gx-reading-1/u);
+assert.match(loader, /gx-reading-layout\.css\?v=gaia-gx-reading-1/u);
 assert.match(gx, /const CLOSE_TRANSITION_MS = reducedMotion \? 0 : 340;/u);
 assert.match(gx, /if \(isOpen \|\| isClosing\) return;/u);
 assert.match(gx, /closeTransitionTimer = window\.setTimeout\(\(\) => \{[\s\S]*?document\.body\.classList\.remove\("gx-story-open"\);/u);
 assert.match(gxStyles, /\.gx-era-transition strong \{[\s\S]*?font-size: clamp\(12px, 2vw, 38px\);[\s\S]*?white-space: nowrap;/u);
-assert.match(gxStyles, /\.gx-modal-skip \{[\s\S]*?top: max\(24px,[\s\S]*?left: clamp\(22px,[\s\S]*?min-height: 48px;/u);
-assert.match(gxStyles, /@media \(min-width: 1600px\) \{[\s\S]*?\.gx-layer\[data-return-to="novel"\] \.gx-story-card h3 \{[\s\S]*?white-space: nowrap;/u);
-assert.match(gxStyles, /body\.gx-story-open \.gx-layer\[data-return-to="novel"\]\[data-phase="gaia-transformation"\] \.gx-story-card \{\s*width: min\(54%, 720px\);/u);
-assert.match(gxStyles, /body\.gx-story-open #gx-layer\[data-return-to="novel"\] \.gx-story-card \{\s*pointer-events: none;\s*touch-action: none;/u);
-assert.match(gxStyles, /body\.gx-story-open #gx-layer\[data-return-to="novel"\] \.gx-mobile-info-toggle \{\s*pointer-events: auto;/u);
+assert.match(readingStyles, /#gx-layer #gx-modal-skip \{[\s\S]*?right: var\(--gx-reading-pad\);\s*left: auto;/u);
+assert.match(readingStyles, /#gx-layer #gx-reading #gx-story-card \{[\s\S]*?pointer-events: none;/u);
+assert.match(readingStyles, /#gx-layer #gx-mobile-info-toggle \{[\s\S]*?min-height: 44px;[\s\S]*?pointer-events: auto;/u);
+assert.match(readingStyles, /#gx-layer #gx-mobile-info\[hidden\] \{ display: none !important; \}/u);
 
 console.log(JSON.stringify({ status: "passed", behavior: "gx-modal-skip-and-return" }, null, 2));

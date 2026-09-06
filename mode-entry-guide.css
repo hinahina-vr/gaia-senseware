@@ -8,6 +8,9 @@
   pointer-events: auto;
 }
 
+/* Map legends live above the base overlay; the guide must own its hit area. */
+.gaia-mode-entry-guide[data-mode="map"] { z-index: 1200; }
+
 .gaia-mode-entry-guide-spotlight {
   position: fixed;
   box-sizing: border-box;
@@ -80,6 +83,16 @@
   outline: 1px solid rgba(145, 223, 255, 0.34);
   outline-offset: 3px;
 }
+
+.gaia-mode-entry-guide-controls { display: flex; gap: 8px; margin-top: 16px; }
+.gaia-mode-entry-guide-controls button {
+  min-height: 44px; padding: 8px 12px; border: 1px solid #87d6e84d; border-radius: 8px;
+  color: #e5f6fa; background: #0d354d; font: 600 12px/1.4 var(--font-ja, sans-serif); cursor: pointer;
+}
+.gaia-mode-entry-guide-controls [data-mode-guide-skip] { margin-right: auto; background: transparent; }
+.gaia-mode-entry-guide-controls [data-mode-guide-next] { color: #032033; background: #a7e8f4; }
+.gaia-mode-entry-guide-controls button:disabled { opacity: .35; cursor: default; }
+.gaia-mode-entry-guide-controls button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
 .gaia-mode-entry-guide-replay {
   position: fixed;

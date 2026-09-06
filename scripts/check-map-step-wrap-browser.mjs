@@ -13,7 +13,7 @@ try {
   for (const width of [1440, 3840, 901]) {
     const context = await browser.newContext({ viewport: { width, height: width === 3840 ? 2088 : 900 }, reducedMotion: "reduce" });
     await context.addInitScript(() => {
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ path: "data/ovation-aurora-snapshot.json", contentType: "application/json" }));
@@ -22,7 +22,7 @@ try {
     await page.goto(`${base}/?mode=13&preview=step-wrap#world`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => globalThis.GaiaMapObservationAdapter && document.querySelector("[data-map-dock-year-step]"));
     const sources = await page.evaluate(() => GaiaMapObservationAdapter.waitSignalsReady());
-    await page.evaluate(() => GaiaModeEntryGuide.close("map", { restoreFocus: false }));
+    await page.evaluate(() => { GaiaModeEntryGuide.close("map", { restoreFocus: false }); GaiaMapDemo.stop(); });
     const slider = page.locator("#japan-layer [data-signal-time]").first();
     const previous = page.locator('[data-map-dock-year-step="-1"]');
     const next = page.locator('[data-map-dock-year-step="1"]');
@@ -33,7 +33,8 @@ try {
       await slider.evaluate(input => { input.value = input.min; input.dispatchEvent(new Event("input", { bubbles: true })); });
       await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "01");
       const count = Number(await slider.getAttribute("data-map-step-count"));
-      assert.equal(count, mode === 7 ? sources.modes.find(mode => mode.id === "earth-organ").signals.current.length : 31);
+      const [id, key] = mode === 7 ? ["earth-organ", "current"] : mode === 2 ? ["forest-cloud-engine", "precipitation"] : ["nothing-is-waste", "countryWaste"];
+      assert.equal(count, sources.modes.find(mode => mode.id === id).signals[key].length);
       await previous.click();
       await page.waitForFunction(count => document.querySelector("[data-map-dock-year]").textContent === String(count), count);
       assert.equal(await slider.getAttribute("data-map-step-index"), String(count - 1));

@@ -4,7 +4,7 @@ const descriptions = {
   "nasa-modis-ecological-layer": "背景参照として保存した資料です。比較の読みやすさを優先して地図には表示せず、相関計算にも使いません。",
   "worldbank-forest": "陸地に占める森林の割合を、緑の0〜100%棒と散布図の縦軸へ変換。都市人口率が最も近い国と並べて比較します。",
   "worldbank-urban": "人口に占める都市居住者の割合を、青の0〜100%棒と散布図の横軸へ変換。森林率とは分母が異なります。",
-  "forest-urban-correlation": "選んだ国と都市人口率の差が最小の国を比較。「関係を見る」で31か国のPearson相関と単回帰線を表示。国別の時間変化ではありません。",
+  "forest-urban-correlation": "選んだ国と都市人口率の差が最小の国を比較。「関係を見る」で両指標のある国・地域のPearson相関と単回帰線を表示。国別の時間変化ではありません。",
   "unesco-whc": "各大地域の世界遺産24例を、文化・記憶の独立した表示へ配置。森林率・都市人口率の比較や相関計算には混ぜません。",
 };
 export const applyEcologiesReadingMetadata = mode => {

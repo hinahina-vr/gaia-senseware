@@ -12,7 +12,7 @@ const report = { status: "running", checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 let page;
 try {
-  for (const [width, height, warm = false] of (baseline ? [[2176, 1072]] : [[2176, 1072], [1440, 900], [1024, 768], [390, 844], [320, 568], [1440, 900, true]])) {
+  for (const [width, height, warm = false] of (baseline ? [[2176, 1072]] : [[2176, 1072], [1440, 900], [1024, 768], [901, 768], [390, 844], [320, 568], [1440, 900, true]])) {
     const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "no-preference" });
     await context.addInitScript(storyVersion => {
       const progress = { storyVersion, stepId: "map_mode01_004", reachedSceneIds: [], viewed: {}, evesRoute: [], observationOrder: null, editorialChoice: null, reflectionIds: [], resultTone: null, demoInterest: "気候の長期変化", metCharacters: { mizuha: true, amane: true, sakuya: true }, audio: { muted: true, volume: 0.37 }, readStepIds: [], clear: false, archivesUnlocked: false, sessionId: "story-map-dock-test" };
@@ -33,6 +33,8 @@ try {
     await page.waitForFunction(() => globalThis.GaiaNovel);
     await page.waitForFunction(() => document.body.classList.contains("novel-mode-detour") && document.querySelector("#japan-layer")?.getBoundingClientRect().width > 0 && globalThis.GaiaMapObservationAdapter);
     await page.evaluate(() => GaiaMapObservationAdapter.waitSignalsReady());
+    await page.waitForFunction(() => document.querySelector("#japan-overlay").dataset.quantitativeLegendId === "co2-concentration"
+      && document.querySelector("#japan-overlay").dataset.plotRevealState === "complete");
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const scan = await page.evaluate(() => {
       const layer = document.querySelector("#japan-layer");
@@ -43,6 +45,11 @@ try {
           hit: document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.outerHTML.slice(0, 150) } : null;
       };
       return { width: innerWidth, body: document.body.className, layer: layer.getBoundingClientRect().toJSON(), phase: layer.dataset.storyPhase,
+        metric: { left: Number(layer.querySelector("#japan-overlay").dataset.auxiliaryPanelScreenLeft), top: Number(layer.querySelector("#japan-overlay").dataset.auxiliaryPanelScreenTop),
+          right: Number(layer.querySelector("#japan-overlay").dataset.auxiliaryPanelScreenRight), bottom: Number(layer.querySelector("#japan-overlay").dataset.auxiliaryPanelScreenBottom) },
+        skipText: layer.querySelector("#story-map-modal-skip").textContent.replace(/\s+/gu, ""),
+        skipHit: (() => { const b = layer.querySelector("#story-map-modal-skip"), r = b.getBoundingClientRect(); return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })(),
+        guide: measure('[data-gaia-mode-guide-replay="map"]'),
         scale: [...layer.querySelectorAll(".map-dock-timeline-scale span")].map(node => Number(node.textContent)),
         controls: [".map-command-dock", ".signal-console-map", ".signal-console-heading", ".signal-console-map > label", ".map-dock-year", ".map-dock-year b", "[data-signal-time]", ".map-dock-action--source", ".map-dock-action--statistics", "#story-map-modal-skip", ".japan-map-actions", ".signal-encoding-legend-dock"].map(measure) };
     });
@@ -50,6 +57,18 @@ try {
     await page.screenshot({ path: path.join(output, `${baseline ? "before" : "after"}-${width}${warm ? "-warm" : ""}.png`) });
     if (baseline) console.log(JSON.stringify(scan));
     if (!baseline) {
+      const skip = scan.controls.find(item => item.selector === "#story-map-modal-skip").box;
+      assert.equal(scan.skipText, "スキップ▶"); assert(scan.skipHit, "Skip must be pointer-accessible");
+      assert(skip.left > scan.layer.left + scan.layer.width / 2 && scan.layer.right - skip.right < 24 && skip.top - scan.layer.top < 24, `${width}: skip is not at the upper right`);
+      assert(scan.metric.left - scan.layer.left < 30, `${width}: quantitative panel is not on the left`);
+      if (width > 900) {
+        const legend = scan.controls.find(item => item.selector === ".signal-encoding-legend-dock").box;
+        assert(legend.left - scan.layer.left < 24 && legend.top - scan.layer.top < 24, `${width}: legend is not upper left`);
+        assert(Math.abs(scan.metric.left - legend.left) < 2 && Math.abs(scan.metric.right - legend.right) < 2, `${width}: observation column is not aligned`);
+        assert(scan.metric.top >= legend.bottom + 6 && scan.metric.bottom < scan.controls.find(item => item.selector === ".map-command-dock").box.top);
+        assert(scan.guide.box.left >= legend.left && scan.guide.box.right <= legend.right && scan.guide.box.bottom <= legend.bottom, "Guide must move with legend");
+        assert(legend.right < skip.left, "Legend overlaps skip");
+      }
       assert.equal(scan.scale[0], 1958); assert.equal(scan.scale.at(-1), 2050);
       assert(scan.scale.every((value, index) => !index || value > scan.scale[index - 1]), "Year scale must not include playback speed");
       for (const control of scan.controls.filter(item => item?.visible && [".signal-console-map", ".signal-console-map > label", ".map-dock-year", ".map-dock-year b", "[data-signal-time]", ".map-dock-action--source", ".map-dock-action--statistics"].includes(item.selector))) {
@@ -75,6 +94,8 @@ try {
         assert.equal(await page.evaluate(() => document.body.classList.contains("novel-mode-detour")), true);
       }
       if (width < 901) {
+        const toggle = await page.locator("#map-mobile-legend-toggle").boundingBox();
+        assert(toggle.x < scan.layer.left + 30 && toggle.x + toggle.width < skip.left, "Mobile legend control overlaps skip");
         await page.locator("#map-mobile-legend-toggle").click();
         await page.locator("#map-signal-encoding-legend-dock").waitFor({ state: "visible" });
         const legend = await page.locator("#map-signal-encoding-legend-dock").boundingBox();
@@ -83,7 +104,7 @@ try {
       }
       await page.locator("#story-map-modal-skip").click();
       await page.waitForFunction(() => GaiaNovel.getState().stepId === "map_mode01_005" && !document.body.classList.contains("novel-mode-detour"));
-      console.log(`PASS ${width}${warm ? " warm" : ""}: bounded dock, correct years, pointer/keyboard, actions, story return`);
+      console.log(`PASS ${width}${warm ? " warm" : ""}: left observation column, upper-right skip, bounded dock, pointer/keyboard, actions, story return`);
     }
     await context.close();
   }

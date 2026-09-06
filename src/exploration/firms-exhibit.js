@@ -1,6 +1,7 @@
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
 import { earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { createRealtimeStatus, updateRealtimeStatus } from "./realtime-exhibit-status.js?v=gaia-realtime-identity-1";
 import { FIRE_REVEAL_EDGE, FIRE_COLUMN_LIFETIME, FIRE_COLUMN_LIMIT, FIRE_COLUMN_MOBILE_LIMIT,
   fireSequence, inverseFireEase, FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT } from "./fire-ignition.js?v=gaia-fire-columns-1";
 
@@ -17,10 +18,10 @@ const MAX_CANVAS_PIXELS = 1_600_000;
 const DEFINITION = Object.freeze({
   id: "nasa-firms-active-fire",
   number: "01",
-  shortTitle: "燃える惑星",
-  title: "燃える惑星 — ACTIVE FIRE",
+  shortTitle: "火と暮らしの境界",
+  title: "火と暮らしの境界 — ACTIVE FIRE",
   signalLabel: "火災・熱異常",
-  caption: "NASA FIRMSが直近24時間に捉えた火災・熱異常を、観測された時刻の順に灯します。",
+  caption: "NASA FIRMSが公開する、衛星による直近24時間の火災・熱異常を、観測時刻順に表示します。検知点と放射熱の強さ（FRP）の記録であり、焼失面積、被害、出火原因は分かりません。",
   sourceName: "NASA LANCE FIRMS / MODIS Collection 6.1 NRT",
   source: SOURCE_PAGE,
 });
@@ -43,6 +44,7 @@ let snapshot;
 let snapshotPromise;
 let readout;
 let legend;
+let realtimeStatus;
 let button;
 let active = false;
 let frame = 0;
@@ -565,16 +567,16 @@ const statisticsDataset = () => snapshot ? {
   sourceName: DEFINITION.sourceName,
 } : null;
 
-const openStatistics = () => {
-  const dataset = statisticsDataset();
-  if (!dataset) return;
-  const open = () => void globalThis.GaiaStatisticsLab?.open?.({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
-  if (globalThis.GaiaStatisticsLab?.open) open();
-  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
-};
 
 const renderSnapshot = () => {
   if (!snapshot || !readout || !legend) return;
+  updateRealtimeStatus(realtimeStatus, {
+    sourceState: snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "SAVED SNAPSHOT",
+    observedAt: snapshot.summary.end,
+    source: "NASA FIRMS / MODIS · 公開には時間差があります",
+    kind: "衛星観測（準リアルタイム）",
+    timeLabel: "最新観測",
+  });
   uploadPoints();
   readout.dataset.firmsSource = snapshot.source;
   readout.dataset.firmsGeneratedAt = snapshot.generatedAt;
@@ -598,7 +600,7 @@ const select = async () => {
   if (!active) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "06",
-      title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
+      title: document.querySelector("#japan-mode-title")?.textContent || "積み重なるCO₂",
     };
   }
   active = true;
@@ -609,10 +611,18 @@ const select = async () => {
   canvas.hidden = false;
   legend.hidden = false;
   readout.hidden = false;
+  updateRealtimeStatus(realtimeStatus, { source: "NASA FIRMS / MODIS", kind: "衛星観測（準リアルタイム）", timeLabel: "最新観測" });
+  legend.querySelector("details").open = false;
   button.setAttribute("aria-current", "true");
   document.querySelectorAll(".map-mode-button:not([data-firms-exhibit])").forEach((item) => item.setAttribute("aria-current", "false"));
   applyHeading();
-  const payload = await loadSnapshot();
+  let payload;
+  try { payload = await loadSnapshot(); }
+  catch (error) {
+    if (active) updateRealtimeStatus(realtimeStatus, { sourceState: "ERROR", source: "NASA FIRMS / MODIS", kind: "衛星観測" });
+    console.warn("FIRMS observation data is unavailable.", error);
+    return;
+  }
   if (!active) return;
   renderSnapshot(payload);
   playbackEnabled = true;
@@ -695,12 +705,19 @@ const mount = () => {
   legend.hidden = true;
   legend.setAttribute("aria-label", "NASA FIRMS 火災・熱異常の凡例");
   legend.innerHTML = `
+    <details class="gaia-metric-legend-details"><summary>凡例・データの詳細</summary>
+    <div class="gaia-metric-legend-details-body gaia-firms-legend-body">
     <header><strong>火災放射パワー / FRP</strong><span data-firms-legend-source>読込中</span></header>
     <i aria-hidden="true"></i>
     <div><small>弱い</small><small>50 MW</small><small>200+ MW</small></div>
     <p><span><b class="is-day"></b>昼 / 金橙</span><span><b class="is-night"></b>夜 / 深紅</span><em data-firms-legend-count>—</em></p>
     <div class="gaia-firms-data-time"><span>DATA LATEST</span><time data-firms-latest>読込中</time><small data-firms-age>—</small></div>
+    <p class="gaia-firms-legend-caption">${DEFINITION.caption} 光点や火柱は演出で、実際の炎の高さではありません。</p>
+    </div></details>
   `;
+  for (const type of ["pointerdown", "wheel", "keydown", "keyup"]) legend.addEventListener(type, event => {
+    if (event.target instanceof Element && event.target.closest("details")) event.stopPropagation();
+  });
   layer.append(legend);
 
   readout = document.createElement("section");
@@ -710,7 +727,7 @@ const mount = () => {
   readout.innerHTML = `
     <div class="gaia-firms-chapter">
       <p>EARTH / NASA FIRMS · GLOBAL 24H</p>
-      <div><button type="button" data-firms-step="-1" aria-label="前の展示、30 雨の足跡へ">‹</button><button type="button" class="gaia-featured-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="${DEFINITION.number} ${DEFINITION.shortTitle}。展示一覧を開く"><span><b>${DEFINITION.number}</b><strong>${DEFINITION.shortTitle}</strong></span></button><button type="button" data-firms-step="1" aria-label="次の展示、02 大気をなぞるへ">›</button></div>
+      <div><button type="button" data-firms-step="-1" aria-label="前の展示、30 雨と暮らしの暦へ">‹</button><button type="button" class="gaia-featured-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="${DEFINITION.number} ${DEFINITION.shortTitle}。展示一覧を開く"><span><b>${DEFINITION.number}</b><strong>${DEFINITION.shortTitle}</strong></span></button><button type="button" data-firms-step="1" aria-label="次の展示、02 風がつなぐ世界へ">›</button></div>
     </div>
     <div class="gaia-firms-count"><p>OBSERVED / ACQUISITION-TIME RELAY</p><strong><b data-firms-visible>0</b><span> / <i data-firms-total>—</i> 表示点</span></strong><small data-firms-time>観測待機</small></div>
     <div class="gaia-firms-primary"><p>最大 火災放射パワー</p><strong data-firms-max-frp>—</strong><span>MW</span></div>
@@ -727,6 +744,8 @@ const mount = () => {
     </div>
   `;
   decorateMapActions(readout.querySelector(".gaia-firms-actions"), readout.querySelector(".gaia-firms-actions a"), readout.querySelector("[data-firms-analysis]"));
+  realtimeStatus = createRealtimeStatus();
+  readout.querySelector(".gaia-firms-chapter").after(realtimeStatus);
   layer.append(readout);
 
   button = document.createElement("button");
@@ -757,14 +776,13 @@ const mount = () => {
     playbackEnabled = !playbackEnabled;
     if (playbackEnabled) cycleStartedAt = performance.now() - REVEAL_DELAY_MS - inverseFireEase(manualProgress) * REVEAL_MS;
   });
-  readout.querySelector("[data-firms-analysis]")?.addEventListener("click", openStatistics);
   addEventListener("resize", () => { if (active) lastRenderedAt = 0; }, { passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) cancelAnimationFrame(frame);
     else if (active) frame = requestAnimationFrame(draw);
   });
   dispatchEvent(new CustomEvent("gaia:firms-exhibit-mounted"));
-  void loadSnapshot();
+  void loadSnapshot().catch(error => console.warn("FIRMS preload is unavailable.", error));
 };
 
 if (globalThis.GaiaMapObservationAdapter) mount();

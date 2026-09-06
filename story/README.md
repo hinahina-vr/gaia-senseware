@@ -11,6 +11,7 @@
 - `LOG_REVISION_2026-09-06.json`: 修正元のLOG ID、原稿ID、反映先IDと重複整理の対応表です。APEIRONCENEの画面IDは`runtimeStepId`で保持し、追加・削除で後続IDを振り直しません。
 - `LOG_COMMENTS_2026-09-06_BEYOND.md`: 同日11:56 UTC出力のAPEIRONCENE追加改稿59件です。先行する109件の原文・対応表は履歴として保持します。
 - `LOG_REVISION_2026-09-06_BEYOND.json`: 追加改稿59件と18メッセージの挿入対応表です。未修正本文・本編のハッシュと既存LOG ID順を検証し、先行改稿の上書き対象を明示します。
+- `LOG_REVISION_2026-09-06_BEYOND_FOLLOWUP.json`: 統合台本確認後の追修正2件（`beyond_03_043`の話者をルウへ、`beyond_01_028`の非人型描写とページ分割）の記録です。`npm run check:story-log-comments`で、旧ログの保持と対象外542項目・シーン順・安定IDの不変を検証します。
 - `物語台本.md`: 本編6シーンの凍結入力。これだけでは現行表示と一致しません。
 - `observation-log-revisions-20260822.js`: 凍結入力へ適用する現行差し替え。本文・話者ラベル・演出メタデータを含みます。
 - `../novel-story-data.js`: 凍結入力と差し替えを土台に、承認済み入力のID順と本文を適用して生成される本編ランタイム。直接編集しません。

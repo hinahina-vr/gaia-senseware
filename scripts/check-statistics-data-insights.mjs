@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildDataInsight, DATA_INSIGHT_METHODS } from "../statistics-data-insights.js";
+import { buildStatisticalReading as buildDataInsight, DATA_INSIGHT_METHODS } from "../statistics-data-insights.js";
 import { METHOD_LOOKUP } from "../statistics-methods.js";
 import { analyzeSummary, analyzeCorrelation, analyzeDistribution, analyzeLogistic, analyzeBayes, analyzeInterval, notApplicable } from "../statistics-lab-core.js";
 

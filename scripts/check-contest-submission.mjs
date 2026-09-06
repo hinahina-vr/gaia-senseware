@@ -72,6 +72,17 @@ assert.doesNotMatch(index, /id="gaia-opening-(?:tour-start|route-tour)"/u);
 assert.match(index, /data-build-profile="release"/u);
 assert.match(index, /LOCAL DATA \/ SNAPSHOT/u);
 assert.doesNotMatch(index, /SIGNAL \/ LIVE/u);
+assert.doesNotMatch(index, /(?:審査中は外部APIへ接続しない|表示中に外部APIへ接続しません|リアルタイム連携は次の開発段階)/u, "設計説明にライブAPI実装前の断定が残っています");
+assert.match(index, /aria-label="[^"]*保存JSONと外部API/u);
+assert.match(index, /id="architecture-data-policy"/u);
+for (const [name, document] of [["画面内説明", index], ["README", readme], ["設計文書", architecture], ["提出ガイド", guide]]) {
+  for (const required of ["LIVE CACHE", "SAVED SNAPSHOT", "SAVED VALUES", "演出用サンプル", "5分", "15分"]) {
+    assert(document.includes(required), `${name}に取得状態の説明がありません: ${required}`);
+  }
+}
+for (const required of ["NOAA SWPC", "Open-Meteo", "USGS", "NASA FIRMS", "/api/live/v1/"]) {
+  assert(index.includes(required), `画面内に取得経路の説明がありません: ${required}`);
+}
 assert.match(tour, /○ SOURCE \/ 公開記録/u);
 assert.match(tour, /△ DERIVED \/ 計算・補間/u);
 assert.match(tour, /◇ SCENARIO \/ 仮定・操作/u);
@@ -94,4 +105,4 @@ assert.doesNotMatch(sensorPlatform, /GaiaObservation|観測ノート|gaia-observ
 assert.match(loader, /hash === "#tour"/u);
 assert.doesNotMatch(index, /<script[^>]+src="https?:\/\//iu, "外部ランタイムscriptを読み込んでいます");
 
-console.log(JSON.stringify({ status: "passed", guide: "docs/CONTEST_2026_SUBMISSION.md", architecture: "docs/ARCHITECTURE.md", dataSources: "docs/DATA_SOURCES.md", workflow: ".github/workflows/contest-checks.yml", checks: 66 }, null, 2));
+console.log(JSON.stringify({ status: "passed", guide: "docs/CONTEST_2026_SUBMISSION.md", architecture: "docs/ARCHITECTURE.md", dataSources: "docs/DATA_SOURCES.md", workflow: ".github/workflows/contest-checks.yml", dataAccessCopy: "passed" }, null, 2));

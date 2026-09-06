@@ -2,6 +2,7 @@
 // Method IDs remain stable so saved views and dataset defaults keep working.
 export const METHOD_GROUPS = [
   { id: "descriptive", name: "記述・探索", methods: [
+    ["discovery", "特徴から課題を探す", "集中・変化・似た条件での違いを探索し、確かめるべき問いを選びます。"],
     ["summary", "値の分布を見る", "値がどこに集まり、どこから外れているかを見る。"],
     ["scatter", "散布図・共分散・Pearson相関", "2変数の方向と強さを、点の配置から確認します。"],
   ] },
@@ -37,8 +38,8 @@ export const METHOD_GROUPS = [
     ["bayes", "Beta–Binomial・HDI", "事前分布が観測によってどう更新されたか示します。"],
     ["mcmc", "MCMC診断", "決定的なチェーンで収束指標と有効標本を確認します。"],
   ] },
-  { id: "workflow", name: "総合演習", methods: [
-    ["exercise", "GAIA 6段階総合演習", "問い、整形、可視化、推定、限界、次の分析を一続きにします。"],
+  { id: "workflow", name: "分析の進め方", methods: [
+    ["exercise", "分析の流れを確認する", "データに合う分析結果を表示し、問い・出典・図・推定・限界・次の分析の6項目を確認します。"],
   ] },
 ];
 

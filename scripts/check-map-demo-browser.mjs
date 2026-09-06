@@ -14,7 +14,7 @@ try {
   for (const width of widths) {
     const context = await browser.newContext({ viewport: { width, height: width >= 2400 ? 2088 : 900 }, hasTouch: width < 720, reducedMotion: width === 320 ? "reduce" : "no-preference" });
     await context.addInitScript(() => {
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ contentType: "application/json", body: ovation }));
@@ -38,6 +38,7 @@ try {
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && globalThis.GaiaMapDemo && GaiaMapCategories.buttons().length === 30);
     await page.evaluate(() => GaiaModeEntryGuide.close("map", { restoreFocus: false }));
     await page.waitForTimeout(1200);
+    const mobile = width <= 900;
     const toggle = page.locator("#gaia-map-demo-toggle");
     const profile = { width, visited: [], layout: [], lifecycle: [] };
     report.profiles.push(profile);
@@ -50,8 +51,8 @@ try {
       dockTitle: document.querySelector("#japan-mode-title").textContent,
     }));
     const layout = async state => {
-      const result = await page.evaluate(() => {
-        const b = document.querySelector("#gaia-map-demo-toggle");
+      const result = await page.evaluate(mobile => {
+        const b = document.querySelector(mobile ? '[data-mobile-sheet="tools"]' : "#gaia-map-demo-toggle");
         const rect = b.getBoundingClientRect();
         const peers = ["#japan-close", "#gaia-statistics-button-mobile", '[data-gaia-mode-guide-replay="map"]', ".gaia-audio-dock"].map(selector => {
           const node = document.querySelector(selector);
@@ -59,11 +60,11 @@ try {
           return { selector, x: r?.x, y: r?.y, width: r?.width, height: r?.height, overlap: !!r && r.width > 0 && r.height > 0 && rect.left < r.right && rect.right > r.left && rect.top < r.bottom && rect.bottom > r.top };
         });
         const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-        const text = b.querySelector("[data-demo-label]");
+        const text = b.querySelector("[data-demo-label]") || b;
         const range = document.createRange(); range.selectNodeContents(text);
         return { width: rect.width, height: rect.height, x: rect.x, y: rect.y, right: rect.right, inViewport: rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight,
           reachable: b === hit || b.contains(hit), hit: hit?.outerHTML.slice(0, 250), peers, labelLines: range.getClientRects().length, overflow: b.scrollWidth > b.clientWidth + 1, outline: getComputedStyle(b).outlineStyle };
-      });
+      }, mobile);
       profile.layout.push({ state, ...result });
       await page.screenshot({ path: path.join(output, `${width}-${state}.jpg`), type: "jpeg", quality: 86 });
       assert(result.width >= 44 && result.height >= 44 && result.inViewport && result.reachable && !result.overflow, `${width} ${state}: control layout ${JSON.stringify(result)}`);
@@ -71,7 +72,10 @@ try {
       assert.equal(result.labelLines, 1);
     };
     const start = async () => {
-      if (width < 720) await toggle.tap(); else await toggle.click();
+      if (mobile) {
+        if (!(await page.locator("#map-mobile-sheet").evaluate(node => node.open))) await page.locator('[data-mobile-sheet="tools"]').click();
+        await page.getByRole("button", { name: "全展示のデモ再生", exact: true }).click();
+      } else await toggle.click();
       assert.equal(await toggle.getAttribute("aria-pressed"), "true");
     };
     const select = async number => {
@@ -79,7 +83,8 @@ try {
       await page.waitForFunction(number => Number(document.querySelector("#japan-mode-number").textContent) === number, number);
       await page.clock.runFor(800);
     };
-    assert.equal((await snapshot()).demo.active, false);
+    assert.equal((await snapshot()).demo.active, true);
+    await page.evaluate(() => GaiaMapDemo.stop());
     await layout("idle");
     await select(1);
     await start();
@@ -105,7 +110,8 @@ try {
     }
     await page.screenshot({ path: path.join(output, `${width}-after-loop.jpg`), type: "jpeg", quality: 86 });
     // Stop button, keyboard escape, ordinary input, leave and re-entry.
-    await toggle.click();
+    if (mobile) await page.locator('[data-mobile-sheet="tools"]').click();
+    else await toggle.click();
     assert.equal((await snapshot()).demo.active, false);
     profile.lifecycle.push("stop-button");
     await start();
@@ -113,7 +119,10 @@ try {
     assert.equal((await snapshot()).demo.active, false);
     assert.equal(await page.locator("#japan-layer").getAttribute("aria-hidden"), "false");
     profile.lifecycle.push("escape-keeps-map-open");
-    await toggle.focus();
+    if (mobile) {
+      await page.locator('[data-mobile-sheet="tools"]').click();
+      await page.getByRole("button", { name: "全展示のデモ再生", exact: true }).focus();
+    } else await toggle.focus();
     await page.keyboard.press("Enter");
     assert.equal((await snapshot()).demo.active, true);
     await layout("keyboard");
@@ -144,18 +153,23 @@ try {
     await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event("visibilitychange")); });
     assert.equal((await snapshot()).demo.paused, false);
     profile.lifecycle.push("hidden-tab-retains-time");
-    // Auto first-visit guide must not interrupt a running demo.
-    await page.evaluate(() => sessionStorage.removeItem("gaia:mode-entry-guide:map:v3"));
-    assert.equal(await page.evaluate(() => GaiaModeEntryGuide.open("map")), false);
-    profile.lifecycle.push("no-guide-interruption");
+    // A guide pauses (but does not turn off) the running demo.
+    await page.evaluate(() => sessionStorage.removeItem("gaia:mode-entry-guide:map:v4"));
+    assert.equal(await page.evaluate(() => GaiaModeEntryGuide.open("map")), true);
+    assert.equal((await snapshot()).demo.active, true);
+    assert.equal((await snapshot()).demo.paused, true);
+    await page.evaluate(() => GaiaModeEntryGuide.close("map"));
+    assert.equal((await snapshot()).demo.paused, false);
+    await page.clock.runFor(400);
+    profile.lifecycle.push("guide-pauses-and-resumes");
     await page.locator("#japan-close").click();
     assert.equal((await snapshot()).demo.active, false);
     await page.clock.runFor(1000);
-    await page.evaluate(() => { sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"); location.hash = "#world"; });
+    await page.evaluate(() => { sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen"); location.hash = "#world"; });
     await page.waitForFunction(() => document.querySelector("#japan-layer").getAttribute("aria-hidden") === "false");
-    assert.equal((await snapshot()).demo.active, false);
+    assert.equal((await snapshot()).demo.active, true);
     assert.equal(await page.locator("#gaia-map-demo-toggle").count(), 1);
-    profile.lifecycle.push("leave-and-reenter-off");
+    profile.lifecycle.push("leave-and-reenter-default-on");
     assert.equal((await snapshot()).muted, "true");
     await context.close();
     console.log(JSON.stringify({ width, visited: profile.visited.length, lifecycle: profile.lifecycle.length, status: "passed" }));

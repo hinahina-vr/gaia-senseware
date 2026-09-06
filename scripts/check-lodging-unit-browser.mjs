@@ -29,12 +29,12 @@ try {
         GaiaEstatExhibits.setMonth(month);
         GaiaEstatExhibits.selectPrefecture(prefecture);
       }, { month, prefecture });
-      const current = series.lodging[series.months[month]][prefecture];
-      const previous = series.lodging[series.months[month - 1]][prefecture];
+      const current = series.lodging[series.periodsBySeries.lodging[month]][prefecture];
+      const previous = series.lodging[series.periodsBySeries.lodging[0]][prefecture];
       const delta = current - previous;
       await page.waitForFunction(expected => document.querySelector("[data-estat-value]").textContent === expected, current.toLocaleString("ja-JP"));
       assert.equal(await page.locator("[data-estat-unit]").textContent(), "人");
-      assert.equal(await page.locator("[data-estat-value-label]").textContent(), "延べ宿泊者数");
+      assert.equal(await page.locator("[data-estat-value-label]").textContent(), "年間延べ宿泊者数（従業者10人以上）");
       assert.equal(await page.locator("[data-estat-delta]").textContent(), `${delta > 0 ? "+" : ""}${delta.toLocaleString("ja-JP")} 人`);
       for (const attr of ["current", "minimum", "maximum"]) {
         assert.match(await page.locator(`.gaia-estat-heat-legend [data-metric-${attr}]`).textContent(), / 人$/);

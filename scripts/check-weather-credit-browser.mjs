@@ -54,8 +54,8 @@ try {
     for (const mode of ["wind-field", "rain-chorus", "temperature-field", "cloud-drift", "carbon-pulse", "pm25-haze"]) {
       await page.evaluate(mode => document.querySelector(`[data-live-exhibit="${mode}"]`).click(), mode);
       await page.waitForFunction(() => document.querySelector("[data-live-anchor-label]").textContent === "青森県・青森");
-      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "02 青森県");
-      assert.equal(await page.locator("[data-live-city-caption]").textContent(), "青森");
+      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "青森県（青森市）");
+      assert.equal(await page.locator("[data-live-city-caption]").count(), 0);
       assert.match(await page.evaluate(() => GaiaLiveData.getState().measurements.weatherWindSpeed.location.label), /^Open-Meteo/);
       const air = ["carbon-pulse", "pm25-haze"].includes(mode);
       assert.equal(await page.locator("[data-live-cams-credit]").isVisible(), air);
@@ -97,12 +97,12 @@ try {
     await page.keyboard.press("Escape");
     await page.evaluate(() => GaiaLiveExhibits.selectObservationPoint("naha"));
     await page.waitForFunction(() => GaiaLiveData.getState().city === "naha" && GaiaLiveData.getState().requestState === "unavailable");
-    assert.equal(await page.locator("[data-live-deck-location]").textContent(), "47 沖縄県");
+    assert.equal(await page.locator("[data-live-deck-location]").textContent(), "沖縄県（那覇市）");
     assert.equal(await page.locator("[data-live-exhibit-value]").textContent(), "—");
     assert(await credit.isVisible(), "Attribution vanished when the selected city had no data");
     for (const mode of ["carbon-pulse", "pm25-haze"]) {
       await page.evaluate(mode => document.querySelector(`[data-live-exhibit="${mode}"]`).click(), mode);
-      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "47 沖縄県");
+      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "沖縄県（那覇市）");
       assert.equal(await page.locator("[data-live-exhibit-value]").textContent(), "—");
       assert(await page.locator("[data-live-cams-credit]").isVisible());
     }

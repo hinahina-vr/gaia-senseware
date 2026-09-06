@@ -1,8 +1,10 @@
 import { descriptive } from "./statistics-lab-core.js";
+import { discoverData } from "./statistics-discovery.js?v=gaia-annual-history-1";
 
 // Observation-level copy is separate from the statistical explanation. Only
 // the rows used by the current analysis are supplied; no network or AI needed.
 export const DATA_INSIGHT_METHODS = Object.freeze([
+  "discovery",
   "summary", "scatter", "moments", "discrete", "continuous", "sampling", "unbiased",
   "interval", "difference-ci", "hypothesis", "welch", "paired", "anova", "binomial",
   "categorical", "fisher", "bh", "regression", "multiple", "logistic", "diagnostics",
@@ -33,17 +35,29 @@ function timeChange(dataset, rows, unit, label) {
   };
 }
 
-export function buildDataInsight({ result, dataset, rows = [], methodId, recordQuery = "" }) {
+export function buildDataInsight(input) {
+  if (input.result.dataInsight) return input.result.dataInsight;
+  const statisticalReading = buildStatisticalReading(input);
+  // An unavailable or unstable model must not acquire a confident headline.
+  if (input.result.kind === "not-applicable" || (input.methodId === "logistic" && !input.result.model?.converged)
+    || (input.methodId === "mcmc" && !(metric(input.result, "R-hat") <= 1.05))) return statisticalReading;
+  return { ...discoverData(input), statisticalReading };
+}
+
+export function buildStatisticalReading({ result, dataset, rows = [], methodId, recordQuery = "" }) {
   const chart = result.chart || {};
   const unit = methodId === "unbiased" ? dataset.unit || "" : chart.unit ?? chart.yUnit ?? dataset.unit ?? "";
   const label = named(result.family === "exponential" ? chart.label : dataset.valueLabel || dataset.yLabel || dataset.title);
   const yLabel = named(dataset.yLabel || label), xLabel = named(dataset.xLabel);
   const stats = result.stats || chart.summary || descriptive(rows.map(row => row.value));
   const scope = `${dataset.title} / 現在の対象 ${rows.length}行${recordQuery ? ` / 絞り込み「${recordQuery}」` : ""}。${result.family === "exponential" || rows.some(row => row.provenance && row.provenance !== "SOURCE") ? "補完・派生値を含みます。" : "実測・出典データのみ。"}`;
-  const make = (headline, summary, evidence = [], detail = null, caveat = "この結果は選択中の観測範囲についてのものです。原因や未観測の地域・将来まで断定するものではありません。") => ({
+  const make = (headline, summary, evidence = [], detail = null, caveat = "この結果は選択中の観測範囲についてのものです。原因や未観測の地域・将来まで断定するものではありません。") => {
+    caveat = [caveat, dataset.comparisonNote, dataset.missingCount ? `全収録期間の欠測${dataset.missingCount}年は計算から除外しています。` : ""].filter(Boolean).join(" ");
+    return {
     methodId, headline, summary, evidence, caveat, scope,
     findings: [{ title: "データから見えたこと", body: summary }, ...(detail ? [detail] : []), { title: "どこまで言えるか", body: caveat }],
-  });
+    };
+  };
   if (result.kind === "not-applicable" || !stats) return make(
     "今のデータでは、この問いへの答えは出せません。",
     result.insight?.interpretation || result.insight?.meaning || "比較に必要な観測値が足りません。",

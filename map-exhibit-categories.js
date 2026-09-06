@@ -17,11 +17,29 @@
   const buttons = (root = document) => [...root.querySelectorAll(".map-mode-bank .map-mode-button")]
     .sort((a, b) => Number(a.textContent.trim()) - Number(b.textContent.trim()));
   const standardButtons = () => buttons().filter(button => button.hasAttribute("data-map-standard-index"));
-  globalThis.GaiaMapCategories = Object.freeze({ definitions, get, buttons, standardButtons });
+  // Classify the main dataset, not its animation or current connection state.
+  // A country ranking is not a chronological series; a saved live-feed value
+  // does not become historical playback merely because the network is offline.
+  const timeTypes = Object.freeze({ realtime: "リアルタイム", series: "時系列", comparison: "比較", simulation: "試算" });
+  const profiles = new Map(Array.from({ length: 30 }, (_, index) => {
+    const number = index + 1;
+    const scope = number <= 14 ? "world" : "japan";
+    const time = number <= 5 || (number >= 15 && number <= 20) ? "realtime"
+      : number === 7 ? "simulation" : [8, 9, 12, 13].includes(number) ? "comparison" : "series";
+    return [number, Object.freeze({ scope, time, scopeLabel: scope === "world" ? "世界" : "日本", timeLabel: timeTypes[time] })];
+  }));
+  const getProfile = number => profiles.get(Number(number)) || null;
+  const profileGuide = "世界／日本は対象エリア。リアルタイムは定期更新型（保存値を含む）、時系列は年・日時の推移。地域の比較や試算は分けて表示しています。";
+  globalThis.GaiaMapCategories = Object.freeze({ definitions, get, buttons, standardButtons, getProfile, profileGuide });
 
   const layer = document.querySelector("#japan-layer");
   const groups = layer?.querySelector(".map-mode-groups");
   if (!layer || !groups) return;
+  const guide = document.createElement("p");
+  guide.className = "map-picker-profile-guide";
+  guide.textContent = profileGuide;
+  groups.prepend(guide);
+  const descriptions = new Map();
   const sections = new Map();
   let scheduled = false;
   const setText = (element, value) => {
@@ -35,6 +53,7 @@
         section.className = "map-mode-group map-category-group";
         section.dataset.mapCategory = category.id;
         section.style.setProperty("--map-category-color", category.color);
+        section.style.setProperty("--map-category-columns", category.numbers.length === 6 ? "3" : "5");
         const heading = document.createElement("p");
         heading.className = "map-mode-group-label";
         heading.id = `map-category-${category.id}-label`;
@@ -60,6 +79,29 @@
       const grid = sections.get(category.id).querySelector(".map-category-list");
       if (button.parentElement !== grid) grid.append(button);
       if (button.dataset.mapCategory !== category.id) button.dataset.mapCategory = category.id;
+      const profile = getProfile(button.textContent.trim());
+      if (profile) {
+        for (const [key, value] of Object.entries({ mapScope: profile.scope, mapTime: profile.time,
+          mapScopeLabel: profile.scopeLabel, mapTimeLabel: profile.timeLabel })) {
+          if (button.dataset[key] !== value) button.dataset[key] = value;
+        }
+        // Preserve the numeric text node used by routing and renderer indices.
+        // CSS supplies the visible caption; this shared text supplies its
+        // screen-reader equivalent without changing any button's identity.
+        const id = `map-profile-${profile.scope}-${profile.time}`;
+        if (!descriptions.has(id)) {
+          const description = document.createElement("span");
+          description.id = id;
+          description.hidden = true;
+          description.textContent = `${profile.scopeLabel}展示・${profile.timeLabel}${profile.time === "realtime" ? "型。接続状態や保存値は展示内で確認できます。" : "展示"}`;
+          groups.append(description);
+          descriptions.set(id, description);
+        }
+        const describedBy = new Set((button.getAttribute("aria-describedby") || "").split(/\s+/u).filter(Boolean));
+        describedBy.add(id);
+        const nextDescription = [...describedBy].join(" ");
+        if (button.getAttribute("aria-describedby") !== nextDescription) button.setAttribute("aria-describedby", nextDescription);
+      }
     }
     // Keep the original mounting points for lazy-loaded providers. Relocating
     // the real buttons preserves their listeners, references and accessibility.

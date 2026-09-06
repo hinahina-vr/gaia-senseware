@@ -5,6 +5,7 @@ import vm from "node:vm";
 import "./check-live-loading.mjs";
 import "./check-statistics-methods.mjs";
 import "./check-exhibit-catalog.mjs";
+import "./check-map-editorial.mjs";
 import "./check-map-demo.mjs";
 import { LIVE_EXHIBITS } from "../src/exploration/live-exhibit-catalog.js";
 import { ESTAT_EXHIBITS } from "../src/exploration/estat-exhibit-catalog.js";
@@ -85,7 +86,7 @@ for (const id of retiredIds) {
   assert(!appSource.includes(id), `${id}: retired exhibit remains in app.js`);
 }
 
-assert.equal(content.modes[2].titleJa, "森林と降水量を重ねる");
+assert.equal(content.modes[2].titleJa, "森と水のつながり");
 assert.match(content.modeConcepts["forest-cloud-engine"].seeing, /森林域/u);
 assert.match(content.modeConcepts["forest-cloud-engine"].touch, /大きな水色円.*代表地点名・平均降水量/u);
 assert.match(appSource, /const FOREST_RAIN_MIN_RADIUS = 10;/u);
@@ -93,12 +94,12 @@ assert.match(appSource, /const FOREST_RAIN_MAX_RADIUS = 54;/u);
 assert.match(appSource, /row\.id === "brazil" \? "ブラジル" : getCountryNameJa\(row\)/u);
 assert.equal(content.modes.some(({ id }) => id === "pollination-protocol"), false);
 assert.doesNotMatch(appContentSource, /pollination-protocol|ミツバチ|GloBI|GBIF/u);
-assert.equal(content.modes[3].titleJa, "再資源化率を比べる");
+assert.equal(content.modes[3].titleJa, "捨てた先の未来");
 assert.match(content.modeConcepts["nothing-is-waste"].seeing, /緑.*橙.*直径はすべて同じ/u);
-assert.match(content.modeConcepts["nothing-is-waste"].touch, /左右ボタン.*スライダー.*31.*公式値か補完値/u);
+assert.match(content.modeConcepts["nothing-is-waste"].touch, /左右ボタン.*スライダー.*国・地域.*公表値と出典/u);
 assert.doesNotMatch(appSource, /scenarioRecycle|scenarioIncrease|drawOuterTargetRing/u);
 assert.match(appSource, /signalMode\.id === "nothing-is-waste" \|\|[\s\S]*co2TimelineHeld/u);
-assert.match(content.modes[4].description, /1945〜2023年.*VIIRS 2016.*固定参照/u);
+assert.match(content.modes[4].description, /1945〜2023年.*VIIRS.*2016年.*固定.*比較/u);
 assert.match(content.modeConcepts["anthropocene-scar"].seeing, /国土の色.*固定対数尺度.*濃紺.*淡黄.*2016年/u);
 assert.match(content.modeConcepts["anthropocene-scar"].touch, /1945〜2023年.*色の付いた国土.*0\.65秒以上/u);
 assert.match(appSource, /glow-plus-radiance-core/u);
@@ -112,7 +113,7 @@ assert.match(appSource, /emissionsGeometry = "natural-earth-country-choropleth"/
 assert.match(appSource, /emissionsHitSurface = "country-regions"/u);
 assert.match(appSource, /化石燃料由来CO₂[ 　]\$\{selected\.emissionsMtCo2\.toFixed\(1\)\} Mt/u);
 assert.doesNotMatch(appSource, /国全体の色|FOSSIL CO₂ \$\{selected\.emissionsMtCo2/u);
-assert.match(content.modes[5].description, /発生日時順.*カメラで追い.*到着の0\.5秒後.*赤い×.*一つずつ.*0\.9秒後.*日本時間.*一斉にフェードアウト.*×に続く輪.*可感半径/u);
+assert.match(content.modes[5].description, /USGS.*2000〜2026年.*M7\.5.*発生日時順.*学習用.*可感半径.*実際の震度分布.*被害範囲.*津波範囲.*気象庁.*実測震度/u);
 assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /発生日時の早い地震から順.*M7\.5.*約500km.*M9\.1.*約2,000km.*別年度の震源は表示しません/u);
 assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*発生日時の早い順.*カメラで追い.*到着の0\.5秒後.*0\.9秒後.*地震件数に合わせて変わり.*世界表示へ戻/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 2200/u);
@@ -157,7 +158,7 @@ assert.match(appSource, /"赤い× \/ この年の震源"/u);
 assert.match(appSource, /getEarthquakeYearTransition/u);
 assert.match(appSource, /reducedMotionStillAdvances = signalMode\?\.id === "rhythm-of-disaster"/u);
 assert.match(appSource, /setJapanDataLayer\("snapshot"\)/u);
-assert.match(content.modes[6].description, /同じ31か国.*緑と青の棒.*散布図/u);
+assert.match(content.modes[6].description, /世界の国・地域.*森林面積率.*都市人口率.*異なる分母.*100%.*標本内の相関.*相関は因果/u);
 assert.match(content.modeConcepts["three-ecologies"].seeing, /回帰線.*相関係数r/u);
 assert.match(content.modeConcepts["three-ecologies"].touch, /都市人口率の低い国から高い国/u);
 assert.match(content.modeDataNarratives["three-ecologies"], /森林面積率.*緑の棒.*青の棒/u);
@@ -165,9 +166,9 @@ assert.match(appSource, /const getThreeEcologiesComparison/u);
 assert.match(appSource, /ecologiesPlot = "paired-bars-with-linked-scatter"/u);
 assert.match(appSource, /drawMemoryContext\(unescoGlobalSample\)/u);
 const threeEcologiesData = gaiaData.modes.find(({ id }) => id === "three-ecologies");
-assert.equal(threeEcologiesData.signals.pairedCountries.length, 31);
-assert.equal(threeEcologiesData.signals.ecological.length, 31);
-assert.equal(threeEcologiesData.signals.social.length, 31);
+assert(threeEcologiesData.signals.pairedCountries.length >= 200);
+assert(threeEcologiesData.signals.ecological.length >= 200);
+assert(threeEcologiesData.signals.social.length >= 200);
 assert.equal(threeEcologiesData.signals.culture.length, 24);
 assert(threeEcologiesData.signals.pairedCountries.every((row) => Number.isFinite(row.forestPercent) && Number.isFinite(row.urbanPercent)));
 assert.match(appSource, /const ECOLOGIES_SEQUENCE_DURATION_MS = MODE_SEQUENCE_DURATION_MS \* 2;/u);
@@ -175,7 +176,7 @@ assert.match(appSource, /const ECOLOGIES_SELECTION_TRANSITION_MS = 920;/u);
 assert.match(appSource, /const getEcologiesSelectionTransition = \(rows, selected, now\)/u);
 assert.match(appSource, /id === "three-ecologies"[\s\S]{0,120}ECOLOGIES_SEQUENCE_DURATION_MS/u);
 assert.match(appSource, /ecologiesCountryDisplayMs[\s\S]{0,500}ecologiesSelectionTransitionProgress/u);
-assert.match(content.modes[7].description, /国土の青.*暗い青.*明るい水色/u);
+assert.match(content.modes[7].description, /世界銀行.*発電割合.*国土の青.*年は異なり.*0%.*未収録.*代表地点.*原因を計算した値ではありません/u);
 assert.match(content.modeConcepts["earth-organ"].seeing, /国・地域.*暗い青.*明るい水色/u);
 assert.match(content.modeConcepts["earth-organ"].touch, /自動再生とスライダー.*高い国から低い国.*結ぶ機能はなくし/u);
 assert.match(appSource, /\.sort\(\(a, b\) => b\.renewablePercent - a\.renewablePercent\)/u);
@@ -293,12 +294,12 @@ assert.doesNotMatch(liveDataSource, /ensureSpaceReceipt|data-gaia-live-receipt|g
 assert.doesNotMatch(stylesSource, /gaia-live-receipt|gaia-live-sound-controls/u);
 assert.doesNotMatch(mapGridStylesSource, /gaia-live-receipt/u);
 const liveContracts = [
-  ["15", "wind-field", "Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。"],
-  ["16", "carbon-pulse", "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。"],
-  ["17", "rain-chorus", "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。"],
-  ["18", "temperature-field", "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。"],
-  ["19", "cloud-drift", "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。"],
-  ["20", "pm25-haze", "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。"],
+  ["15", "wind-field", "Open-Meteoの47都道府県代表都市の風速モデル値を、同じ色尺度で比べます。光の線の色と太さが速さを表し、線の向きは風向ではありません。"],
+  ["16", "carbon-pulse", "CAMSの東京に対応する格子のCO₂濃度予測です。光の輪は濃度を表す演出で、東京の排出量、室内濃度、個人が吸った量を示しません。"],
+  ["17", "rain-chorus", "Open-Meteoの東京の降水量モデル値を、雨粒と波紋で表します。値の対象時刻と単位を確かめてください。雨の筋や波紋は浸水域や洪水の予測ではありません。"],
+  ["18", "temperature-field", "Open-Meteoの東京の地上2m気温のモデル値を、色と揺らぎで表します。室内温度、体感温度、個人の熱中症リスクを示す値ではありません。"],
+  ["19", "cloud-drift", "Open-Meteoの東京の総雲量を、空を覆う割合（0〜100%）として読みます。雲の重なりは演出で、衛星画像や日射量そのものではありません。"],
+  ["20", "pm25-haze", "CAMSの東京に対応する格子のPM2.5濃度予測です。霞は値に応じた演出で、実測の煙、汚染源、個人の曝露量や健康被害を示しません。"],
 ];
 assert.deepEqual(LIVE_EXHIBITS.map(({ number, id, caption }) => [number, id, caption]), liveContracts, "Live explanatory contracts changed");
 assert.match(liveExhibitsSource, /getContext\("webgl"[\s\S]*WEBGL_FRAGMENT_SOURCE/u);
@@ -306,7 +307,8 @@ assert.match(liveExhibitsSource, /WEBGL_WIND_BRUSH_VERTEX_SOURCE[\s\S]*WEBGL_WIN
 assert.match(liveExhibitsSource, /vec3 windPalette[\s\S]*blue[\s\S]*cyan[\s\S]*green[\s\S]*yellow[\s\S]*orange[\s\S]*red/u);
 assert.match(liveExhibitsSource, /gl\.drawArrays\(gl\.TRIANGLES, 0, windPoints\.length \* windBrushCorners\.length\)/u);
 assert.match(liveExhibitsSource, /data-live-poi-step="-1"[\s\S]*data-live-poi-step="1"/u);
-assert.match(liveDataSource, /\/api\/live\/v1\/wind-field/u);
+assert.match(liveDataSource, /\/api\/live\/v1\/prefecture-field/u);
+assert.match(liveDataSource, /gaia:live-prefecture-field/u);
 assert.match(liveDataSource, /gaia:live-wind-field/u);
 assert.match(liveExhibitsSource, /visualLanguage = "continuous-signal-field"/u);
 assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 temperatureField[\s\S]*vec3 cloudField[\s\S]*vec3 no2Field/u);
@@ -348,7 +350,7 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-beyond-log-20260906-115607/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-live-glass-20260907-1/u);
 assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "lodging").unit, "人");
 assert.match(liveExhibitsSource, /この地図で確かめること/u);
 assert.equal(LIVE_EXHIBITS.filter(exhibit => typeof exhibit.question === "string" && exhibit.question.length).length, 6);
@@ -356,24 +358,24 @@ assert.doesNotMatch(liveExhibitsSource, /LIVE WAVE|live-wave-bar|gaia-live-deck-
 assert.match(modeLoaderSource, /data-ledger\.css\?v=gaia-source-link-icons-1/u);
 assert.match(modeLoaderSource, /data-ledger\.js\?v=gaia-observation-panels-jst-1/u);
 assert.doesNotMatch(read("src/exploration/estat-exhibits.js"), /47 PREFECTURES \/ AUTO RELAY/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-renewable-world-readout-1/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-place-picker-1/u);
 const titleCopyFade = mapGridStylesSource.match(/@keyframes map-title-separator-copy-fade \{([\s\S]*?)\n\}/u)?.[1];
 assert(titleCopyFade, "Title exit uses a dedicated fade");
 assert.doesNotMatch(titleCopyFade, /transform|translate/u);
 assert.match(titleCopyFade, /82% \{ opacity: 1; \}/u);
 assert.match(titleCopyFade, /92%, 100% \{ opacity: 0; \}/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-story-map-dock-1/u);
-assert.match(modeLoaderSource, /map-exhibit-categories\.css\?v=gaia-unified-picker-1/u);
-assert.match(modeLoaderSource, /map-exhibit-categories\.js\?v=gaia-exhibit-order-1/u);
-assert.match(modeLoaderSource, /app-content\.js\?v=gaia-renewable-world-readout-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-mobile-shell-1/u);
+assert.match(modeLoaderSource, /map-exhibit-categories\.css\?v=gaia-exhibit-profile-1/u);
+assert.match(modeLoaderSource, /map-exhibit-categories\.js\?v=gaia-exhibit-profile-1/u);
+assert.match(modeLoaderSource, /app-content\.js\?v=gaia-country-coverage-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-prefecture-gis-view-1/u);
 assert.match(modeLoaderSource, /map-observation-panels\.css\?v=gaia-observation-panels-jst-1/u);
-assert.match(modeLoaderSource, /map-legend-drag\.js\?v=gaia-observation-mincho-1/u);
+assert.match(modeLoaderSource, /map-legend-drag\.js\?v=gaia-story-map-left-ui-1/u);
 assert.match(modeLoaderSource, /map-legend-drag\.css\?v=gaia-movable-legends-1/u);
 assert.match(modeLoaderSource, /metric-legend\.css\?v=gaia-unified-metric-legend-1/u);
 assert.match(modeLoaderSource, /map-instrument-ui\.css\?v=gaia-country-emissions-history-1/u);
-assert.match(modeLoaderSource, /styles\.css\?v=gaia-exhibit-preview-card-1/u);
-assert.match(modeLoaderSource, /mode-entry-guide\.js\?v=gaia-live-deck-3/u);
+assert.match(modeLoaderSource, /styles\.css\?v=gaia-prefecture-gis-view-1/u);
+assert.match(modeLoaderSource, /mode-entry-guide\.js\?v=gaia-map-guide-sequence-1/u);
 assert.match(appSource, /setIntroEntryGuideStep\(0\);\s*introEntryGuide\.focus/u);
 assert.match(appSource, /generation === introEntryGuideGeneration[\s\S]{0,140}introEntryGuide\.classList\.add\("is-visible", "is-presented"\)/u);
 assert.match(appSource, /releaseIntroEntryGuideSurface\(step\.target\)/u);
@@ -382,8 +384,8 @@ assert.match(stylesSource, /\.intro-entry-guide-shade \{[\s\S]{0,760}0 0 0 9999p
 assert.match(stylesSource, /@keyframes intro-guide-condense[\s\S]{0,300}filter: blur\(8px\)/u);
 assert.match(stylesSource, /animation: intro-guide-release 620ms/u);
 assert.doesNotMatch(stylesSource, /\.intro-entry-guide-bubble \{[\s\S]{0,1200}transition:[^;}]*(?:top|left)/u);
-assert.match(appSource, /avoid: "\.gaia-live-exhibit-readout"/u);
-assert.match(appSource, /version: "v3"[\s\S]{0,900}title: "展示を選ぶ"[\s\S]{0,900}title: "年代をたどる"[\s\S]{0,900}title: "問いを読む"[\s\S]{0,900}title: "データの出典を確認する"[\s\S]{0,900}title: "データを詳しく分析する"/u);
+assert.match(appSource, /avoid: "\.gaia-live-exhibit-readout, \.gaia-firms-readout, \.gaia-planet-signals-readout, \.gaia-estat-readout, #map-mobile-toolbar"/u);
+assert.match(appSource, /version: "v4"[\s\S]{0,1200}title: "左下から、展示を選ぶ"[\s\S]{0,900}title: "観測値と単位を読む"[\s\S]{0,900}title: "時間をたどる"[\s\S]{0,900}title: "データの出典を確認する"[\s\S]{0,900}title: "データを詳しく分析する"/u);
 assert.match(modeLoaderSource, /particles-v9\.js\?v=gaia-light-surface-fps-1/u);
 assert.match(appSource, /const mapSurfaceIsVisible = japanIsOpen/u);
 assert.match(appSource, /if \(mapSurfaceIsVisible\) \{\s*renderJapanTiles\(\);\s*renderJapanOverlay\(now\);/u);
@@ -412,19 +414,21 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-observation-mincho-1/u);
-assert.match(modeLoaderSource, /map-observation-typography\.css\?v=gaia-observation-mincho-1/u);
-assert.match(modeLoaderSource, /live-observation-ui\.css\?v=gaia-live-observation-ui-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-lodging-color-1/u);
+assert.match(modeLoaderSource, /map-observation-typography\.css\?v=gaia-lodging-color-1/u);
+assert.match(modeLoaderSource, /live-observation-ui\.css\?v=gaia-action-corner-1/u);
+assert.match(modeLoaderSource, /observation-place-picker\.css\?v=gaia-place-inline-1/u);
 assert.match(liveExhibitsSource, /createMetricLegend\(\{ className: "gaia-live-metric-legend"/u);
 assert.match(liveExhibitsSource, /querySelector\("\.japan-credits"\)\.append\(weatherCredit\)/u);
 assert.doesNotMatch(liveExhibitsSource, /OBSERVATION RELAY \/ PREFECTURE|MODEL \/ JAPAN · 47 PREFECTURES|className = "gaia-live-city-picker"/u);
-assert.match(modeLoaderSource, /map-exhibit-actions\.css\?v=gaia-prefecture-city-1/u);
-assert.match(modeLoaderSource, /statistics-lab\.js\?v=gaia-renewable-world-readout-1/u);
+assert.match(modeLoaderSource, /map-exhibit-actions\.css\?v=gaia-realtime-analysis-disabled-1/u);
+assert.match(modeLoaderSource, /statistics-lab\.js\?v=gaia-observation-studio-1/u);
+assert.match(modeLoaderSource, /statistics-atmosphere\.css\?v=gaia-observation-studio-1/u);
 await import("./check-map-action-statistics.mjs");
 assert.match(modeLoaderSource, /firms-exhibit\.css\?v=gaia-firms-readout-fit-1/u);
 assert.match(modeLoaderSource, /planet-signals-exhibit\.css\?v=gaia-epicenter-jump-1/u);
 assert.match(modeLoaderSource, /map-chapter-navigation\.css\?v=gaia-unified-picker-1/u);
-assert.match(html, /id="japan-title" data-exhibit-number="06" aria-label="06 地球の一呼吸" aria-live="polite">地球の一呼吸<\/h2>/u);
+assert.match(html, /id="japan-title" data-exhibit-number="06" aria-label="06 積み重なるCO₂" aria-live="polite">積み重なるCO₂<\/h2>/u);
 assert.match(html, /id="map-title-transition"[\s\S]{0,120}id="map-title-transition-text"/u);
 assert.match(html, /class="map-title-transition-copy"[\s\S]{0,140}id="map-title-transition-subtitle"/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);
@@ -467,7 +471,7 @@ assert.match(mapGridStylesSource, /\.map-grid-data \{[\s\S]{0,280}var\(--map-gri
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[3].description, /同じ大きさの円グラフ/u);
-assert.match(modeLoaderSource, /styles\.css\?v=gaia-exhibit-preview-card-1/u);
+assert.match(modeLoaderSource, /styles\.css\?v=gaia-prefecture-gis-view-1/u);
 assert.match(appSource, /tooltip\.dataset\.placement = placement/u);
 assert.match(appSource, /const target = usesCompactMapUi\(\) \? japanModeBank : japanLayer/u);
 assert.match(appSource, /--map-tooltip-anchor-y/u);
@@ -478,7 +482,7 @@ assert.match(appSource, /const animateMapReadingGuide = \(guide\) =>/u);
 assert.match(appSource, /mapReadingGuideBody\?\.setAttribute\("aria-busy", "true"\)/u);
 assert.match(stylesSource, /\.map-reading-guide\.is-mode-entering[\s\S]{0,180}map-reading-guide-enter/u);
 assert.match(stylesSource, /@keyframes map-reading-guide-enter/u);
-assert.match(html, /id="map-mode-preview"[\s\S]*id="map-mode-preview-number">06 \/ AIR<[\s\S]*id="map-mode-preview-label">地球の一呼吸<[\s\S]*1958年からの濃度の変化をたどります。/u);
+assert.match(html, /id="map-mode-preview"[\s\S]*id="map-mode-preview-number">06 \/ AIR<[\s\S]*id="map-mode-preview-label">積み重なるCO₂<[\s\S]*1958年からの濃度をたどり、観測・再構成・未来の試算を分けて読みます。/u);
 assert.doesNotMatch(html, /id="map-mode-preview-(?:surface|title|lead|note)"/u);
 assert.doesNotMatch(html, /data-intro-path="abstract"/u);
 assert.doesNotMatch(html, /id="map-surface-map"|id="map-surface-light"|class="map-surface-switch"/u);

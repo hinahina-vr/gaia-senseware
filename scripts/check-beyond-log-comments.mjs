@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { readApprovedStoryScript } from "./approved-story-script.mjs";
 import { parseLogComments } from "./story-log-comments.mjs";
 import { planBeyondLogComment } from "./beyond-log-comments.mjs";
+import { followup, priorSource } from "./check-beyond-followup.mjs";
 import "../novel-story-data.js";
 import "../true-end-data.js";
 
@@ -33,14 +34,15 @@ for (const comment of comments) {
   assert.equal(mapping.action, plan.action);
   const entries = mapping.outputIds.map(id => source.get(id));
   assert(entries.every(Boolean));
-  assert.deepEqual(entries.map(entry => entry.text), plan.parts.map(part => part.text), `${comment.id}: missing edit`);
+  // Later corrections are checked separately; retain the original 59-comment contract.
+  assert.deepEqual(entries.map(entry => (priorSource.get(entry.id) ?? entry).text), plan.parts.map(part => part.text), `${comment.id}: missing edit`);
   entries.forEach((entry, index) => {
     const step = runtime.get(manifest.runtimeIds[entry.id]);
     assert(step, `${entry.id}: missing runtime`);
     assert.equal(step.text, entry.text);
     if (step.pages) assert.equal(step.pages.join(""), step.text);
     const part = plan.parts[index];
-    if (part.speaker) assert.equal(entry.speakerLabel, part.speaker === "地の文" ? "—" : part.speaker);
+    if (part.speaker) assert.equal((priorSource.get(entry.id) ?? entry).speakerLabel, part.speaker === "地の文" ? "—" : part.speaker);
   });
   const anchor = source.get(mapping.sourceId);
   assert.equal(anchor.metadata.runtimeStepId, comment.id);
@@ -58,7 +60,7 @@ for (const id of ["beyond_02_023", "beyond_02_024", manifest.runtimeIds[deduplic
   assert.equal(steps.filter(step => step.text === text).length, 1, `${id}: duplicated passage`);
 }
 assert.equal(runtime.get("beyond_02_042").speaker, undefined);
-assert.equal(runtime.get("beyond_03_043").speaker, "mizuha");
+assert.equal(followup.edits.find(edit => edit.runtimeId === "beyond_03_043").beforeRuntime.speaker, "mizuha");
 assert.equal(steps.at(-2).id, "beyond_03_053");
 assert.equal(steps.at(-1).speaker, undefined);
 assert(steps.at(-1).text.endsWith("放課後は、どこまでも終わらない。"));

@@ -628,8 +628,8 @@ body.gx-open {
 .gx-modal-skip {
   position: absolute;
   top: max(24px, calc(env(safe-area-inset-top) + 18px));
-  right: auto;
-  left: clamp(22px, 3.2vw, 58px);
+  right: clamp(22px, 3.2vw, 58px);
+  left: auto;
   z-index: 13;
   display: inline-flex;
   align-items: center;
@@ -986,8 +986,8 @@ body.gx-open {
 
   .gx-modal-skip {
     top: max(14px, calc(env(safe-area-inset-top) + 10px));
-    right: auto;
-    left: 14px;
+    right: 14px;
+    left: auto;
     min-width: 110px;
     min-height: 44px;
     padding: 9px 15px;

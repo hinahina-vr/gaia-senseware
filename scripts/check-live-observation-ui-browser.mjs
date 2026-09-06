@@ -64,17 +64,20 @@ try {
     await select(10);
     await page.waitForFunction(() => GaiaLiveData.getState().requestState === "ready");
     assert.equal(await page.locator(".gaia-live-city-picker").count(), 0, "Retired upper-left picker remains");
-    assert.equal(await page.locator(".gaia-live-prefecture-picker select").count(), 1);
-    assert.equal(await page.locator(".gaia-live-prefecture-picker option").count(), 47);
+    assert.equal(await page.locator(".gaia-live-prefecture-picker select").count(), 0);
+    await page.locator(".gaia-live-place-selector").click();
+    assert.equal(await page.locator("#gaia-observation-place-picker [data-place-city]").count(), 47);
+    await page.keyboard.press("Escape");
     assert.equal(await page.locator("[data-live-poi-step]").count(), 2, "Duplicate city arrows remain");
     assert.equal(await page.locator(".gaia-live-prefecture-picker > p").textContent(), "都道府県");
-    const picker = page.locator(".gaia-live-prefecture-picker select");
-    await picker.selectOption("osaka");
+    const picker = page.locator(".gaia-live-place-selector");
+    await picker.click();
+    await page.locator('[data-place-city="osaka"]').click();
     await page.waitForFunction(() => GaiaLiveData.getState().city === "osaka" && GaiaLiveData.getState().requestState === "ready");
     for (const [number, key, value, unit, minimum, maximum] of metrics) {
       await select(number);
-      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "27 大阪府");
-      assert.equal(await page.locator("[data-live-city-caption]").textContent(), "大阪");
+      assert.equal(await page.locator("[data-live-deck-location]").textContent(), "大阪府（大阪市）");
+      assert.equal(await page.locator("[data-live-city-caption]").count(), 0);
       assert.deepEqual(await legendStyle(".gaia-live-metric-legend"), reference, `${width}/${number}: inconsistent instrument style`);
       const scan = await page.locator(".gaia-live-metric-legend").evaluate(node => ({
         value: Number(node.dataset.metricValue), minimum: Number(node.dataset.metricMinimum), maximum: Number(node.dataset.metricMaximum),
@@ -84,7 +87,7 @@ try {
       }));
       assert.equal(scan.value, value); assert.equal(scan.minimum, minimum); assert.equal(scan.maximum, maximum);
       assert(Math.abs(scan.progress - (value - minimum) / (maximum - minimum)) < .00001);
-      assert.equal(scan.markerHidden, false); assert.equal(scan.scope, "大阪府");
+      assert.equal(scan.markerHidden, false); assert.equal(scan.scope, "大阪府（大阪市）");
       assert.equal(scan.period, "13:45 JST"); assert.equal(scan.current, `${value} ${unit}`);
       assert.equal(await page.locator(".japan-credits .gaia-live-data-credit").count(), 1);
       assert.equal(await page.locator(".gaia-live-prefecture-picker .gaia-live-data-credit").count(), 0);
@@ -92,7 +95,7 @@ try {
       const boxes = await page.evaluate(() => {
         const rect = node => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
         const picker = document.querySelector(".gaia-live-prefecture-picker");
-        const control = picker.querySelector("select");
+        const control = picker.querySelector(".gaia-live-place-selector");
         const cr = control.getBoundingClientRect();
         const credit = document.querySelector(".gaia-live-weather-credit");
         const names = [picker.querySelector("strong"), picker.querySelector("small")].map(node => {
@@ -102,7 +105,7 @@ try {
         });
         return { picker: rect(picker), legend: rect(document.querySelector(".gaia-live-metric-legend")),
           credit: rect(credit), dock: rect(document.querySelector(".gaia-live-exhibit-readout")),
-          pickerHit: document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2) === control,
+          pickerHit: control.contains(document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2)),
           hitElement: document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2)?.outerHTML.slice(0, 240),
           controlBox: rect(control), controlPointer: getComputedStyle(control).pointerEvents,
           creditFits: credit.scrollWidth <= credit.clientWidth + 1, names };
@@ -118,18 +121,19 @@ try {
       if ([10, 15].includes(number)) await page.screenshot({ path: path.join(output, `${width}-${number}.jpg`), type: "jpeg", quality: 88 });
     }
     await picker.focus();
-    assert.equal(await picker.evaluate(node => getComputedStyle(node.parentElement).outlineStyle), "solid");
-    await picker.selectOption("naha");
+    assert.equal(await picker.evaluate(node => getComputedStyle(node).outlineStyle), "solid");
+    await picker.click();
+    await page.locator('[data-place-city="naha"]').click();
     await page.waitForFunction(() => GaiaLiveData.getState().city === "naha" && GaiaLiveData.getState().requestState === "unavailable");
     assert.equal(await page.locator(".gaia-live-metric-legend [data-metric-current]").textContent(), "未取得");
     assert.equal(await page.locator(".gaia-live-metric-legend [data-metric-marker]").getAttribute("hidden"), "");
     assert(await page.locator(".gaia-live-data-credit").isVisible());
     await page.locator('[data-live-poi-step="1"]').click();
     await page.waitForFunction(() => GaiaLiveData.getState().city === "sapporo" && GaiaLiveData.getState().requestState === "ready");
-    assert.equal(await picker.inputValue(), "sapporo");
+    assert.equal(await picker.getAttribute("data-city"), "sapporo");
     await page.locator('[data-live-poi-step="-1"]').click();
     await page.waitForFunction(() => GaiaLiveData.getState().city === "naha");
-    assert.equal(await picker.inputValue(), "naha");
+    assert.equal(await picker.getAttribute("data-city"), "naha");
     await select(16);
     assert.equal(await page.locator(".gaia-live-weather-credit").isVisible(), false);
     assert.equal(await page.locator(".gaia-live-metric-legend").isVisible(), false);

@@ -1,15 +1,16 @@
 import { STATUS_LABELS } from "./transforms.js?v=gaia-live-loading-1";
 import { earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
-import { buildLiveStatistics } from "./live-statistics.js?v=gaia-unified-actions-1";
-import { LIVE_EXHIBITS as EXHIBITS } from "./live-exhibit-catalog.js?v=gaia-exhibit-order-1";
+import { japanPrefectureView } from "./japan-prefecture-view.js?v=gaia-prefecture-gis-view-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { LIVE_EXHIBITS as EXHIBITS } from "./live-exhibit-catalog.js?v=gaia-exhibit-editorial-1";
 import { OBSERVATION_CITIES, findObservationCity, adjacentObservationCity } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
 import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
+import { createObservationPlacePicker } from "./observation-place-picker.js?v=gaia-place-inline-1";
+import { formatPrefecturePlace } from "./observation-place-label.js?v=gaia-place-inline-1";
 
 // Preserve the existing module export for callers outside the map runtime.
 export { OBSERVATION_CITIES };
 
-const LIVE_OVERVIEW_ZOOM = Object.freeze({ desktop: 4.45, mobile: 4.25 });
 const LIVE_POI_DWELL_MS = 6800;
 const LIVE_POI_MANUAL_DWELL_MS = 12000;
 const LIVE_POI_DEPART_MS = 280;
@@ -31,6 +32,8 @@ let mobileReadoutToggle = null;
 let chapterSelectorToggle = null;
 let anchorMarker = null;
 let cityPicker = null;
+let placePicker = null;
+let resumePoiAfterPicker = false;
 let metricLegend = null;
 let weatherCredit = null;
 let cityMarkersLayer = null;
@@ -83,14 +86,6 @@ const formatJstDateTime = (value) => {
 const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "loading", requestState: "loading", connected: false };
 const currentMeasurement = (exhibit) => currentState().measurements?.[exhibit.key] || null;
 const currentWindField = () => windFieldSnapshot;
-const statisticsDataset = () => activeIndex < 0 ? null : buildLiveStatistics(EXHIBITS[activeIndex], currentState(), currentWindField());
-const openStatistics = () => {
-  const dataset = statisticsDataset();
-  if (!dataset) return;
-  const open = () => void globalThis.GaiaStatisticsLab?.open?.({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
-  if (globalThis.GaiaStatisticsLab?.open) open();
-  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
-};
 const profile = () => globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { dprCap: 1, particleRatio: 0.65, level: "medium" };
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const WIND_FIELD_REFERENCE_MS = 15;
@@ -131,21 +126,6 @@ const cityForLocation = (location) => OBSERVATION_CITIES.find((city) => (
   Math.abs(city.lat - Number(location?.lat)) < 0.08 && Math.abs(city.lon - Number(location?.lon)) < 0.08
 )) || selectedCity();
 
-const focusSelectedCity = ({ resetZoom = false } = {}) => {
-  const city = selectedCity();
-  const overlay = document.querySelector("#japan-overlay");
-  const currentZoom = Number(overlay?.dataset.earthZoom);
-  const overviewZoom = innerWidth <= 720 ? LIVE_OVERVIEW_ZOOM.mobile : LIVE_OVERVIEW_ZOOM.desktop;
-  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
-    lon: city.lon,
-    lat: city.lat,
-    zoom: resetZoom || !Number.isFinite(currentZoom) ? overviewZoom : currentZoom,
-    targetX: 0.5,
-    targetY: innerWidth <= 720 ? 0.39 : 0.43,
-    label: `prefecture-${city.code}-${city.id}`,
-  });
-};
-
 const observationLocation = (exhibit, measurement) => {
   const location = measurement?.location;
   const lon = Number(location?.lon);
@@ -153,13 +133,11 @@ const observationLocation = (exhibit, measurement) => {
   const fallbackCity = selectedCity();
   // Provider attribution belongs in the edge credit and source ledger, not place names.
   // Normalize display text only; keep the API/snapshot provenance unchanged.
-  const placeLabel = String(location?.label || "")
-    .replace(/^(?:Open-Meteo|CAMS(?:モデル)?)\s*\/\s*/iu, "")
-    .replace(/[\s　]*格子$/u, "").trim();
+  const city = cityForLocation(location);
   return {
     lon: Number.isFinite(lon) ? lon : fallbackCity.lon,
     lat: Number.isFinite(lat) ? lat : fallbackCity.lat,
-    label: placeLabel || fallbackCity.label,
+    label: formatPrefecturePlace(city.prefecture, city.city),
   };
 };
 
@@ -1115,11 +1093,6 @@ const renderReadout = () => {
   const observedAt = formatJstDateTime(measurement?.observedAt);
   readout.dataset.missing = String(missing);
   readout.dataset.requestState = state.requestState || "ready";
-  const analysis = readout.querySelector("[data-live-deck-analysis]");
-  analysis.disabled = !statisticsDataset();
-  analysis.title = analysis.disabled
-    ? pending ? "データの取得後に分析できます" : "この地点のデータは未取得です。データのある地点を選ぶと分析できます"
-    : "表示中のモデル値を統計分析する";
   readout.dataset.exhibit = exhibit.id;
   readout.style.setProperty("--live-signal-level", String(strength));
   readout.querySelector("[data-live-exhibit-kicker]").textContent = `${exhibit.number} / ${status}`;
@@ -1138,7 +1111,7 @@ const renderReadout = () => {
   const metricDate = measurement?.observedAt ? new Date(measurement.observedAt) : null;
   updateMetricLegend(metricLegend, {
     title: exhibit.signalLabel,
-    scope: locationCity.prefecture,
+    scope: location.label,
     period: missing || !metricDate || !Number.isFinite(metricDate.getTime()) ? "" : new Intl.DateTimeFormat("ja-JP", {
       timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
     }).format(metricDate) + " JST",
@@ -1162,7 +1135,7 @@ const renderReadout = () => {
       : `現在は保存済み${modelMeasurement ? "モデル" : "観測"}データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? pending ? "LOADING" : "STANDBY" : formatValue(measurement);
-  readout.querySelector("[data-live-stage-location]").textContent = `${locationCity.code} ${locationCity.prefecture}`;
+  readout.querySelector("[data-live-stage-location]").textContent = location.label;
   readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
   readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
   readout.querySelector("[data-live-exhibit-input]").textContent = missing
@@ -1176,18 +1149,17 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-time]").textContent = observedAt;
   readout.querySelector("[data-live-deck-number]").textContent = exhibit.number;
   readout.querySelector("[data-live-deck-title]").textContent = exhibit.shortTitle;
-  readout.querySelector("[data-live-deck-location]").textContent = `${locationCity.code} ${locationCity.prefecture}`;
-  readout.querySelector(".gaia-live-place-selector").title = `${locationCity.name} · ${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
+  readout.querySelector("[data-live-deck-location]").textContent = location.label;
+  readout.querySelector(".gaia-live-place-selector").title = `${location.label} · ${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
   readout.querySelectorAll("[data-live-poi-step]").forEach((button) => {
     const direction = Number(button.dataset.livePoiStep) || 0;
     const target = adjacentObservationCity(selectedCityId, direction);
-    button.setAttribute("aria-label", `${direction < 0 ? "前" : "次"}の観測地点、${target.code} ${target.name}へ送る`);
+    button.setAttribute("aria-label", `${direction < 0 ? "前" : "次"}の観測地点、${target.code} ${formatPrefecturePlace(target.prefecture, target.city)}へ送る`);
   });
   if (cityPicker) {
     cityPicker.dataset.city = selectedCityId;
     weatherCredit.querySelector("[data-live-cams-credit]").hidden = !["forecastCo2", "pm25"].includes(exhibit.key);
-    cityPicker.querySelector("select").value = selectedCityId;
-    cityPicker.querySelector("[data-live-city-caption]").textContent = locationCity.city;
+    placePicker?.sync(selectedCityId);
   }
 };
 
@@ -1291,7 +1263,6 @@ const setPoiAutoplayEnabled = (enabled) => {
 const selectObservationCity = (cityId, {
   source = "manual",
   animate = true,
-  resetZoom = false,
   force = false,
 } = {}) => {
   const nextCity = findObservationCity(cityId);
@@ -1304,12 +1275,11 @@ const selectObservationCity = (cityId, {
       clearPoiTransitionPresentation();
       if (cityPicker) {
         cityPicker.dataset.state = "ready";
-        cityPicker.querySelector("select").value = nextCity.id;
+        placePicker?.sync(nextCity.id);
       }
       renderReadout();
       draw(performance.now(), true);
     }
-    focusSelectedCity({ resetZoom });
     schedulePoiAutoplay(source === "manual" ? LIVE_POI_MANUAL_DWELL_MS : LIVE_POI_DWELL_MS);
     return true;
   }
@@ -1329,8 +1299,8 @@ const selectObservationCity = (cityId, {
   anchorMarker?.classList.add("is-departing");
   if (cityPicker) {
     cityPicker.dataset.state = "loading";
-    cityPicker.querySelector("select").value = nextCity.id;
-    cityPicker.querySelector("[data-live-city-caption]").textContent = `${nextCity.code} ${nextCity.name}へ移動中`;
+    placePicker?.sync(nextCity.id);
+    cityPicker.querySelector(".gaia-live-place-selector").title = `${formatPrefecturePlace(nextCity.prefecture, nextCity.city)}へ移動中`;
   }
 
   dispatchEvent(new CustomEvent("gaia:live-poi-change", {
@@ -1350,7 +1320,6 @@ const selectObservationCity = (cityId, {
     layer.dataset.livePoiTransition = "arriving";
     cityPicker.dataset.transition = "arriving";
     void globalThis.GaiaLiveData?.selectCity?.(nextCity.id);
-    focusSelectedCity({ resetZoom });
     renderReadout();
     draw(performance.now(), true);
     dispatchEvent(new CustomEvent("gaia:live-poi-change", {
@@ -1373,12 +1342,13 @@ const selectObservationCity = (cityId, {
 
 const select = (index) => {
   if (!EXHIBITS[index]) return;
+  placePicker?.close({ restoreFocus: false });
   globalThis.GaiaFirmsExhibit?.deactivate?.();
   const enteringLiveDeck = activeIndex < 0;
   if (enteringLiveDeck) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "06",
-      title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
+      title: document.querySelector("#japan-mode-title")?.textContent || "積み重なるCO₂",
     };
     selectedCityId = globalThis.GaiaLiveData?.getCity?.() || selectedCityId;
     poiAutoplayEnabled = !reducedMotion;
@@ -1398,18 +1368,17 @@ const select = (index) => {
   cityMarkersLayer.hidden = false;
   setMobileReadoutExpanded(false);
   applyHeading();
+  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.(japanPrefectureView(innerWidth));
   if (enteringLiveDeck) {
     selectObservationCity(selectedCityId, {
       source: "entry",
       animate: false,
-      resetZoom: true,
       force: true,
     });
   } else {
     renderReadout();
     lastRenderedAt = 0;
     draw(performance.now(), true);
-    requestAnimationFrame(() => focusSelectedCity());
     schedulePoiAutoplay();
   }
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: exhibit.id } }));
@@ -1423,6 +1392,7 @@ const deactivate = ({ number, title } = {}) => {
   poiTransitionGeneration += 1;
   clearPoiTransitionPresentation();
   activeIndex = -1;
+  placePicker?.close({ restoreFocus: false });
   lightTouches = [];
   lightPointer.active = 0;
   lightPointer.down = false;
@@ -1485,9 +1455,9 @@ const mount = () => {
     button.className = "gaia-live-city-marker";
     button.dataset.liveCityMarker = city.id;
     button.dataset.prefectureCode = city.code;
-    button.setAttribute("aria-label", `${city.code} ${city.name}の観測データを表示`);
+    button.setAttribute("aria-label", `${city.code} ${formatPrefecturePlace(city.prefecture, city.city)}の観測データを表示`);
     button.setAttribute("aria-current", String(city.id === selectedCityId));
-    button.innerHTML = `<i aria-hidden="true"></i><span><strong>${city.prefecture}（${city.city}）</strong><b data-live-marker-value>値は未取得</b><small data-live-marker-detail>地点を選んで取得</small></span>`;
+    button.innerHTML = `<i aria-hidden="true"></i><span><strong>${formatPrefecturePlace(city.prefecture, city.city)}</strong><b data-live-marker-value>値は未取得</b><small data-live-marker-detail>地点を選んで取得</small></span>`;
     button.addEventListener("pointerdown", (event) => event.stopPropagation());
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1569,9 +1539,9 @@ const mount = () => {
       <p>CHAPTER / LIVE MAP</p>
       <div>
         <button type="button" data-live-deck-step="-1" aria-label="一つ前のライブ展示へ">‹</button>
-        <button class="gaia-live-deck-selector-toggle" data-map-bank-toggle type="button" aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="15 風脈。展示一覧を開く">
+        <button class="gaia-live-deck-selector-toggle" data-map-bank-toggle type="button" aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="15 街を通る風。展示一覧を開く">
           <span data-live-deck-number>15</span>
-          <strong data-live-deck-title>風脈</strong>
+          <strong data-live-deck-title>街を通る風</strong>
         </button>
         <button type="button" data-live-deck-step="1" aria-label="一つ次のライブ展示へ">›</button>
       </div>
@@ -1579,14 +1549,11 @@ const mount = () => {
     <div class="gaia-live-deck-location gaia-live-prefecture-picker">
       <p>都道府県</p>
       <div class="gaia-live-deck-location-control">
-        <button type="button" data-live-poi-step="-1" aria-label="前の観測地点へ">←</button>
-        <label class="gaia-live-place-selector">
-          <strong data-live-deck-location aria-hidden="true">01 北海道</strong>
-          <small data-live-city-caption aria-hidden="true">札幌</small>
-          <select aria-label="都道府県の観測地点を選ぶ">${OBSERVATION_CITIES.map((city) => `<option value="${city.id}">${city.code} ${city.name}</option>`).join("")}</select>
-          <i aria-hidden="true">⌄</i>
-        </label>
-        <button type="button" data-live-poi-step="1" aria-label="次の観測地点へ">→</button>
+        <button type="button" data-live-poi-step="-1" aria-label="前の観測地点へ">‹</button>
+        <button type="button" class="gaia-live-place-selector" aria-label="都道府県を選ぶ">
+          <strong data-live-deck-location aria-hidden="true">北海道（札幌市）</strong>
+        </button>
+        <button type="button" data-live-poi-step="1" aria-label="次の観測地点へ">›</button>
       </div>
     </div>
     <div class="gaia-live-exhibit-primary">
@@ -1644,8 +1611,21 @@ const mount = () => {
   `;
   decorateMapActions(readout.querySelector(".gaia-live-deck-actions"), readout.querySelector("[data-live-deck-source]"), readout.querySelector("[data-live-deck-analysis]"));
   cityPicker = readout.querySelector(".gaia-live-prefecture-picker");
-  cityPicker.querySelector("select").value = selectedCityId;
   layer.append(readout);
+  placePicker = createObservationPlacePicker({
+    container: layer,
+    trigger: cityPicker.querySelector(".gaia-live-place-selector"),
+    getSelected: () => selectedCityId,
+    onSelect: cityId => selectObservationCity(cityId, { source: "manual" }),
+    onOpen: () => {
+      resumePoiAfterPicker = poiAutoplayEnabled;
+      setPoiAutoplayEnabled(false);
+    },
+    onClose: () => {
+      if (resumePoiAfterPicker && activeIndex >= 0 && !layer.hidden && layer.getAttribute("aria-hidden") !== "true") setPoiAutoplayEnabled(true);
+      resumePoiAfterPicker = false;
+    },
+  });
   new ResizeObserver(updateLiveCreditPosition).observe(readout);
   addEventListener("resize", updateLiveCreditPosition, { passive: true });
   chapterSelectorToggle = readout.querySelector(".gaia-live-deck-selector-toggle");
@@ -1659,16 +1639,12 @@ const mount = () => {
     });
   });
   readout.querySelector("[data-live-deck-source]")?.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
-  readout.querySelector("[data-live-deck-analysis]")?.addEventListener("click", openStatistics);
   mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
   mobileReadoutToggle?.addEventListener("click", () => {
     setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");
   });
   dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
 
-  cityPicker.querySelector("select")?.addEventListener("change", (event) => {
-    selectObservationCity(event.currentTarget.value, { source: "manual" });
-  });
   [readout].forEach((container) => {
     container?.querySelectorAll("[data-live-poi-step]").forEach((button) => {
       button.addEventListener("click", (event) => {
@@ -1752,6 +1728,7 @@ const mount = () => {
       draw(performance.now(), true);
     }
   });
+  addEventListener("gaia:live-prefecture-field", () => renderReadout());
   addEventListener("gaia:live-city-change", (event) => {
     if (findObservationCity(event.detail?.city)) selectedCityId = event.detail.city;
     if (cityPicker) cityPicker.dataset.state = event.detail?.state || "ready";

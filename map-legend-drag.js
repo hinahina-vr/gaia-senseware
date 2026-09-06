@@ -47,7 +47,7 @@
   const syncGuide = () => {
     const guide = layer.querySelector('[data-gaia-mode-guide-replay="map"]');
     if (!guide) return;
-    const attached = desktop && states.legend.position && visible(legend);
+    const attached = desktop && (states.legend.position || layer.dataset.storyMode === "map01") && visible(legend);
     if (attached && !guideHome) {
       guideHome = { parent: guide.parentNode, next: guide.nextSibling };
       legend.append(guide);
@@ -187,7 +187,7 @@
     }
     globalThis.GaiaLiveExhibits?.reflowObservationLabel?.();
   };
-  new MutationObserver(syncVisibility).observe(layer, { attributes: true, attributeFilter: ["class", "hidden", "aria-hidden"] });
+  new MutationObserver(syncVisibility).observe(layer, { attributes: true, attributeFilter: ["class", "hidden", "aria-hidden", "data-story-mode"] });
   new ResizeObserver(() => { if (states.legend.position) applyLegend(); syncObservationPanels(); }).observe(legend);
   globalThis.GaiaMapLegendDrag = Object.freeze({
     syncObservationPanels,

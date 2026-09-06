@@ -12,7 +12,7 @@ function mountMapDemo() {
   const help = document.createElement("span");
   help.id = "gaia-map-demo-help";
   help.className = "map-demo-visually-hidden";
-  help.textContent = "全30展示を25秒ごとに自動で切り替えます。地図へのタッチ・クリックやキー操作で停止します。";
+  help.textContent = "地図を開くとデモはオン。全30展示を25秒ごとに自動で切り替えます。操作ガイド中は切り替えを一時停止し、地図へのタッチ・クリックやキー操作でデモを停止します。";
   const status = document.createElement("span");
   status.className = "map-demo-visually-hidden";
   status.setAttribute("role", "status");
@@ -66,7 +66,7 @@ function mountMapDemo() {
       layer.classList.toggle("is-demo-running", state.active);
       button.setAttribute("aria-pressed", String(state.active));
       button.setAttribute("aria-label", state.active ? "デモを停止" : "デモを開始");
-      button.title = state.active ? "デモ再生中 — 操作すると停止" : "展示をゆっくり巡る";
+      button.title = state.active ? state.paused ? "デモはオン — ガイド中・非表示中は切り替えを一時停止" : "デモ再生中 — 操作すると停止" : "展示をゆっくり巡る";
       label.textContent = state.active ? "デモ中" : "デモ";
       syncProgress(state);
       if (state.active !== wasActive) {
@@ -76,14 +76,21 @@ function mountMapDemo() {
       }
     },
   });
-  const start = () => {
+  const guideIsOpen = () => {
+    const guide = globalThis.GaiaModeEntryGuide?.getState?.();
+    return guide?.active && guide.id === "map";
+  };
+  const syncPause = () => controller.setPaused(document.hidden || guideIsOpen());
+  const start = ({ automatic = false } = {}) => {
     if (document.hidden || !isAvailable()) return false;
-    globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false });
+    if (!automatic) globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false });
     for (const selector of [".map-dock-bank-trigger", "#map-mobile-bank-toggle"]) {
       const toggle = layer.querySelector(selector);
       if (toggle?.getAttribute("aria-expanded") === "true") toggle.click();
     }
-    return controller.start();
+    const started = controller.start();
+    syncPause();
+    return started;
   };
   button.setAttribute("aria-label", "デモを開始");
   button.title = "展示をゆっくり巡る";
@@ -95,6 +102,10 @@ function mountMapDemo() {
   // must not cancel the loop, and the stop control must not restart itself.
   const onInput = event => {
     if (!event.isTrusted || !controller.getState().active) return;
+    // Reading, stepping through, or replaying the guide keeps the default on.
+    // Its lifecycle pauses the countdown instead of cancelling the demo.
+    if (guideIsOpen() || event.composedPath().some(node => node instanceof Element
+      && node.matches('[data-gaia-mode-guide-replay="map"]'))) return;
     const onToggle = event.composedPath().includes(button);
     if (onToggle && (["pointerdown", "click"].includes(event.type)
       || (event.type === "keydown" && ["Enter", " "].includes(event.key)))) return;
@@ -106,20 +117,34 @@ function mountMapDemo() {
   };
   for (const type of ["pointerdown", "click", "wheel"]) addEventListener(type, onInput, { capture: true, passive: true });
   addEventListener("keydown", onInput, true);
-  document.addEventListener("visibilitychange", () => controller.setPaused(document.hidden));
+  let defaultPending = !layer.hidden && !layer.dataset.storyMode;
+  document.addEventListener("visibilitychange", () => { syncAvailability(); syncPause(); });
+  for (const name of ["gaia:mode-guide-open", "gaia:mode-guide-close"]) {
+    addEventListener(name, event => { if (event.detail?.id === "map") syncPause(); });
+  }
   addEventListener("pagehide", () => controller.stop("leave"));
-  addEventListener("gaia:japan-close", () => controller.stop("leave"));
+  addEventListener("gaia:japan-close", () => { defaultPending = false; controller.stop("leave"); });
   const syncAvailability = () => {
     const available = isAvailable();
     button.disabled = !available || buttons().length < 2;
     if (!available) controller.stop("unavailable");
+    if (defaultPending && !button.disabled && !document.hidden) {
+      // One automatic start per map visit. A manual stop stays stopped until
+      // the visitor explicitly starts again or leaves and re-enters the map.
+      defaultPending = false;
+      start({ automatic: true });
+    }
   };
   const observer = new MutationObserver(syncAvailability);
   observer.observe(layer, { attributes: true, attributeFilter: ["hidden", "aria-hidden", "class", "data-story-mode"] });
   observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  addEventListener("gaia:japan-open", () => {
+    defaultPending = !layer.dataset.storyMode && !document.body.matches(".gaia-tour-open, .novel-open");
+    syncAvailability();
+  });
   addEventListener("gaia:app-ready", syncAvailability);
-  syncAvailability();
   globalThis.GaiaMapDemo = Object.freeze({ start, stop: controller.stop, getState: controller.getState });
+  syncAvailability();
 }
 
 mountMapDemo();

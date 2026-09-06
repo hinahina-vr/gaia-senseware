@@ -11,7 +11,7 @@
   layer.inert = true;
   layer.tabIndex = -1;
   layer.setAttribute("role", "dialog");
-  layer.setAttribute("aria-modal", "false");
+  layer.setAttribute("aria-modal", "true");
   layer.setAttribute("aria-labelledby", "gaia-mode-entry-guide-title");
   layer.setAttribute("aria-describedby", "gaia-mode-entry-guide-copy");
   layer.innerHTML = `
@@ -23,6 +23,11 @@
       </header>
       <h2 id="gaia-mode-entry-guide-title" data-mode-guide-title></h2>
       <p id="gaia-mode-entry-guide-copy" data-mode-guide-copy></p>
+      <nav class="gaia-mode-entry-guide-controls" aria-label="ガイドの操作">
+        <button type="button" data-mode-guide-skip>閉じる</button>
+        <button type="button" data-mode-guide-back>戻る</button>
+        <button type="button" data-mode-guide-next>次へ →</button>
+      </nav>
     </article>`;
   document.body.append(layer);
 
@@ -118,6 +123,7 @@
     card.style.top = `${Math.round(candidates.top)}px`;
     card.dataset.placement = candidates.placement;
     card.dataset.positioned = "true";
+    if (document.activeElement === layer) layer.querySelector("[data-mode-guide-next]").focus({ preventScroll: true });
   };
 
   const schedulePosition = () => {
@@ -154,7 +160,8 @@
     layer.querySelector("[data-mode-guide-total]").textContent = String(activeSteps.length);
     layer.querySelector("[data-mode-guide-title]").textContent = step.title;
     layer.querySelector("[data-mode-guide-copy]").textContent = step.copy;
-    delete card.dataset.positioned;
+    layer.querySelector("[data-mode-guide-back]").disabled = activeIndex === 0;
+    layer.querySelector("[data-mode-guide-next]").textContent = activeIndex === activeSteps.length - 1 ? activeConfig.finishLabel || "はじめる" : "次へ →";
 
     const rect = activeTarget.getBoundingClientRect();
     if (rect.height < innerHeight * 0.9 && (rect.top < 12 || rect.bottom > innerHeight - 12)) {
@@ -168,6 +175,7 @@
   function close({ restoreFocus = true } = {}) {
     if (!activeId) return false;
     const closingConfig = activeConfig;
+    const closingId = activeId;
     activeId = null;
     activeConfig = null;
     activeSteps = [];
@@ -183,6 +191,7 @@
       if (!activeId) layer.hidden = true;
     }, reducedMotion ? 0 : 180);
     closingConfig?.onClose?.();
+    dispatchEvent(new CustomEvent("gaia:mode-guide-close", { detail: { id: closingId } }));
     if (restoreFocus && returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
     returnFocus = null;
     return true;
@@ -201,12 +210,12 @@
     // at least one guide target is actually visible before consuming the
     // first-visit flag or trying to render the first step.
     let visibleSteps = config.steps.filter((step) => isVisible(resolveTarget(step)));
-    for (let attempt = 0; visibleSteps.length === 0 && attempt < 30; attempt += 1) {
+    for (let attempt = 0; (visibleSteps.length === 0 || (config.ready && !config.ready())) && attempt < 30; attempt += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 80));
       if (config.available && !config.available()) return false;
       visibleSteps = config.steps.filter((step) => isVisible(resolveTarget(step)));
     }
-    if (visibleSteps.length === 0) return false;
+    if (visibleSteps.length === 0 || (config.ready && !config.ready()) || activeId === id) return false;
 
     activeId = id;
     activeConfig = config;
@@ -214,9 +223,11 @@
     activeIndex = 0;
     returnFocus = document.activeElement;
     sessionStorage.setItem(seenKey(id, config.version), "seen");
+    delete card.dataset.positioned;
     layer.hidden = false;
     layer.inert = false;
     layer.setAttribute("aria-hidden", "false");
+    dispatchEvent(new CustomEvent("gaia:mode-guide-open", { detail: { id } }));
     requestAnimationFrame(() => {
       if (activeId !== id) return;
       layer.classList.add("is-visible");
@@ -260,10 +271,21 @@
     if (!activeId) return;
     event.preventDefault();
     event.stopPropagation();
-    advance();
+    if (event.target.closest("[data-mode-guide-skip]")) close();
+    else if (event.target.closest("[data-mode-guide-back]")) setStep(activeIndex - 1, -1);
+    else advance();
   });
   layer.addEventListener("keydown", (event) => {
-    if (!activeId || (event.key !== "Enter" && event.key !== " ")) return;
+    if (!activeId) return;
+    if (event.key === "Tab") {
+      const controls = [...layer.querySelectorAll("button:not(:disabled)")];
+      const index = controls.indexOf(document.activeElement);
+      event.preventDefault();
+      event.stopPropagation();
+      controls[(index + (event.shiftKey ? controls.length - 1 : 1)) % controls.length]?.focus();
+      return;
+    }
+    if ((event.key !== "Enter" && event.key !== " ") || event.target instanceof HTMLButtonElement) return;
     event.preventDefault();
     event.stopPropagation();
     advance();
@@ -274,6 +296,11 @@
     event.stopImmediatePropagation();
     close();
   }, true);
+  document.addEventListener("focusin", (event) => {
+    if (activeId && !layer.contains(event.target)) {
+      (card.dataset.positioned ? layer.querySelector("[data-mode-guide-next]") : layer).focus({ preventScroll: true });
+    }
+  });
   addEventListener("resize", schedulePosition, { passive: true });
   addEventListener("scroll", schedulePosition, { passive: true, capture: true });
 

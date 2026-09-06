@@ -1,10 +1,10 @@
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
 import { earthBaseScale, earthLongitudeToMapX as mapLongitude } from "./world-projection.js?v=gaia-japan-center-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
-import { buildPlanetStatistics } from "./planet-statistics.js?v=gaia-unified-actions-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
 import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-japan-center-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
 import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
+import { createRealtimeStatus, updateRealtimeStatus } from "./realtime-exhibit-status.js?v=gaia-realtime-identity-1";
 
 const GLOBAL_SAMPLE_COUNT = 240;
 const formatCoordinates = (point, digits = 1, separator = " ") =>
@@ -20,12 +20,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "global-wind-pressure",
     number: "02",
-    shortTitle: "大気をなぞる",
-    title: "大気をなぞる — WIND / PRESSURE",
+    shortTitle: "風がつなぐ世界",
+    title: "風がつなぐ世界 — WIND / PRESSURE",
     signalLabel: "風速・風向・気圧",
     accent: "#63f3ff",
     rgb: "99, 243, 255",
-    caption: "風向と風速をもとに、淡い光がゆっくり流れます。光の形と動きは演出です。観測点を選ぶと、その場所の値を確認できます。",
+    caption: "Open-Meteoの風速・風向・気圧のモデル値を、全球の代表地点で比較します。光の筋は風を表す演出で、空気や水蒸気の実際の移動経路ではありません。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
@@ -37,12 +37,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "global-aerosol-light",
     number: "03",
-    shortTitle: "大気の散乱",
-    title: "大気の散乱 — AEROSOL LIGHT",
+    shortTitle: "見えない空気の行方",
+    title: "見えない空気の行方 — AEROSOL LIGHT",
     signalLabel: "PM2.5・光学的厚さ",
     accent: "#f3a3ff",
     rgb: "243, 163, 255",
-    caption: "微粒子と光学的厚さを地点間で補間し、濃淡のある霞として描きます。霞の形と動きは演出です。",
+    caption: "Open-Meteo経由のCAMSモデルによるPM2.5とエアロゾル光学的厚さを表示します。地点間を補間した霞で、汚染源、個人の曝露量、健康被害は分かりません。",
     sourceName: "Open-Meteo Air Quality API / CAMS",
     sourcePage: "https://open-meteo.com/en/docs/air-quality-api",
     sourceLabel: "Air Quality APIの仕様を見る",
@@ -54,12 +54,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "usgs-earthquake-ripples",
     number: "04",
-    shortTitle: "地殻の波紋",
-    title: "地殻の波紋 — EARTHQUAKES",
+    shortTitle: "揺れる星に暮らす",
+    title: "揺れる星に暮らす — EARTHQUAKES",
     signalLabel: "全規模・直近24時間",
     accent: "#ffbd68",
     rgb: "255, 189, 104",
-    caption: "USGSが公開する直近24時間の地震を、発生時刻と規模に応じた波紋で示します。登場順と広がる光は演出です。",
+    caption: "USGSが公開する直近24時間の地震を、発生時刻とマグニチュードでたどります。波紋は演出であり、実際の震度、被害範囲、次の地震の予測ではありません。",
     sourceName: "USGS Earthquake Hazards Program",
     sourcePage: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php",
     sourceLabel: "USGS GeoJSON Feedを見る",
@@ -71,12 +71,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "global-cloud-radiance",
     number: "05",
-    shortTitle: "雲を透る光",
-    title: "雲を透る光 — CLOUD / RADIATION",
+    shortTitle: "雲と光の分け前",
+    title: "雲と光の分け前 — CLOUD / RADIATION",
     signalLabel: "雲量・短波放射",
     accent: "#ffd879",
     rgb: "255, 216, 121",
-    caption: "雲の形はNASAの参考画像です。雲量・日射に応じて濃淡を調整しています。現在の衛星画像ではありません。光る点から、その場所の数値を確認できます。",
+    caption: "Open-Meteoの雲量・短波放射のモデル値で、地上に届く光の違いを見ます。雲の形にはNASAの参考画像を使い、現在の衛星画像や地点ごとの発電量は示しません。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
@@ -146,6 +146,7 @@ let initializeAtmosphere;
 let readout;
 let legend;
 let metricLegend;
+let realtimeStatus;
 let buttons = [];
 let activeIndex = -1;
 let selectionRevision = 0;
@@ -298,6 +299,14 @@ const LOADERS = Object.freeze({
   atmosphere: loadAtmosphere,
   air: loadAir,
   earthquake: loadEarthquake,
+});
+
+const updateRealtimeIdentity = (definition, data) => updateRealtimeStatus(realtimeStatus, {
+  sourceState: data?.sourceState || "FETCHING",
+  observedAt: data?.observedAt,
+  source: definition.loader === "earthquake" ? "USGS · 直近24時間の地震" : definition.loader === "air" ? "Open-Meteo / CAMS" : "Open-Meteo / DWD・ECMWFほか",
+  kind: definition.loader === "earthquake" ? "地震観測" : definition.loader === "air" ? "大気質モデル" : "気象モデル",
+  timeLabel: definition.loader === "earthquake" ? "配信時刻" : "データ時刻",
 });
 
 const readCache = (key) => {
@@ -789,7 +798,7 @@ const updatePlanetLegend = (definition, data = null) => {
     gradient: `linear-gradient(90deg, rgba(${definition.rgb}, .04), rgba(${definition.rgb}, .44), rgb(${definition.rgb}))`,
     description: !data ? "データを読み込んでいます" : `${stamp}。${isQuake ? "公開された地震の規模" : "取得できた格子のモデル値の単純平均（全球の面積加重平均ではありません）"}。${sample ? "参考用に生成した値であり、ライブ観測ではありません。" : ""}`,
   });
-  legend.querySelector("[data-planet-detail-summary]").textContent = sample ? "演出用サンプル" : "データと出典";
+  legend.querySelector("[data-planet-detail-summary]").textContent = sample ? "参考値の凡例・詳細" : "凡例・データの詳細";
   const notice = legend.querySelector("[data-planet-reference-notice]");
   notice.hidden = definition.renderer !== "cloud";
   notice.textContent = "雲の形は過去の参考画像";
@@ -801,6 +810,7 @@ const updatePlanetLegend = (definition, data = null) => {
 
 const renderReadout = (definition, data) => {
   const summary = summarize(definition, data);
+  updateRealtimeIdentity(definition, data);
   readout.style.setProperty("--planet-accent", definition.accent);
   readout.style.setProperty("--planet-rgb", definition.rgb);
   legend.style.setProperty("--planet-accent", definition.accent);
@@ -822,15 +832,13 @@ const renderReadout = (definition, data) => {
     epicenter.disabled = false;
   }
   readout.querySelector("[data-planet-caption]").textContent = definition.caption;
+  legend.querySelector("[data-planet-detail-caption]").textContent = definition.caption;
   readout.querySelector("[data-planet-state]").textContent = data.sourceState;
   readout.querySelector("[data-planet-time]").textContent = formatJst(data.observedAt);
   const source = readout.querySelector("[data-planet-source-link]");
   source.href = definition.sourcePage;
   source.title = definition.sourceName;
   source.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
-  const analysis = readout.querySelector("[data-planet-analysis]");
-  analysis.disabled = !data.points.length || data.sourceState === "SAVED VALUES";
-  analysis.title = analysis.disabled ? "実データの取得後に分析できます（現在は表示用の参考値）" : "表示中の地点データを統計分析する";
   updatePlanetLegend(definition, data);
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
@@ -843,14 +851,6 @@ const renderReadout = (definition, data) => {
   canvas.dataset.planetEncoding = definition.visualLabel.toLowerCase().replaceAll(" ", "-");
 };
 
-const openStatistics = () => {
-  if (activeIndex < 0 || readout.dataset.loading === "true") return;
-  const dataset = buildPlanetStatistics(DEFINITIONS[activeIndex], currentData);
-  if (!dataset) return;
-  const open = () => void globalThis.GaiaStatisticsLab?.open?.({ modeId: dataset.modeId, datasetId: dataset.id, dataset });
-  if (globalThis.GaiaStatisticsLab?.open) open();
-  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
-};
 
 const select = async (index) => {
   const definition = DEFINITIONS[index];
@@ -862,7 +862,7 @@ const select = async (index) => {
   if (activeIndex < 0) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "06",
-      title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
+      title: document.querySelector("#japan-mode-title")?.textContent || "積み重なるCO₂",
     };
   }
   activeIndex = index;
@@ -890,6 +890,12 @@ const select = async (index) => {
   buttons.forEach((item, buttonIndex) => item.setAttribute("aria-current", String(buttonIndex === index)));
   document.querySelectorAll(".map-mode-button:not([data-planet-exhibit])").forEach((item) => item.setAttribute("aria-current", "false"));
   applyHeading(definition);
+  // The explanation belongs to the new exhibit even while its data is loading.
+  readout.querySelector("[data-planet-caption]").textContent = definition.caption;
+  legend.querySelector("[data-planet-detail-caption]").textContent = definition.caption;
+  updateRealtimeIdentity(definition);
+  readout.querySelector("[data-planet-state]").textContent = "FETCHING";
+  readout.querySelector("[data-planet-time]").textContent = "—";
   readout.dataset.loading = "true";
   readout.dataset.planetRenderer = definition.renderer;
   const epicenter = readout.querySelector("[data-planet-epicenter]");
@@ -900,7 +906,6 @@ const select = async (index) => {
   readout.querySelector("[data-planet-epicenter-name]").textContent = "読み込み中";
   readout.querySelector("[data-planet-secondary-b-item]").hidden = definition.renderer === "quake";
   readout.querySelector("[data-planet-secondary-b-label]").textContent = definition.renderer === "quake" ? "最大震源" : "—";
-  readout.querySelector("[data-planet-analysis]").disabled = true;
   const sourceLink = readout.querySelector("[data-planet-source-link]");
   sourceLink.href = definition.sourcePage;
   sourceLink.title = definition.sourceName;
@@ -1024,11 +1029,12 @@ const mount = () => {
   legend.hidden = true;
   legend.setAttribute("aria-label", "地球ライブデータの描画凡例");
   legend.innerHTML = `
-    <details class="gaia-metric-legend-details"><summary><span data-planet-detail-summary>データと出典</span><span data-planet-reference-notice hidden>雲の形は過去の参考画像</span></summary>
+    <details class="gaia-metric-legend-details"><summary><span data-planet-detail-summary>凡例・データの詳細</span><span data-planet-reference-notice hidden>雲の形は過去の参考画像</span></summary>
       <div class="gaia-metric-legend-details-body">
         <div class="gaia-planet-data-time"><span data-planet-time-label>数値の時刻</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
         <p><span data-planet-legend-state>FETCHING</span> · <span data-planet-legend-count>—</span></p>
         <p data-planet-scope-note></p>
+        <p data-planet-detail-caption></p>
         <a class="gaia-planet-cloud-credit" data-cloud-image-credit href="https://visibleearth.nasa.gov/images/57747/blue-marble-clouds" target="_blank" rel="noopener noreferrer" hidden><span>雲の参考画像 · NASA Blue Marble ↗</span><small>2002年公開 · 現在の雲分布ではありません</small></a>
         <p class="gaia-planet-poi-key"><span>観測点 · クリック／タップで詳細</span></p>
       </div>
@@ -1036,7 +1042,7 @@ const mount = () => {
   `;
   metricLegend = createMetricLegend({ label: "地球の観測値と色の目盛り" });
   metricLegend.querySelector("[data-metric-title]").setAttribute("data-planet-legend-title", "");
-  legend.prepend(metricLegend);
+  legend.querySelector(".gaia-metric-legend-details-body").prepend(metricLegend);
   // Keep the map's drag capture and zoom shortcuts off the source disclosure.
   for (const type of ["pointerdown", "wheel", "keydown", "keyup"]) {
     legend.addEventListener(type, event => {
@@ -1068,6 +1074,8 @@ const mount = () => {
     <div class="gaia-planet-source"><a data-planet-source-link target="_blank" rel="noopener noreferrer"></a><button type="button" data-planet-analysis disabled></button></div>
   `;
   decorateMapActions(readout.querySelector(".gaia-planet-source"), readout.querySelector("[data-planet-source-link]"), readout.querySelector("[data-planet-analysis]"));
+  realtimeStatus = createRealtimeStatus();
+  readout.querySelector(".gaia-planet-chapter").after(realtimeStatus);
   layer.append(readout);
 
   buttons = DEFINITIONS.map((definition, index) => {
@@ -1092,7 +1100,6 @@ const mount = () => {
     deactivate();
   }, { capture: true });
   readout.querySelectorAll("[data-planet-step]").forEach((item) => item.addEventListener("click", () => step(item.dataset.planetStep)));
-  readout.querySelector("[data-planet-analysis]").addEventListener("click", openStatistics);
   readout.querySelector("[data-planet-epicenter]").addEventListener("click", focusStrongestEarthquake);
   addEventListener("resize", () => { if (activeIndex >= 0) lastRenderedAt = 0; }, { passive: true });
   addEventListener("gaia:japan-close", pauseDrawing);

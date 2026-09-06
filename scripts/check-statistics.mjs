@@ -66,8 +66,8 @@ if (
 const waste = snapshot.modes.find((mode) => mode.id === "nothing-is-waste")?.signals?.countryWaste || [];
 const sourceWaste = waste.filter((row) => row.valueStatus === "SOURCE");
 const imputedWaste = waste.filter((row) => row.valueStatus === "IMPUTED");
-if (waste.length !== 31 || sourceWaste.length !== 17 || imputedWaste.length !== 14) {
-  throw new Error("Waste provenance must be 17 SOURCE + 14 IMPUTED = 31");
+if (waste.length < 90 || sourceWaste.length !== waste.length || imputedWaste.length !== 0) {
+  throw new Error("Global recycling coverage must retain at least 90 source-only country values, without neighbor imputation");
 }
 if (imputedWaste.some((row) => row.donorIso3?.length !== 5)) {
   throw new Error("Every imputed waste row must disclose five donors");

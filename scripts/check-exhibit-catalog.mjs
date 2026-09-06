@@ -51,8 +51,10 @@ for (const exhibit of ESTAT_EXHIBITS) {
   assert.equal(new URL(exhibit.source).protocol, "https:");
 }
 assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "lodging").unit, "人");
-assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "summerHigh").shortTitle, "日最高気温の年平均");
-assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "winterLow").shortTitle, "日最低気温の年平均");
+assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "summerHigh").shortTitle, "一日の熱を重ねる");
+assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "winterLow").shortTitle, "一日の冷えを重ねる");
+assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "summerHigh").valueLabel, "日最高気温の年平均");
+assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "winterLow").valueLabel, "日最低気温の年平均");
 
 const readRuntime = name => fs.readFileSync(new URL(`../src/exploration/${name}`, import.meta.url), "utf8");
 const liveRuntime = readRuntime("live-exhibits.js");

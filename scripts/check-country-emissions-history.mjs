@@ -33,4 +33,4 @@ assert.equal((getCountryEmissionsPlot(sample).path.match(/M/gu) || []).length, 2
 assert.deepEqual(getCountryEmissionsSeries(rows, "UNKNOWN"), []);
 assert.deepEqual(getCountryEmissionsSeries(null, "AUS"), []);
 assert(Number.isFinite(getCountryEmissionsPlot([{ year: 2000, value: 0 }]).points[0].x));
-console.log("PASS country emissions: all 31 country histories match source; linear axes, selected year, missing/zero/one-point values");
+console.log(`PASS country emissions: all ${new Set(rows.map(row => row.iso3)).size} country histories match source; linear axes, selected year, missing/zero/one-point values`);

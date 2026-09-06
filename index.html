@@ -173,7 +173,7 @@
     <script src="./opening-audio.js?v=gaia-heard-tracks-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-route-glint-replay-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-beyond-log-20260906-115607" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-live-glass-20260907-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -1105,7 +1105,7 @@
             <div
               class="architecture-scene"
               role="img"
-              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、9つの感覚器展示と四つの体験へ変換する作品構成図"
+              aria-label="地球と宇宙の公開記録を保存JSONと外部APIから取得し、SOURCE、DERIVED、SCENARIOを分けて、30の地図展示と四つの体験へ変換する作品構成図"
             >
               <img
                 class="architecture-scene-art"
@@ -1126,9 +1126,9 @@
               </section>
 
               <section class="architecture-node architecture-node-snapshot">
-                <p><span>02</span> 作品内に保存</p>
-                <h3>ローカルJSON</h3>
-                <small>審査中は外部APIへ接続しない</small>
+                <p><span>02</span> データを取得</p>
+                <h3>保存JSON ＋ API</h3>
+                <small>サイト経由・直接接続を併用<br />取得値をキャッシュして表示</small>
               </section>
 
               <section class="architecture-node architecture-node-transform">
@@ -1142,11 +1142,8 @@
 
               <section class="architecture-node architecture-node-senses">
                 <p><span>04</span> 数字を感覚へ</p>
-                <h3>9つの観測展示</h3>
-                <ol aria-label="9つの感覚器展示">
-                  <li>01</li><li>02</li><li>03</li><li>04</li><li>05</li>
-                  <li>06</li><li>07</li><li>08</li><li>09</li>
-                </ol>
+                <h3>30の地図展示</h3>
+                <small>基礎・統計・ライブ／モデル</small>
               </section>
 
               <section class="architecture-node architecture-node-output">
@@ -1178,7 +1175,7 @@
                 </li>
                 <li>
                   <span>02</span>
-                  <div><strong>作品の中に保存する</strong><p>審査中に通信が切れても動くよう、必要な数値と画像をあらかじめ保存しています。</p></div>
+                  <div><strong>保存データとAPIを併用する</strong><p>取得済みのJSONに加え、一部の展示では閲覧中に公開APIへ接続します。取得値はキャッシュし、通信に失敗した場合は展示ごとに過去の取得値・保存値・演出用サンプルへ切り替えるか、欠測として扱います。</p></div>
                 </li>
                 <li>
                   <span>03</span>
@@ -1204,14 +1201,29 @@
               </p>
               <div class="regulation-list">
                 <article><span>01</span><div><strong>HTML / CSS / JavaScript</strong><p>画面、デザイン、アニメーション、操作をすべてこの三つで実装しています。</p></div></article>
-                <article><span>02</span><div><strong>外部ライブラリ不使用</strong><p>jQuery、Three.js、Pixi.js、anime.jsなどは使っていません。WebGL2やCanvasはChrome標準の機能です。</p></div></article>
+                <article><span>02</span><div><strong>外部ライブラリ不使用</strong><p>jQuery、Three.js、Pixi.js、anime.jsなどは使っていません。WebGL2やCanvasはChrome標準の機能です。これは外部データAPIを使わないという意味ではありません。</p></div></article>
                 <article><span>03</span><div><strong>提出コードと公開版は同じ</strong><p>GitHubに提出するコードと、Cloudflareで公開する作品は同じ内容です。</p></div></article>
                 <article><span>04</span><div><strong>PC・スマートフォンChrome対応</strong><p>マウス、タッチ、キーボードで操作でき、画面の広さに合わせてレイアウトが変わります。</p></div></article>
-                <article><span>05</span><div><strong>データは作品内に保存</strong><p>表示中に外部APIへ接続しません。リアルタイム連携は次の開発段階で検討します。</p></div></article>
+                <article><span>05</span><div><strong>外部通信とデータの状態を明示</strong><p>保存済みデータとライブAPIを併用しています。下の「データの取得経路と鮮度」で、接続先、LIVE CACHEの意味、取得できない場合の扱いを確認できます。</p></div></article>
               </div>
               <aside class="regulation-note">
                 <strong>地図について</strong>
                 <p>大陸と国境にはNatural Earth 1:50m、都道府県境界には地球地図日本を使っています。すべて作品内のGeoJSON / TopoJSONに保存し、Canvasで一枚の地図として描いています。</p>
+              </aside>
+            </section>
+
+            <section class="architecture-story architecture-data-policy" id="architecture-data-policy" aria-labelledby="architecture-data-policy-title">
+              <p class="architecture-label">DATA ACCESS / FRESHNESS</p>
+              <h3 id="architecture-data-policy-title">データの取得経路と鮮度</h3>
+              <ol>
+                <li><span>01</span><div><strong>作品に同梱した保存データ</strong><p>MAP 01—09の基礎データ、MAP 16—25の国内統計、ORBITALは、主に取得・加工済みのJSONを表示します。これらの保存データの表示自体には外部APIを使いません。ただし、MAP 01のオーロラ層には別途ライブ取得があります。</p></div></li>
+                <li><span>02</span><div><strong>サイト側APIを経由するデータ</strong><p>MAP 10—15と26は、同じサイトの /api/live/v1/ へ接続します。サイト側がOpen-Meteo／CAMSやNASA FIRMSなどの公開データを取得し、キャッシュ付きで配信します。</p></div></li>
+                <li><span>03</span><div><strong>ブラウザから直接取得するデータ</strong><p>MAP 01のオーロラ層はNOAA SWPC、MAP 27—30はOpen-MeteoとUSGSへ直接接続します。MAP 27—30は取得した値をこのタブ内に5分間キャッシュします。</p></div></li>
+              </ol>
+              <aside class="regulation-note" id="architecture-cache-guide">
+                <strong>LIVE / LIVE CACHEは「今この瞬間の実測」ではありません</strong>
+                <p>MAP 27—30のLIVEはAPIからの取得成功、LIVE CACHEは取得後5分以内のタブ内キャッシュの再利用です。MAP 26のLIVE CACHEはサイト側APIの取得値を表し、サーバーでは15分を基準にキャッシュします。どちらも常時再取得の意味ではありません。取得時刻とデータ自体の時刻は異なるため、画面のデータ時刻・経過時間も確認してください。気象・大気質にはモデル値を含みます。</p>
+                <p>SAVED SNAPSHOTは保存済みデータです。MAP 26では更新失敗時の期限切れAPIキャッシュもこの表示に含まれます。MAP 27—30のSAVED VALUESは演出用サンプルであり、過去の実測データではありません。データの取得状態と、SOURCE／DERIVED／SCENARIOという加工・仮定の区分は別の情報です。</p>
               </aside>
             </section>
           </div>
@@ -1537,9 +1549,7 @@
           type="button"
           aria-label="地図の操作をスキップして物語へ戻る"
         >
-          <span>SKIP</span>
-          <strong>物語へ戻る</strong>
-          <b aria-hidden="true">→</b>
+          <strong>スキップ</strong><b aria-hidden="true">▶</b>
         </button>
 
         <div class="map-title-transition" id="map-title-transition" aria-hidden="true">
@@ -1554,7 +1564,7 @@
             <span class="japan-live-dot" aria-hidden="true"></span>
             <span id="map-scope-kicker">Planetary lens / Open map</span>
           </p>
-          <h2 id="japan-title" data-exhibit-number="06" aria-label="06 地球の一呼吸" aria-live="polite">地球の一呼吸</h2>
+          <h2 id="japan-title" data-exhibit-number="06" aria-label="06 積み重なるCO₂" aria-live="polite">積み重なるCO₂</h2>
           <button
             class="map-mobile-heading-toggle"
             id="map-mobile-heading-toggle"
@@ -1566,8 +1576,7 @@
             <strong>詳細</strong>
           </button>
           <p id="japan-description">
-            水、熱、生きもの、大地の動きは国境で止まりません。
-            世界の観測記録を一枚の地図に重ねて見てみましょう。
+            空気に残る炭素は、私たちが暮らす気候に関わる
           </p>
           <button
             class="japan-data-button"
@@ -1608,7 +1617,7 @@
         <details class="map-reading-guide" id="map-reading-guide" open>
           <summary>
             <span>この地図で確かめること</span>
-            <strong id="map-guide-title">地球の一呼吸</strong>
+            <strong id="map-guide-title">積み重なるCO₂</strong>
             <i aria-hidden="true"></i>
           </summary>
           <div class="map-reading-guide-body" aria-live="polite">
@@ -1692,7 +1701,7 @@
             <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—30</p>
             <div>
               <span id="japan-mode-number">06</span>
-              <strong id="japan-mode-title">地球の一呼吸</strong>
+              <strong id="japan-mode-title">積み重なるCO₂</strong>
             </div>
           </div>
           <p class="map-mode-bank-guide" id="map-mode-bank-guide">見たい地図展示を選んでください</p>
@@ -1713,8 +1722,8 @@
           <aside class="map-mode-01-tooltip map-mode-preview" id="map-mode-preview" role="tooltip" aria-hidden="true">
             <div>
               <span id="map-mode-preview-number">06 / AIR</span>
-              <b id="map-mode-preview-label">地球の一呼吸</b>
-              <p id="map-mode-preview-copy">季節で揺れながら、少しずつ増えてきたCO₂。1958年からの濃度の変化をたどります。</p>
+              <b id="map-mode-preview-label">積み重なるCO₂</b>
+              <p id="map-mode-preview-copy">日々のエネルギー利用ともつながるCO₂の蓄積。1958年からの濃度をたどり、観測・再構成・未来の試算を分けて読みます。</p>
             </div>
           </aside>
         </section>
@@ -1904,9 +1913,20 @@
               <button class="gaia-statistics-menu-scrim" id="gaia-statistics-menu-scrim" type="button" tabindex="-1" aria-label="解析メニューを閉じる"></button>
               <aside class="gaia-statistics-controls" id="gaia-statistics-controls" aria-label="解析条件" aria-hidden="true" inert>
                 <header class="gaia-statistics-controls-header">
-                  <div><span>ANALYSIS MENU</span><strong>解析メニュー</strong></div>
+                  <div><span>ANALYSIS MENU</span><strong>どんな分析をする？</strong></div>
                   <button id="gaia-statistics-menu-close" type="button" aria-label="解析メニューを閉じる">×</button>
                 </header>
+                <section class="gaia-statistics-purpose-panel">
+                  <p class="gaia-statistics-control-label">1. 確かめたいことを選ぶ</p>
+                  <div class="gaia-statistics-purpose-grid" id="gaia-statistics-purpose-grid" role="group" aria-label="分析の目的"></div>
+                  <select id="gaia-statistics-lectures" aria-label="分析カテゴリ" hidden tabindex="-1"></select>
+                </section>
+                <section class="gaia-statistics-method-panel">
+                  <div class="gaia-statistics-method-heading"><p class="gaia-statistics-control-label" id="gaia-statistics-picker-heading">2. 分析の見方を選ぶ</p><span>アイコンは分析の概念図です</span></div>
+                  <div class="gaia-statistics-methods" id="gaia-statistics-methods" role="group" aria-labelledby="gaia-statistics-picker-heading"></div>
+                </section>
+                <details class="gaia-statistics-data-options">
+                  <summary>データの絞り込み・条件</summary>
                 <section>
                   <p class="gaia-statistics-control-label">データ区分</p>
                   <div class="gaia-statistics-provenance" aria-label="使用するデータ区分">
@@ -1945,14 +1965,7 @@
                   </div>
                   <small>この端末のブラウザ内だけに保存します。</small>
                 </section>
-                <section>
-                  <p class="gaia-statistics-control-label">分析の種類</p>
-                  <select class="gaia-statistics-lectures" id="gaia-statistics-lectures" aria-label="分析カテゴリ"></select>
-                </section>
-                <section>
-                  <p class="gaia-statistics-control-label">見方を選ぶ</p>
-                  <div class="gaia-statistics-methods" id="gaia-statistics-methods" role="group" aria-label="分析手法"></div>
-                </section>
+                </details>
               </aside>
 
               <main class="gaia-statistics-stage">
@@ -2089,12 +2102,6 @@
         <div class="gx-noise" aria-hidden="true"></div>
         <div class="gx-vignette" aria-hidden="true"></div>
 
-        <header class="gx-header">
-          <p class="gx-kicker">GAIA TRANSFORMATION / DEEP TIME</p>
-          <h2 id="gx-title">THE FIRST GX</h2>
-          <p id="gx-subtitle">GX = 人間と地球が、ともに変わるための転換</p>
-        </header>
-
         <button class="gx-close mode-exit-control" id="gx-close" type="button" hidden>戻る</button>
         <button
           class="gx-modal-skip"
@@ -2103,10 +2110,10 @@
           aria-label="GXモーダルをスキップして戻る"
           hidden
         >
-          <b aria-hidden="true">◀</b><span>戻る</span>
+          <span>スキップ</span><b aria-hidden="true">▶</b>
         </button>
 
-        <div class="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
+        <div class="gx-time" id="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
           <span class="gx-time-kicker">現在からさかのぼる</span>
           <strong class="gx-time-number">
             <span id="gx-time-value">4,600,000,000</span>
@@ -2115,47 +2122,54 @@
           <span class="gx-time-context" id="gx-time-context">約46–40億年前 / 冥王代</span>
         </div>
 
-        <article class="gx-story-card" id="gx-story-card" aria-live="polite" tabindex="0" data-mobile-info-open="false">
-          <p class="gx-phase-meta">
-            <span class="gx-kind" id="gx-kind" data-kind="DERIVED">DERIVED</span>
-            <span id="gx-phase-index">01 / 08</span>
-          </p>
-          <h3 id="gx-phase-title">岩石より先に、水の記憶がある。</h3>
-          <button
-            class="gx-mobile-info-toggle"
-            id="gx-mobile-info-toggle"
-            type="button"
-            aria-expanded="false"
-            aria-controls="gx-mobile-info gx-effect-row"
-          >
-            <span>解説</span><b aria-hidden="true">＋</b>
-          </button>
-          <div class="gx-mobile-info" id="gx-mobile-info">
-            <p class="gx-copy" id="gx-phase-copy">地球史の記録を読み込んでいます。</p>
-            <div class="gx-strata-marker">
-              <span>地層に残るもの</span>
-              <strong id="gx-strata-marker">ジルコン / 最古の岩石</strong>
+        <div class="gx-reading" id="gx-reading">
+          <header class="gx-header">
+            <p class="gx-kicker">GAIA TRANSFORMATION / DEEP TIME</p>
+            <h2 id="gx-title">THE FIRST GX</h2>
+          </header>
+          <article class="gx-story-card" id="gx-story-card" aria-live="polite" data-mobile-info-open="false">
+            <p class="gx-phase-meta">
+              <span id="gx-phase-index">01 / 08</span>
+              <span class="gx-kind" id="gx-kind" data-kind="SOURCE">SOURCE</span>
+            </p>
+            <h3 id="gx-phase-title">岩石より先に、水の記憶がある。</h3>
+            <p class="gx-summary" id="gx-phase-summary">地球史の記録を読み込んでいます。</p>
+            <button
+              class="gx-mobile-info-toggle"
+              id="gx-mobile-info-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="gx-mobile-info"
+            >
+              <span>背景と地層の記録</span><b aria-hidden="true">＋</b>
+            </button>
+            <div class="gx-mobile-info" id="gx-mobile-info" hidden>
+              <p class="gx-copy" id="gx-phase-copy">地球史の記録を読み込んでいます。</p>
+              <div class="gx-strata-marker">
+                <span>地層に残るもの</span>
+                <strong id="gx-strata-marker">ジルコン / 最古の岩石</strong>
+              </div>
+              <p class="gx-guide gx-guide--effect" id="gx-effect-row"><span>画面で起きること</span><b id="gx-effect">まだ触れていません。</b></p>
+              <div class="gx-secondary-controls">
+                <button id="gx-restart" type="button">最初から</button>
+                <button id="gx-data" type="button" aria-expanded="false" aria-controls="gx-data-panel">出典とデータ</button>
+              </div>
             </div>
-          </div>
-          <p class="gx-guide gx-guide--primary"><span>どう触る？</span><b id="gx-phase-guide">水面をなぞってください。</b></p>
-          <p class="gx-guide gx-guide--effect" id="gx-effect-row"><span>いまの操作</span><b id="gx-effect">まだ触れていません。</b></p>
-        </article>
+          </article>
+        </div>
 
-        <div class="gx-controls">
+        <div class="gx-controls" id="gx-controls">
           <nav class="gx-phase-nav" id="gx-phase-nav" aria-label="THE FIRST GXの章を選ぶ"></nav>
           <div class="gx-era-progress" id="gx-era-progress" hidden aria-live="polite">
+            <p class="gx-gesture" id="gx-phase-guide">水面をなぞってください。</p>
             <div class="gx-era-progress__head">
-              <span id="gx-era-progress-label">CYANOBACTERIA / OCEAN COVERAGE</span>
+              <span id="gx-era-progress-label">水の記録</span>
               <strong id="gx-era-progress-value">0%</strong>
             </div>
-            <div class="gx-era-progress__track" aria-hidden="true"><i id="gx-era-progress-bar"></i></div>
-            <p id="gx-era-progress-copy">地球の海を生命で満たしてください。</p>
+            <div class="gx-era-progress__track" role="progressbar" aria-labelledby="gx-era-progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="gx-era-progress-bar"></i></div>
+            <p id="gx-era-progress-copy" class="gx-completion-note" hidden></p>
           </div>
           <button class="gx-next" id="gx-next" type="button" hidden>海へ光を置く　→</button>
-          <div class="gx-secondary-controls">
-            <button id="gx-restart" type="button">最初から</button>
-            <button id="gx-data" type="button" aria-expanded="false" aria-controls="gx-data-panel">OPEN DATA / 諸元</button>
-          </div>
         </div>
 
         <div class="gx-era-transition" id="gx-era-transition" aria-hidden="true">
@@ -2167,6 +2181,7 @@
         <aside class="gx-data-panel" id="gx-data-panel" aria-hidden="true">
           <button id="gx-data-close" type="button" aria-label="データ諸元を閉じる">×</button>
           <p class="gx-data-label">OPEN DATA / INTERPRETIVE TIMELINE</p>
+          <p id="gx-subtitle">GX = 人間と地球が、ともに変わるための転換</p>
           <h3>この光は、何から作った？</h3>
           <p id="gx-data-notice">地質年代の幅と研究上の解釈を、鑑賞用の時間軸へ変換しています。</p>
           <dl>
@@ -2824,7 +2839,7 @@
         <header class="concept-header">
           <div>
             <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 09</span></p>
-            <h2 id="concept-title">地球の一呼吸</h2>
+            <h2 id="concept-title">積み重なるCO₂</h2>
             <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
           </div>
           <button class="concept-close" id="concept-close" type="button" aria-label="解説を閉じる">

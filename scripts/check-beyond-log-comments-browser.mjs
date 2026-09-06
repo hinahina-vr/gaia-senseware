@@ -11,7 +11,7 @@ const widths = (process.argv[4] || "1440,390").split(",").map(Number);
 fs.mkdirSync(output, { recursive: true });
 const beyond = globalThis.GAIA_TRUE_END_STORY.scenes.flatMap(scene => scene.steps);
 const speakerNames = { system: "AIVA", lou: "ルウ", mizuha: "みず", amane: "あめ", sakuya: "saku", visitor: "あなた" };
-const captures = new Set(["beyond_01_add_032", "beyond_02_024", "beyond_02_040", "beyond_02_042", "beyond_03_043", "beyond_03_053", beyond.at(-1).id]);
+const captures = new Set(["beyond_01_028", "beyond_01_add_032", "beyond_02_024", "beyond_02_040", "beyond_02_042", "beyond_03_043", "beyond_03_053", beyond.at(-1).id]);
 const report = { status: "running", checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 let page;

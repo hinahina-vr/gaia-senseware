@@ -14,7 +14,7 @@ try {
   for (const width of widths) {
     const context = await browser.newContext({ viewport: { width, height: width === 3840 ? 2088 : width < 721 ? 844 : 900 } });
     await context.addInitScript(() => {
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ path: "data/ovation-aurora-snapshot.json", contentType: "application/json" }));
@@ -25,6 +25,7 @@ try {
       && document.querySelectorAll(".map-mode-bank .map-mode-button").length === 30);
     await page.evaluate(() => {
       globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false });
+      globalThis.GaiaMapDemo.stop();
       document.querySelector('[data-live-exhibit="carbon-pulse"]').click();
       globalThis.GaiaLiveExhibits.pausePoiAutoplay();
     });
@@ -35,6 +36,15 @@ try {
       }, city);
       await page.waitForFunction(city => document.querySelector("#gaia-live-exhibit-canvas").dataset.observationCity === city
         && document.querySelector("#japan-layer").dataset.livePoiTransition === "settled", city);
+      // Selection no longer moves the camera. Bring an off-screen/edge point
+      // into view explicitly so this test can inspect its rendered CSS core.
+      await page.evaluate(cityId => {
+        if (!document.querySelector(".gaia-live-exhibit-anchor").hidden) return;
+        const city = GaiaLiveExhibits.observationPoints.find(point => point.id === cityId);
+        GaiaMapObservationAdapter.focusEarthLocation({ lon: city.lon, lat: city.lat,
+          zoom: Number(document.querySelector("#japan-overlay").dataset.earthZoom), targetX: .5, targetY: .4 });
+      }, city);
+      await page.waitForFunction(() => document.querySelector("#japan-overlay").dataset.viewAnimation === "idle");
       await page.waitForTimeout(100);
       const samples = await page.evaluate(() => {
         const anchor = document.querySelector(".gaia-live-exhibit-anchor");

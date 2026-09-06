@@ -30,10 +30,12 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert(source.indexOf("sapporo: Object.freeze") < source.indexOf("aomori: Object.freeze"));
   assert(source.indexOf("aomori: Object.freeze") < source.indexOf("naha: Object.freeze"));
   assert.match(source, /current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m"/u);
-  assert.match(source, /WIND_FIELD_TTL_MS = 5 \* 60 \* 1_000/u);
-  assert.match(source, /latitude: cities\.map\(\(city\) => city\.lat\)\.join\(","\)/u);
-  assert.match(source, /longitude: cities\.map\(\(city\) => city\.lon\)\.join\(","\)/u);
-  assert.match(source, /current: "wind_speed_10m"/u);
+  const national = fs.readFileSync(path.join(sensorRoot, "src", "prefecture-field.ts"), "utf8");
+  assert.match(national, /ttl: 300_000/u);
+  assert.match(national, /latitude: cities\.map\(city => city\.lat\)\.join\(","\)/u);
+  assert.match(national, /longitude: cities\.map\(city => city\.lon\)\.join\(","\)/u);
+  assert.match(national, /weatherWindSpeed: "wind_speed_10m"/u);
+  assert.match(source, /\/api\/live\/v1\/prefecture-field/u);
   assert.match(source, /\/api\/live\/v1\/wind-field/u);
   assert.match(source, /FIRMS_SOURCE_URL = "https:\/\/firms\.modaps\.eosdis\.nasa\.gov\/data\/active_fire\/modis-c6\.1\/csv\/MODIS_C6_1_Global_24h\.csv"/u);
   assert.match(source, /FIRMS_MAX_SOURCE_BYTES = 4_000_000/u);
@@ -139,6 +141,23 @@ try {
     assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
     assert.deepEqual([...new Set(payload.events.map((event) => event.provider))].sort(), ["esa", "jaxa", "noaa", "open-meteo"]);
     assert(payload.events.every((event) => event.status === "snapshot"));
+  });
+  await test("national analysis route exposes all 47 identities and six metrics without fabricating disabled values", async () => {
+    const response = await fetch(`${origin}/api/live/v1/prefecture-field`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.scope, "japan-prefectures");
+    assert.equal(payload.targetCount, 47);
+    for (const [provider, keys] of [["weather", ["cloudCover", "weatherPrecipitation", "weatherTemperature", "weatherWindSpeed"]], ["air", ["forecastCo2", "pm25"]]]) {
+      const field = payload[provider];
+      assert.equal(field.source, "unavailable");
+      assert.equal(field.points.length, 47);
+      assert.equal(new Set(field.points.map(point => point.id)).size, 47);
+      assert.deepEqual(Object.keys(field.points[0].measurements).sort(), keys);
+      assert(field.points.every(point => Object.values(point.measurements).every(value => value === null)));
+    }
+    assert.equal((await fetch(`${origin}/api/live/v1/prefecture-field`, { method: "POST" })).status, 405);
+    assert.equal(await (await fetch(`${origin}/api/live/v1/prefecture-field`, { method: "HEAD" })).text(), "");
   });
   await test("prefecture wind field stays D1-free and marks all values missing while live providers are disabled", async () => {
     const response = await fetch(`${origin}/api/live/v1/wind-field`);

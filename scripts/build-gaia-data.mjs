@@ -6,6 +6,7 @@ import { enrichSnapshotWithStatistics } from "./statistics.mjs";
 import { fetchPopulationData, populationDataset } from "./population-data.mjs";
 import { fetchRenewableData, renewableDataset } from "./renewable-data.mjs";
 import { applyEcologiesReadingMetadata } from "./update-ecologies-reading-data.mjs";
+import { fetchCountryCoverage, applyCountryCoverage } from "./country-coverage-data.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptDirectory, "..");
@@ -929,6 +930,10 @@ const modes = [
   ),
 ];
 
+// Expand only the five country-coverage exhibits before statistical enrichment.
+// Any failed global fetch aborts the build instead of publishing a 31-country regression.
+const coverageGeography = JSON.parse(await readFile(resolve(projectDirectory, "data/natural-earth-50m-countries.geojson"), "utf8"));
+applyCountryCoverage({ modes }, await fetchCountryCoverage(coverageGeography, climateSites), retrievedAt);
 applyEcologiesReadingMetadata(modes.find(mode => mode.id === "three-ecologies"));
 const output = enrichSnapshotWithStatistics({
   title: "惑星の放課後",

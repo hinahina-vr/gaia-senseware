@@ -1,0 +1,1157 @@
+{
+  "schemaVersion": 1,
+  "scope": "japan-prefectures",
+  "targetCount": 47,
+  "weather": {
+    "schemaVersion": 1,
+    "source": "snapshot",
+    "generatedAt": "2026-09-06T21:30:52.188Z",
+    "points": [
+      {
+        "id": "sapporo",
+        "name": "北海道 / 札幌",
+        "lat": 43.0618,
+        "lon": 141.3545,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 4.82,
+          "weatherTemperature": 17.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 100
+        }
+      },
+      {
+        "id": "aomori",
+        "name": "青森県 / 青森",
+        "lat": 40.8244,
+        "lon": 140.74,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.28,
+          "weatherTemperature": 21.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 69
+        }
+      },
+      {
+        "id": "morioka",
+        "name": "岩手県 / 盛岡",
+        "lat": 39.7036,
+        "lon": 141.1527,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.9,
+          "weatherTemperature": 18.8,
+          "weatherPrecipitation": 0,
+          "cloudCover": 97
+        }
+      },
+      {
+        "id": "sendai",
+        "name": "宮城県 / 仙台",
+        "lat": 38.2682,
+        "lon": 140.8694,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.94,
+          "weatherTemperature": 21.6,
+          "weatherPrecipitation": 0.9,
+          "cloudCover": 100
+        }
+      },
+      {
+        "id": "akita",
+        "name": "秋田県 / 秋田",
+        "lat": 39.7186,
+        "lon": 140.1024,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 3.98,
+          "weatherTemperature": 22,
+          "weatherPrecipitation": 0,
+          "cloudCover": 75
+        }
+      },
+      {
+        "id": "yamagata",
+        "name": "山形県 / 山形",
+        "lat": 38.2404,
+        "lon": 140.3633,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.8,
+          "weatherTemperature": 20.5,
+          "weatherPrecipitation": 0.6,
+          "cloudCover": 98
+        }
+      },
+      {
+        "id": "fukushima",
+        "name": "福島県 / 福島",
+        "lat": 37.7503,
+        "lon": 140.4676,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.86,
+          "weatherTemperature": 21.8,
+          "weatherPrecipitation": 1.8,
+          "cloudCover": 100
+        }
+      },
+      {
+        "id": "mito",
+        "name": "茨城県 / 水戸",
+        "lat": 36.3418,
+        "lon": 140.4468,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.98,
+          "weatherTemperature": 25.9,
+          "weatherPrecipitation": 3.3,
+          "cloudCover": 94
+        }
+      },
+      {
+        "id": "utsunomiya",
+        "name": "栃木県 / 宇都宮",
+        "lat": 36.5658,
+        "lon": 139.8836,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 3.14,
+          "weatherTemperature": 22,
+          "weatherPrecipitation": 2.2,
+          "cloudCover": 90
+        }
+      },
+      {
+        "id": "maebashi",
+        "name": "群馬県 / 前橋",
+        "lat": 36.3911,
+        "lon": 139.0608,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.92,
+          "weatherTemperature": 21.4,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 99
+        }
+      },
+      {
+        "id": "saitama",
+        "name": "埼玉県 / さいたま",
+        "lat": 35.8569,
+        "lon": 139.6489,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.06,
+          "weatherTemperature": 21.9,
+          "weatherPrecipitation": 0.9,
+          "cloudCover": 95
+        }
+      },
+      {
+        "id": "chiba",
+        "name": "千葉県 / 千葉",
+        "lat": 35.6074,
+        "lon": 140.1065,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.97,
+          "weatherTemperature": 25.1,
+          "weatherPrecipitation": 4.3,
+          "cloudCover": 98
+        }
+      },
+      {
+        "id": "tokyo",
+        "name": "東京都 / 東京",
+        "lat": 35.6762,
+        "lon": 139.6503,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.99,
+          "weatherTemperature": 21.8,
+          "weatherPrecipitation": 0.6,
+          "cloudCover": 96
+        }
+      },
+      {
+        "id": "yokohama",
+        "name": "神奈川県 / 横浜",
+        "lat": 35.4437,
+        "lon": 139.638,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.36,
+          "weatherTemperature": 22.4,
+          "weatherPrecipitation": 1.1,
+          "cloudCover": 76
+        }
+      },
+      {
+        "id": "niigata",
+        "name": "新潟県 / 新潟",
+        "lat": 37.9026,
+        "lon": 139.0232,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 3.1,
+          "weatherTemperature": 23.9,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 93
+        }
+      },
+      {
+        "id": "toyama",
+        "name": "富山県 / 富山",
+        "lat": 36.6953,
+        "lon": 137.2113,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.86,
+          "weatherTemperature": 21.9,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 90
+        }
+      },
+      {
+        "id": "kanazawa",
+        "name": "石川県 / 金沢",
+        "lat": 36.5613,
+        "lon": 136.6562,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.17,
+          "weatherTemperature": 23.7,
+          "weatherPrecipitation": 0,
+          "cloudCover": 87
+        }
+      },
+      {
+        "id": "fukui",
+        "name": "福井県 / 福井",
+        "lat": 36.0652,
+        "lon": 136.2216,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.94,
+          "weatherTemperature": 22.5,
+          "weatherPrecipitation": 0,
+          "cloudCover": 79
+        }
+      },
+      {
+        "id": "kofu",
+        "name": "山梨県 / 甲府",
+        "lat": 35.6642,
+        "lon": 138.5684,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.72,
+          "weatherTemperature": 20.5,
+          "weatherPrecipitation": 0,
+          "cloudCover": 90
+        }
+      },
+      {
+        "id": "nagano",
+        "name": "長野県 / 長野",
+        "lat": 36.6513,
+        "lon": 138.181,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.1,
+          "weatherTemperature": 19.9,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 86
+        }
+      },
+      {
+        "id": "gifu",
+        "name": "岐阜県 / 岐阜",
+        "lat": 35.4233,
+        "lon": 136.7606,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.22,
+          "weatherTemperature": 21.9,
+          "weatherPrecipitation": 0,
+          "cloudCover": 83
+        }
+      },
+      {
+        "id": "shizuoka",
+        "name": "静岡県 / 静岡",
+        "lat": 34.9756,
+        "lon": 138.3828,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.3,
+          "weatherTemperature": 22.4,
+          "weatherPrecipitation": 1.3,
+          "cloudCover": 68
+        }
+      },
+      {
+        "id": "nagoya",
+        "name": "愛知県 / 名古屋",
+        "lat": 35.1815,
+        "lon": 136.9066,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.2,
+          "weatherTemperature": 22.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 72
+        }
+      },
+      {
+        "id": "tsu",
+        "name": "三重県 / 津",
+        "lat": 34.7303,
+        "lon": 136.5086,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.39,
+          "weatherTemperature": 22.2,
+          "weatherPrecipitation": 0.3,
+          "cloudCover": 81
+        }
+      },
+      {
+        "id": "otsu",
+        "name": "滋賀県 / 大津",
+        "lat": 35.0179,
+        "lon": 135.8546,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2,
+          "weatherTemperature": 23.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 52
+        }
+      },
+      {
+        "id": "kyoto",
+        "name": "京都府 / 京都",
+        "lat": 35.0116,
+        "lon": 135.7681,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.98,
+          "weatherTemperature": 22.1,
+          "weatherPrecipitation": 0,
+          "cloudCover": 58
+        }
+      },
+      {
+        "id": "osaka",
+        "name": "大阪府 / 大阪",
+        "lat": 34.6937,
+        "lon": 135.5023,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.5,
+          "weatherTemperature": 22.7,
+          "weatherPrecipitation": 0,
+          "cloudCover": 59
+        }
+      },
+      {
+        "id": "kobe",
+        "name": "兵庫県 / 神戸",
+        "lat": 34.6901,
+        "lon": 135.1955,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 3.58,
+          "weatherTemperature": 24.4,
+          "weatherPrecipitation": 0,
+          "cloudCover": 57
+        }
+      },
+      {
+        "id": "nara",
+        "name": "奈良県 / 奈良",
+        "lat": 34.6851,
+        "lon": 135.8048,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.3,
+          "weatherTemperature": 22.3,
+          "weatherPrecipitation": 0,
+          "cloudCover": 61
+        }
+      },
+      {
+        "id": "wakayama",
+        "name": "和歌山県 / 和歌山",
+        "lat": 34.226,
+        "lon": 135.1675,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.94,
+          "weatherTemperature": 23.8,
+          "weatherPrecipitation": 0,
+          "cloudCover": 54
+        }
+      },
+      {
+        "id": "tottori",
+        "name": "鳥取県 / 鳥取",
+        "lat": 35.5011,
+        "lon": 134.2351,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 0.58,
+          "weatherTemperature": 22.6,
+          "weatherPrecipitation": 0,
+          "cloudCover": 62
+        }
+      },
+      {
+        "id": "matsue",
+        "name": "島根県 / 松江",
+        "lat": 35.4681,
+        "lon": 133.0484,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.98,
+          "weatherTemperature": 25.9,
+          "weatherPrecipitation": 0,
+          "cloudCover": 55
+        }
+      },
+      {
+        "id": "okayama",
+        "name": "岡山県 / 岡山",
+        "lat": 34.6618,
+        "lon": 133.9344,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.71,
+          "weatherTemperature": 23.5,
+          "weatherPrecipitation": 0,
+          "cloudCover": 79
+        }
+      },
+      {
+        "id": "hiroshima",
+        "name": "広島県 / 広島",
+        "lat": 34.3853,
+        "lon": 132.4553,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.75,
+          "weatherTemperature": 24.9,
+          "weatherPrecipitation": 0,
+          "cloudCover": 50
+        }
+      },
+      {
+        "id": "yamaguchi",
+        "name": "山口県 / 山口",
+        "lat": 34.1859,
+        "lon": 131.4714,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.82,
+          "weatherTemperature": 24.5,
+          "weatherPrecipitation": 0,
+          "cloudCover": 92
+        }
+      },
+      {
+        "id": "tokushima",
+        "name": "徳島県 / 徳島",
+        "lat": 34.0703,
+        "lon": 134.5548,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.96,
+          "weatherTemperature": 25.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 79
+        }
+      },
+      {
+        "id": "takamatsu",
+        "name": "香川県 / 高松",
+        "lat": 34.3428,
+        "lon": 134.0466,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 4.53,
+          "weatherTemperature": 26.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 82
+        }
+      },
+      {
+        "id": "matsuyama",
+        "name": "愛媛県 / 松山",
+        "lat": 33.8392,
+        "lon": 132.7657,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.71,
+          "weatherTemperature": 24.2,
+          "weatherPrecipitation": 0,
+          "cloudCover": 54
+        }
+      },
+      {
+        "id": "kochi",
+        "name": "高知県 / 高知",
+        "lat": 33.5597,
+        "lon": 133.5311,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.57,
+          "weatherTemperature": 26.3,
+          "weatherPrecipitation": 0,
+          "cloudCover": 40
+        }
+      },
+      {
+        "id": "fukuoka",
+        "name": "福岡県 / 福岡",
+        "lat": 33.5904,
+        "lon": 130.4017,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.75,
+          "weatherTemperature": 25.8,
+          "weatherPrecipitation": 0,
+          "cloudCover": 45
+        }
+      },
+      {
+        "id": "saga",
+        "name": "佐賀県 / 佐賀",
+        "lat": 33.2635,
+        "lon": 130.3009,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.44,
+          "weatherTemperature": 24.7,
+          "weatherPrecipitation": 0,
+          "cloudCover": 45
+        }
+      },
+      {
+        "id": "nagasaki",
+        "name": "長崎県 / 長崎",
+        "lat": 32.7503,
+        "lon": 129.8777,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 2.27,
+          "weatherTemperature": 25.4,
+          "weatherPrecipitation": 0,
+          "cloudCover": 44
+        }
+      },
+      {
+        "id": "kumamoto",
+        "name": "熊本県 / 熊本",
+        "lat": 32.8031,
+        "lon": 130.7079,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.65,
+          "weatherTemperature": 23.5,
+          "weatherPrecipitation": 0.3,
+          "cloudCover": 53
+        }
+      },
+      {
+        "id": "oita",
+        "name": "大分県 / 大分",
+        "lat": 33.2382,
+        "lon": 131.6126,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 4.49,
+          "weatherTemperature": 24.8,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 86
+        }
+      },
+      {
+        "id": "miyazaki",
+        "name": "宮崎県 / 宮崎",
+        "lat": 31.9077,
+        "lon": 131.4202,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 3.06,
+          "weatherTemperature": 24.9,
+          "weatherPrecipitation": 0.2,
+          "cloudCover": 53
+        }
+      },
+      {
+        "id": "kagoshima",
+        "name": "鹿児島県 / 鹿児島",
+        "lat": 31.5966,
+        "lon": 130.5571,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 1.91,
+          "weatherTemperature": 24.7,
+          "weatherPrecipitation": 0,
+          "cloudCover": 57
+        }
+      },
+      {
+        "id": "naha",
+        "name": "沖縄県 / 那覇",
+        "lat": 26.2124,
+        "lon": 127.6809,
+        "observedAt": "2026-09-06T21:30:00.000Z",
+        "measurements": {
+          "weatherWindSpeed": 7.11,
+          "weatherTemperature": 26.9,
+          "weatherPrecipitation": 0.1,
+          "cloudCover": 50
+        }
+      }
+    ],
+    "provenance": {
+      "sourceUrl": "https://api.open-meteo.com/v1/forecast?latitude=43.0618%2C40.8244%2C39.7036%2C38.2682%2C39.7186%2C38.2404%2C37.7503%2C36.3418%2C36.5658%2C36.3911%2C35.8569%2C35.6074%2C35.6762%2C35.4437%2C37.9026%2C36.6953%2C36.5613%2C36.0652%2C35.6642%2C36.6513%2C35.4233%2C34.9756%2C35.1815%2C34.7303%2C35.0179%2C35.0116%2C34.6937%2C34.6901%2C34.6851%2C34.226%2C35.5011%2C35.4681%2C34.6618%2C34.3853%2C34.1859%2C34.0703%2C34.3428%2C33.8392%2C33.5597%2C33.5904%2C33.2635%2C32.7503%2C32.8031%2C33.2382%2C31.9077%2C31.5966%2C26.2124&longitude=141.3545%2C140.74%2C141.1527%2C140.8694%2C140.1024%2C140.3633%2C140.4676%2C140.4468%2C139.8836%2C139.0608%2C139.6489%2C140.1065%2C139.6503%2C139.638%2C139.0232%2C137.2113%2C136.6562%2C136.2216%2C138.5684%2C138.181%2C136.7606%2C138.3828%2C136.9066%2C136.5086%2C135.8546%2C135.7681%2C135.5023%2C135.1955%2C135.8048%2C135.1675%2C134.2351%2C133.0484%2C133.9344%2C132.4553%2C131.4714%2C134.5548%2C134.0466%2C132.7657%2C133.5311%2C130.4017%2C130.3009%2C129.8777%2C130.7079%2C131.6126%2C131.4202%2C130.5571%2C127.6809&current=wind_speed_10m%2Ctemperature_2m%2Cprecipitation%2Ccloud_cover&timezone=GMT&forecast_days=1&wind_speed_unit=ms",
+      "licenseUrl": "https://open-meteo.com/en/pricing",
+      "transformVersion": "japan-prefecture-models-v1"
+    }
+  },
+  "air": {
+    "schemaVersion": 1,
+    "source": "snapshot",
+    "generatedAt": "2026-09-06T21:30:52.393Z",
+    "points": [
+      {
+        "id": "sapporo",
+        "name": "北海道 / 札幌",
+        "lat": 43.0618,
+        "lon": 141.3545,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 432,
+          "pm25": 33.3
+        }
+      },
+      {
+        "id": "aomori",
+        "name": "青森県 / 青森",
+        "lat": 40.8244,
+        "lon": 140.74,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 445,
+          "pm25": 31.9
+        }
+      },
+      {
+        "id": "morioka",
+        "name": "岩手県 / 盛岡",
+        "lat": 39.7036,
+        "lon": 141.1527,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 461,
+          "pm25": 25.1
+        }
+      },
+      {
+        "id": "sendai",
+        "name": "宮城県 / 仙台",
+        "lat": 38.2682,
+        "lon": 140.8694,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 439,
+          "pm25": 15.4
+        }
+      },
+      {
+        "id": "akita",
+        "name": "秋田県 / 秋田",
+        "lat": 39.7186,
+        "lon": 140.1024,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 437,
+          "pm25": 22.6
+        }
+      },
+      {
+        "id": "yamagata",
+        "name": "山形県 / 山形",
+        "lat": 38.2404,
+        "lon": 140.3633,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 452,
+          "pm25": 4.9
+        }
+      },
+      {
+        "id": "fukushima",
+        "name": "福島県 / 福島",
+        "lat": 37.7503,
+        "lon": 140.4676,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 436,
+          "pm25": 0.3
+        }
+      },
+      {
+        "id": "mito",
+        "name": "茨城県 / 水戸",
+        "lat": 36.3418,
+        "lon": 140.4468,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 442,
+          "pm25": 1.2
+        }
+      },
+      {
+        "id": "utsunomiya",
+        "name": "栃木県 / 宇都宮",
+        "lat": 36.5658,
+        "lon": 139.8836,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 441,
+          "pm25": 0.7
+        }
+      },
+      {
+        "id": "maebashi",
+        "name": "群馬県 / 前橋",
+        "lat": 36.3911,
+        "lon": 139.0608,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 452,
+          "pm25": 0.8
+        }
+      },
+      {
+        "id": "saitama",
+        "name": "埼玉県 / さいたま",
+        "lat": 35.8569,
+        "lon": 139.6489,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 448,
+          "pm25": 1.5
+        }
+      },
+      {
+        "id": "chiba",
+        "name": "千葉県 / 千葉",
+        "lat": 35.6074,
+        "lon": 140.1065,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 444,
+          "pm25": 2.2
+        }
+      },
+      {
+        "id": "tokyo",
+        "name": "東京都 / 東京",
+        "lat": 35.6762,
+        "lon": 139.6503,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 449,
+          "pm25": 3.2
+        }
+      },
+      {
+        "id": "yokohama",
+        "name": "神奈川県 / 横浜",
+        "lat": 35.4437,
+        "lon": 139.638,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 442,
+          "pm25": 3.2
+        }
+      },
+      {
+        "id": "niigata",
+        "name": "新潟県 / 新潟",
+        "lat": 37.9026,
+        "lon": 139.0232,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 438,
+          "pm25": 0.1
+        }
+      },
+      {
+        "id": "toyama",
+        "name": "富山県 / 富山",
+        "lat": 36.6953,
+        "lon": 137.2113,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 470,
+          "pm25": 1.3
+        }
+      },
+      {
+        "id": "kanazawa",
+        "name": "石川県 / 金沢",
+        "lat": 36.5613,
+        "lon": 136.6562,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 487,
+          "pm25": 1.1
+        }
+      },
+      {
+        "id": "fukui",
+        "name": "福井県 / 福井",
+        "lat": 36.0652,
+        "lon": 136.2216,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 469,
+          "pm25": 1.9
+        }
+      },
+      {
+        "id": "kofu",
+        "name": "山梨県 / 甲府",
+        "lat": 35.6642,
+        "lon": 138.5684,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 470,
+          "pm25": 0.4
+        }
+      },
+      {
+        "id": "nagano",
+        "name": "長野県 / 長野",
+        "lat": 36.6513,
+        "lon": 138.181,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 470,
+          "pm25": 0.4
+        }
+      },
+      {
+        "id": "gifu",
+        "name": "岐阜県 / 岐阜",
+        "lat": 35.4233,
+        "lon": 136.7606,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 480,
+          "pm25": 2
+        }
+      },
+      {
+        "id": "shizuoka",
+        "name": "静岡県 / 静岡",
+        "lat": 34.9756,
+        "lon": 138.3828,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 460,
+          "pm25": 2.4
+        }
+      },
+      {
+        "id": "nagoya",
+        "name": "愛知県 / 名古屋",
+        "lat": 35.1815,
+        "lon": 136.9066,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 457,
+          "pm25": 6.7
+        }
+      },
+      {
+        "id": "tsu",
+        "name": "三重県 / 津",
+        "lat": 34.7303,
+        "lon": 136.5086,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 451,
+          "pm25": 6.4
+        }
+      },
+      {
+        "id": "otsu",
+        "name": "滋賀県 / 大津",
+        "lat": 35.0179,
+        "lon": 135.8546,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 462,
+          "pm25": 5.8
+        }
+      },
+      {
+        "id": "kyoto",
+        "name": "京都府 / 京都",
+        "lat": 35.0116,
+        "lon": 135.7681,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 480,
+          "pm25": 5
+        }
+      },
+      {
+        "id": "osaka",
+        "name": "大阪府 / 大阪",
+        "lat": 34.6937,
+        "lon": 135.5023,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 453,
+          "pm25": 8.4
+        }
+      },
+      {
+        "id": "kobe",
+        "name": "兵庫県 / 神戸",
+        "lat": 34.6901,
+        "lon": 135.1955,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 447,
+          "pm25": 5.3
+        }
+      },
+      {
+        "id": "nara",
+        "name": "奈良県 / 奈良",
+        "lat": 34.6851,
+        "lon": 135.8048,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 482,
+          "pm25": 7.9
+        }
+      },
+      {
+        "id": "wakayama",
+        "name": "和歌山県 / 和歌山",
+        "lat": 34.226,
+        "lon": 135.1675,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 455,
+          "pm25": 5.3
+        }
+      },
+      {
+        "id": "tottori",
+        "name": "鳥取県 / 鳥取",
+        "lat": 35.5011,
+        "lon": 134.2351,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 434,
+          "pm25": 7.7
+        }
+      },
+      {
+        "id": "matsue",
+        "name": "島根県 / 松江",
+        "lat": 35.4681,
+        "lon": 133.0484,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 431,
+          "pm25": 7
+        }
+      },
+      {
+        "id": "okayama",
+        "name": "岡山県 / 岡山",
+        "lat": 34.6618,
+        "lon": 133.9344,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 479,
+          "pm25": 3.8
+        }
+      },
+      {
+        "id": "hiroshima",
+        "name": "広島県 / 広島",
+        "lat": 34.3853,
+        "lon": 132.4553,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 444,
+          "pm25": 1.6
+        }
+      },
+      {
+        "id": "yamaguchi",
+        "name": "山口県 / 山口",
+        "lat": 34.1859,
+        "lon": 131.4714,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 439,
+          "pm25": 2.1
+        }
+      },
+      {
+        "id": "tokushima",
+        "name": "徳島県 / 徳島",
+        "lat": 34.0703,
+        "lon": 134.5548,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 446,
+          "pm25": 3.8
+        }
+      },
+      {
+        "id": "takamatsu",
+        "name": "香川県 / 高松",
+        "lat": 34.3428,
+        "lon": 134.0466,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 450,
+          "pm25": 4.1
+        }
+      },
+      {
+        "id": "matsuyama",
+        "name": "愛媛県 / 松山",
+        "lat": 33.8392,
+        "lon": 132.7657,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 446,
+          "pm25": 1.9
+        }
+      },
+      {
+        "id": "kochi",
+        "name": "高知県 / 高知",
+        "lat": 33.5597,
+        "lon": 133.5311,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 452,
+          "pm25": 2.1
+        }
+      },
+      {
+        "id": "fukuoka",
+        "name": "福岡県 / 福岡",
+        "lat": 33.5904,
+        "lon": 130.4017,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 435,
+          "pm25": 5.1
+        }
+      },
+      {
+        "id": "saga",
+        "name": "佐賀県 / 佐賀",
+        "lat": 33.2635,
+        "lon": 130.3009,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 441,
+          "pm25": 4.3
+        }
+      },
+      {
+        "id": "nagasaki",
+        "name": "長崎県 / 長崎",
+        "lat": 32.7503,
+        "lon": 129.8777,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 447,
+          "pm25": 3.5
+        }
+      },
+      {
+        "id": "kumamoto",
+        "name": "熊本県 / 熊本",
+        "lat": 32.8031,
+        "lon": 130.7079,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 453,
+          "pm25": 2.8
+        }
+      },
+      {
+        "id": "oita",
+        "name": "大分県 / 大分",
+        "lat": 33.2382,
+        "lon": 131.6126,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 447,
+          "pm25": 2.8
+        }
+      },
+      {
+        "id": "miyazaki",
+        "name": "宮崎県 / 宮崎",
+        "lat": 31.9077,
+        "lon": 131.4202,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 464,
+          "pm25": 2.9
+        }
+      },
+      {
+        "id": "kagoshima",
+        "name": "鹿児島県 / 鹿児島",
+        "lat": 31.5966,
+        "lon": 130.5571,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 527,
+          "pm25": 4.8
+        }
+      },
+      {
+        "id": "naha",
+        "name": "沖縄県 / 那覇",
+        "lat": 26.2124,
+        "lon": 127.6809,
+        "observedAt": "2026-09-06T21:00:00.000Z",
+        "measurements": {
+          "forecastCo2": 441,
+          "pm25": 5
+        }
+      }
+    ],
+    "provenance": {
+      "sourceUrl": "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=43.0618%2C40.8244%2C39.7036%2C38.2682%2C39.7186%2C38.2404%2C37.7503%2C36.3418%2C36.5658%2C36.3911%2C35.8569%2C35.6074%2C35.6762%2C35.4437%2C37.9026%2C36.6953%2C36.5613%2C36.0652%2C35.6642%2C36.6513%2C35.4233%2C34.9756%2C35.1815%2C34.7303%2C35.0179%2C35.0116%2C34.6937%2C34.6901%2C34.6851%2C34.226%2C35.5011%2C35.4681%2C34.6618%2C34.3853%2C34.1859%2C34.0703%2C34.3428%2C33.8392%2C33.5597%2C33.5904%2C33.2635%2C32.7503%2C32.8031%2C33.2382%2C31.9077%2C31.5966%2C26.2124&longitude=141.3545%2C140.74%2C141.1527%2C140.8694%2C140.1024%2C140.3633%2C140.4676%2C140.4468%2C139.8836%2C139.0608%2C139.6489%2C140.1065%2C139.6503%2C139.638%2C139.0232%2C137.2113%2C136.6562%2C136.2216%2C138.5684%2C138.181%2C136.7606%2C138.3828%2C136.9066%2C136.5086%2C135.8546%2C135.7681%2C135.5023%2C135.1955%2C135.8048%2C135.1675%2C134.2351%2C133.0484%2C133.9344%2C132.4553%2C131.4714%2C134.5548%2C134.0466%2C132.7657%2C133.5311%2C130.4017%2C130.3009%2C129.8777%2C130.7079%2C131.6126%2C131.4202%2C130.5571%2C127.6809&current=carbon_dioxide%2Cpm2_5&timezone=GMT&forecast_days=1",
+      "licenseUrl": "https://open-meteo.com/en/pricing",
+      "transformVersion": "japan-prefecture-models-v1"
+    }
+  }
+}

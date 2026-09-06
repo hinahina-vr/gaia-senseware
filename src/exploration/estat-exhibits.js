@@ -1,21 +1,20 @@
 import { OBSERVATION_CITIES } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
+import { formatPrefecturePlace } from "./observation-place-label.js?v=gaia-place-inline-1";
 import { EARTH_CENTER_LONGITUDE, earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
-import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-exhibit-order-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
-import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
+import { japanPrefectureView } from "./japan-prefecture-view.js?v=gaia-prefecture-gis-view-1";
+import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-lodging-color-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
-import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
+import { createMetricLegend, updateMetricLegend, metricLegendProgress } from "./metric-legend.js?v=gaia-lodging-color-1";
 
-const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);
+const SERIES_URL = new URL("../../data/estat-prefecture-series.json?v=gaia-annual-history-1", import.meta.url);
 const PREFECTURE_TOPOLOGY_URL = new URL("../../data/japan-prefectures.topojson?v=gaia-estat-choropleth-1", import.meta.url);
 const PERIOD_MS = 6200;
 const POI_MS = 3600;
 const TRANSITION_MS = 920;
 const PRIMARY_VALUE_COUNT_MS = 760;
 const PRIMARY_VALUE_COUNT_STEPS = 32;
-const LONG_TERM_TEMPERATURE_PERIOD_MS = 1050;
-const DESKTOP_START_ZOOM = 6;
-const MOBILE_START_ZOOM = 4.25;
+const LONG_TERM_PERIOD_MS = 1050;
 const ESTAT_WEBGL_HUB_COUNT = 8;
 const ESTAT_WEBGL_ANCHOR_TRANSITION_MS = 1400;
 const PREFECTURE_REGION_EXHIBITS = new Set(["averageTemperature", "summerHigh", "winterLow", "relativeHumidity", "sunshineHours", "precipitation", "rainyDays"]);
@@ -249,16 +248,8 @@ const loadPrefectureShapes = () => {
 };
 
 const fallbackSeries = () => {
-  const latest = ESTAT_PREFECTURE_SNAPSHOT.period;
-  const fallback = {
-    months: [latest],
-    migration: { [latest]: ESTAT_PREFECTURE_SNAPSHOT.migration.map(({ net }) => net) },
-    lodging: { [latest]: ESTAT_PREFECTURE_SNAPSHOT.lodging.map(({ guestNights }) => guestNights) },
-    housing: { [latest]: ESTAT_PREFECTURE_SNAPSHOT.housing.map(({ newStarts }) => newStarts) },
-    periodsBySeries: {},
-    ids: {},
-  };
-  EXHIBITS.filter(({ frequency }) => frequency === "年次").forEach(({ key }) => {
+  const fallback = { periodsBySeries: {}, unavailable: true };
+  EXHIBITS.forEach(({ key }) => {
     fallback.periodsBySeries[key] = ["—"];
     fallback[key] = { "—": Array(OBSERVATION_CITIES.length).fill(null) };
   });
@@ -267,13 +258,16 @@ const fallbackSeries = () => {
 
 const periodsFor = (exhibit = currentExhibit(), candidate = series) => (
   candidate?.periodsBySeries?.[exhibit.key]
-  || candidate?.months
   || []
 );
 
 const validateSeries = (candidate) => {
-  if (!Array.isArray(candidate?.months) || !candidate.months.length) return false;
-  return EXHIBITS.every((exhibit) => periodsFor(exhibit, candidate).every((period) => (
+  if (!candidate?.periodsBySeries) return false;
+  return EXHIBITS.every((exhibit) => Array.isArray(periodsFor(exhibit, candidate))
+    && periodsFor(exhibit, candidate).length > 0
+    && periodsFor(exhibit, candidate).every((period, index, periods) => (
+    /^\d{4}$/u.test(period) && (index === 0 || Number(period) === Number(periods[index - 1]) + 1)
+    &&
     Array.isArray(candidate[exhibit.key]?.[period])
     && candidate[exhibit.key][period].length === OBSERVATION_CITIES.length
     && candidate[exhibit.key][period].every((value) => value === null || Number.isFinite(value))
@@ -328,7 +322,7 @@ const project = (location, currentProjection) => {
 
 const currentExhibit = () => EXHIBITS[activeIndex] || EXHIBITS[0];
 const usesPrefectureRegions = (exhibit = currentExhibit()) => PREFECTURE_REGION_EXHIBITS.has(exhibit.key);
-const currentPeriod = () => periodsFor()[periodIndex] || ESTAT_PREFECTURE_SNAPSHOT.period;
+const currentPeriod = () => periodsFor()[periodIndex] || "—";
 const valuesFor = (index = periodIndex) => {
   const exhibit = currentExhibit();
   const period = periodsFor(exhibit)[index] || currentPeriod();
@@ -337,10 +331,25 @@ const valuesFor = (index = periodIndex) => {
 
 const selectedValue = () => valuesFor()[selectedIndex];
 const periodDurationFor = (exhibit = currentExhibit()) => (
-  LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key) ? LONG_TERM_TEMPERATURE_PERIOD_MS : PERIOD_MS
+  exhibit.longTerm ? LONG_TERM_PERIOD_MS : PERIOD_MS
 );
-const temperatureStationFor = (index = selectedIndex) => (
-  series?.temperatureHistorySource?.stations?.[index] || null
+const observationStationFor = (index = selectedIndex, exhibit = currentExhibit()) => {
+  if (!usesPrefectureRegions(exhibit)) return null;
+  const station = series?.weatherHistorySource?.stations?.[index] || series?.temperatureHistorySource?.stations?.[index];
+  if (!station) return null;
+  const view = exhibit.key === "sunshineHours" ? "a4" : ["precipitation", "rainyDays"].includes(exhibit.key) ? "a1" : "a2";
+  return { ...station, url: station.urls?.[view] || station.url };
+};
+const sourceMetadataFor = (exhibit = currentExhibit()) => series?.annualHistorySources?.[exhibit.key]
+  || (LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key) ? series?.temperatureHistorySource : series?.weatherHistorySource)
+  || {};
+const comparisonNoteFor = (exhibit = currentExhibit()) => {
+  const note = sourceMetadataFor(exhibit).comparisonNote || "";
+  // The sunshine instrument warning is specific to sunshine, not rainfall/humidity.
+  return exhibit.key === "sunshineHours" ? note : note.replace(/日照計は[^。]*。/u, "");
+};
+const qualityFlagFor = (year, index = selectedIndex, exhibit = currentExhibit()) => (
+  series?.weatherHistorySource?.qualityFlags?.find(flag => flag.series === exhibit.key && flag.year === year && flag.code === OBSERVATION_CITIES[index].code) || null
 );
 const selectedTemperatureTrendPerDecade = (exhibit = currentExhibit()) => {
   if (!LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key)) return null;
@@ -360,8 +369,8 @@ const valueRangeFor = (exhibit) => {
       .flatMap((period) => series?.[exhibit.key]?.[period] || [])
       .filter(Number.isFinite);
     scaleMaxima.set(exhibit.key, {
-      minimum: Math.min(...allValues),
-      maximum: Math.max(...allValues),
+      minimum: allValues.length ? Math.min(...allValues) : 0,
+      maximum: allValues.length ? Math.max(...allValues) : 1,
       absolute: Math.max(1, ...allValues.map((entry) => Math.abs(entry))),
     });
   }
@@ -880,7 +889,7 @@ const rgb = (hex) => {
 
 const HEATMAP_PALETTES = Object.freeze({
   migration: [[0, [225, 79, 94]], [0.48, [77, 48, 103]], [0.52, [25, 86, 112]], [1, [55, 239, 202]]],
-  lodging: [[0, [124, 111, 89]], [0.38, [180, 139, 103]], [0.72, [232, 182, 126]], [1, [255, 231, 170]]],
+  lodging: [[0, [76, 56, 153]], [0.25, [43, 119, 195]], [0.5, [39, 182, 184]], [0.75, [182, 217, 98]], [1, [255, 230, 136]]],
   housing: [[0, [36, 62, 116]], [0.42, [57, 164, 187]], [0.72, [118, 224, 183]], [1, [223, 244, 124]]],
   thermal: [[0, [42, 74, 178]], [0.3, [42, 175, 206]], [0.54, [101, 218, 173]], [0.74, [248, 213, 100]], [0.88, [246, 130, 78]], [1, [205, 54, 91]]],
   heat: [[0, [60, 69, 163]], [0.42, [223, 83, 123]], [0.72, [255, 142, 76]], [1, [255, 229, 113]]],
@@ -899,6 +908,9 @@ const heatmapRatio = (value, exhibit) => {
   if (!Number.isFinite(value)) return null;
   const range = valueRangeFor(exhibit);
   if (exhibit.key === "migration") return clamp01(0.5 + value / (range.absolute * 2));
+  // Lodging counts are strongly skewed. Use one all-year log colour scale,
+  // shared with the legend marker; never rescale each year's ranks separately.
+  if (exhibit.key === "lodging") return metricLegendProgress(value, range.minimum, range.maximum, "log") ?? 0;
   if (exhibit.scaleMode === "cold") {
     return clamp01((range.maximum - value) / Math.max(0.001, range.maximum - range.minimum));
   }
@@ -987,6 +999,10 @@ const drawPrefectureHeatmap = (currentProjection, values, exhibit, timestamp) =>
   canvas.dataset.estatHeatmapValueCount = String(valueCount);
   canvas.dataset.estatHeatmapMissingCount = String(missingCount);
   canvas.dataset.estatHeatmapSelectedCode = String(selectedIndex + 1).padStart(2, "0");
+  canvas.dataset.estatHeatmapScale = exhibit.key === "lodging" ? "log" : "linear";
+  const selectedRatio = heatmapRatio(values[selectedIndex], exhibit);
+  canvas.dataset.estatHeatmapSelectedRatio = selectedRatio === null ? "" : String(selectedRatio);
+  canvas.dataset.estatHeatmapSelectedColor = selectedRatio === null ? "missing" : interpolatePalette(palette, selectedRatio).join(",");
 };
 
 const drawNature = (x, y, strength, selected, time, exhibit, index) => {
@@ -1122,7 +1138,7 @@ const showPrefectureRegionTooltip = (index, event) => {
     [x, y] = currentProjection ? project(city, currentProjection) : [mapRect.width / 2, mapRect.height / 2];
   }
   prefectureRegionTooltip.querySelector("small").textContent = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
-  prefectureRegionTooltip.querySelector("strong").textContent = city.prefecture;
+  prefectureRegionTooltip.querySelector("strong").textContent = formatPrefecturePlace(city.prefecture, observationStationFor(index)?.station);
   prefectureRegionTooltip.querySelector("b").textContent = `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim();
   prefectureRegionTooltip.style.left = `${Math.max(84, Math.min(mapRect.width - 84, x))}px`;
   prefectureRegionTooltip.style.top = `${Math.max(78, Math.min(mapRect.height - 136, y))}px`;
@@ -1283,7 +1299,7 @@ const renderReadout = () => {
   const longTermTemperature = LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key);
   const baselineYear = periods[0];
   const baselineValue = valuesFor(0)[selectedIndex];
-  const comparisonValue = longTermTemperature ? baselineValue : previousValue;
+  const comparisonValue = exhibit.longTerm ? baselineValue : previousValue;
   const delta = periodIndex > 0 && Number.isFinite(value) && Number.isFinite(comparisonValue)
     ? value - comparisonValue
     : null;
@@ -1291,7 +1307,7 @@ const renderReadout = () => {
   const ordered = values.filter(Number.isFinite).sort((a, b) => b - a);
   const rank = Number.isFinite(value) ? ordered.indexOf(value) + 1 : null;
   const city = OBSERVATION_CITIES[selectedIndex];
-  const temperatureStation = temperatureStationFor(selectedIndex);
+  const station = observationStationFor(selectedIndex);
   const period = currentPeriod();
   layer.style.setProperty("--estat-accent", exhibit.accent);
   layer.style.setProperty("--estat-secondary", exhibit.secondary);
@@ -1303,10 +1319,7 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-number]").textContent = exhibit.number;
   readout.querySelector("[data-estat-title]").textContent = exhibit.shortTitle;
   readout.querySelector("[data-map-bank-toggle]").setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}。展示一覧を開く`);
-  const placeName = temperatureStation?.station || city.city;
-  // Tokyo is the source's location name, not a municipality called Tokyo City.
-  const municipality = placeName === "東京" || placeName.endsWith("市") ? placeName : `${placeName}市`;
-  readout.querySelector("[data-estat-place]").textContent = `${city.prefecture}（${municipality}）`;
+  readout.querySelector("[data-estat-place]").textContent = formatPrefecturePlace(city.prefecture, station?.station);
   readout.querySelector("[data-estat-value-label]").textContent = exhibit.valueLabel;
   readout.querySelector("[data-estat-unit]").textContent = exhibit.unit;
   animatePrimaryValue(value, exhibit);
@@ -1314,21 +1327,29 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-rank]").textContent = rank ? `${rank} / ${ordered.length}` : "欠測";
   readout.querySelector("[data-estat-delta]").textContent = delta === null ? (periodIndex === 0 ? "起点" : "比較不可") : `${formatNumber(delta, true, exhibit.decimals || 0)} ${exhibit.unit}`;
   readout.querySelector("[data-estat-frequency]").textContent = `${exhibit.provider || "e-Stat"} · ${exhibit.frequency.toUpperCase()}`;
-  readout.querySelector(".gaia-estat-comparison span:first-child").childNodes[0].nodeValue = longTermTemperature ? "47地点順位" : "都道府県順位";
-  readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = longTermTemperature
+  readout.querySelector(".gaia-estat-comparison span:first-child").childNodes[0].nodeValue = usesPrefectureRegions(exhibit) ? "観測地点順位" : "都道府県順位";
+  readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = exhibit.longTerm
     ? `${baselineYear}年差`
     : exhibit.frequency === "年次" ? "前年差" : "前月差";
   readout.querySelector("[data-estat-caption]").textContent = `${exhibit.caption} 海の光と流れは抽象演出で、実測海流や人の移動経路ではありません。`;
   readout.querySelector("[data-estat-guide]").textContent = longTermTemperature && Number.isFinite(trendPerDecade)
-    ? `${exhibit.guide} ${temperatureStation?.station || city.city}の線形傾向は10年あたり${formatNumber(trendPerDecade, true, 2)}℃。`
+    ? `${exhibit.guide} ${station?.station || city.city}の線形傾向は10年あたり${formatNumber(trendPerDecade, true, 2)}℃。`
     : exhibit.guide;
+  const quality = qualityFlagFor(period);
+  const qualityNote = series.unavailable ? "年次データを読み込めませんでした。月次値への置き換えは行いません。"
+    : !Number.isFinite(value) ? quality?.flag === "insufficient" ? "この年は気象庁の資料不足値のため欠測扱いです。0や推定値には置き換えていません。" : "この年の値は未収録です。0や推定値には置き換えていません。"
+    : quality?.flag === "quasi-normal" ? "この年は気象庁の準正常値です。品質情報を保持して表示しています。" : "";
+  readout.querySelector("[data-estat-quality]").textContent = qualityNote;
+  readout.querySelector("[data-estat-quality]").hidden = !qualityNote;
+  readout.dataset.estatValueQuality = !Number.isFinite(value) ? "missing" : quality?.flag || "normal";
+  readout.querySelector("[data-estat-analysis]").disabled = !periods.some((year, index) => Number.isFinite(valuesFor(index)[selectedIndex]));
   readout.dataset.estatCoverageStart = periods[0] || "";
   readout.dataset.estatCoverageEnd = periods.at(-1) || "";
   readout.dataset.estatPeriodCount = String(periods.length);
   readout.dataset.estatTrendPerDecade = Number.isFinite(trendPerDecade) ? trendPerDecade.toFixed(4) : "";
-  readout.dataset.estatObservationStation = temperatureStation?.station || city.city;
+  readout.dataset.estatObservationStation = station?.station || "";
   const sourceAction = readout.querySelector("[data-estat-source-action]");
-  sourceAction.href = temperatureStation?.url || exhibit.source;
+  sourceAction.href = station?.url || sourceMetadataFor(exhibit).sourceUrl || exhibit.source;
   sourceAction.title = `${exhibit.sourceName}を${exhibit.provider || "e-Stat"}で確認`;
   sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データを${exhibit.provider || "e-Stat"}で確認する（新しいタブ）`);
   const range = valueRangeFor(exhibit);
@@ -1336,27 +1357,40 @@ const renderReadout = () => {
   heatLegend.style.setProperty("--estat-heat-gradient", gradient);
   updateMetricLegend(heatLegend, {
     title: exhibit.valueLabel,
-    scope: longTermTemperature ? temperatureStation?.station || city.city : city.prefecture,
+    scope: formatPrefecturePlace(city.prefecture, station?.station),
     period: period.replace("-", "/"),
     current: Number.isFinite(value) ? `${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}` : "欠測",
     value, minimum: range.minimum, maximum: range.maximum,
     minimumLabel: `${formatNumber(range.minimum, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}`,
     maximumLabel: `${formatNumber(range.maximum, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}`,
     gradient,
-    description: `${periods[0]}〜${periods.at(-1)}の47${longTermTemperature ? "観測地点" : "都道府県"}に共通の色の範囲。針は選択中の値。`,
+    scale: exhibit.key === "lodging" ? "log" : "linear",
+    description: `${periods[0]}〜${periods.at(-1)}の47${usesPrefectureRegions(exhibit) ? "観測地点" : "都道府県"}に共通の色の範囲。針は選択中の値。`,
   });
+  const scopeNote = exhibit.key === "migration" ? "日本人移動者のみ（外国人は含まない）"
+    : exhibit.key === "lodging" ? "従業者10人以上の施設（小規模施設は含まない）"
+    : usesPrefectureRegions(exhibit) ? "代表観測地点の値（県全域の平均ではない）" : "暦年の着工戸数（完成戸数ではない）";
+  heatLegend.querySelector("[data-estat-history-note]").textContent = [
+    series.unavailable ? "" : `${periods[0]}〜${periods.at(-1)}年 · ${scopeNote}`,
+    exhibit.key === "lodging" ? "面の色は紫→青→青緑→黄の対数目盛。人数の値は変えていません。" : "",
+    exhibit.key === "sunshineHours" ? "1986〜1990年に日照計変更。未補正の長期比較です。" : "",
+    qualityNote,
+  ].filter(Boolean).join(" ");
+  readout.querySelector("[data-estat-mobile-history-note]").textContent = heatLegend.querySelector("[data-estat-history-note]").textContent;
   const slider = readout.querySelector("[data-estat-month]");
   slider.max = String(periods.length - 1);
   slider.value = String(periodIndex);
   slider.setAttribute("aria-valuetext", period);
   slider.setAttribute("aria-label", exhibit.frequency === "年次" ? "表示年を選ぶ" : "表示月を選ぶ");
   const timelineTicks = readout.querySelector("[data-estat-months]");
-  timelineTicks.classList.toggle("is-long-term", longTermTemperature);
+  timelineTicks.classList.toggle("is-long-term", Boolean(exhibit.longTerm));
+  timelineTicks.style.setProperty("--estat-period-count", String(periods.length));
+  const labelGap = Math.ceil(28 * periods.length / Math.max(1, timelineTicks.clientWidth));
   timelineTicks.innerHTML = periods.map((entry, index) => {
-    const showLongTermLabel = !longTermTemperature
+    const showLongTermLabel = !exhibit.longTerm
       || index === 0
       || index === periods.length - 1
-      || Number(entry) % 10 === 0;
+      || (Number(entry) % 10 === 0 && index >= labelGap && periods.length - 1 - index >= labelGap);
     const label = exhibit.frequency === "年次" ? (showLongTermLabel ? entry : "") : entry.slice(5);
     return `<i class="${index === periodIndex ? "is-current" : ""}"><span>${label}</span></i>`;
   }).join("");
@@ -1379,14 +1413,17 @@ const statisticsDataset = () => {
   const exhibit = currentExhibit();
   const period = currentPeriod();
   const values = valuesFor();
-  const temperatureStation = temperatureStationFor(selectedIndex);
-  if (LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key)) {
+  const station = observationStationFor(selectedIndex);
+  if (exhibit.longTerm) {
     const periods = periodsFor(exhibit);
     const city = OBSERVATION_CITIES[selectedIndex];
+    const missingPeriods = periods.filter((year, index) => !Number.isFinite(valuesFor(index)[selectedIndex]));
+    const validPeriods = periods.filter(year => !missingPeriods.includes(year));
+    const source = sourceMetadataFor(exhibit);
     return {
       id: `estat-prefecture-${exhibit.key}`,
       modeId: "estat-prefecture",
-      title: `${exhibit.number} ${exhibit.shortTitle} — ${city.prefecture}・${temperatureStation?.station || city.city}（${periods[0]}〜${periods.at(-1)}）`,
+      title: `${exhibit.number} ${exhibit.shortTitle} — ${formatPrefecturePlace(city.prefecture, station?.station)}（${periods[0]}〜${periods.at(-1)}）`,
       rows: periods.map((year, index) => {
         const value = valuesFor(index)[selectedIndex];
         return {
@@ -1396,19 +1433,29 @@ const statisticsDataset = () => {
           y: Number.isFinite(value) ? value : Number.NaN,
           value: Number.isFinite(value) ? value : Number.NaN,
           prefecture: city.prefecture,
-          city: temperatureStation?.station || city.city,
+          city: station?.station || "",
+          year: Number(year),
+          qualityFlag: qualityFlagFor(year)?.flag || "normal",
           period: year,
           provenance: "SOURCE",
         };
       }).filter((row) => Number.isFinite(row.value)),
       unit: exhibit.unit,
       xLabel: "年",
+      xKind: "year",
+      valueLabel: exhibit.valueLabel,
       yLabel: exhibit.valueLabel,
-      defaultMethod: "regression",
+      defaultMethod: "discovery",
       provenance: ["SOURCE"],
-      periodStart: periods[0],
-      periodEnd: periods.at(-1),
-      sourceUrl: temperatureStation?.url || exhibit.source,
+      periodStart: validPeriods[0] || "",
+      periodEnd: validPeriods.at(-1) || "",
+      coverageStart: periods[0],
+      coverageEnd: periods.at(-1),
+      missingPeriods,
+      missingCount: missingPeriods.length,
+      comparisonNote: comparisonNoteFor(exhibit),
+      population: source.population || "",
+      sourceUrl: station?.url || source.sourceUrl || exhibit.source,
       sourceName: exhibit.sourceName,
     };
   }
@@ -1427,6 +1474,10 @@ const statisticsDataset = () => {
         prefecture: city.prefecture,
         city: city.city,
         period,
+        ...(["precipitation", "rainyDays"].includes(exhibit.key) ? {
+          precipitation: series.precipitation?.[period]?.[index],
+          rainyDays: series.rainyDays?.[period]?.[index],
+        } : {}),
         provenance: "SOURCE",
       };
     }).filter((row) => Number.isFinite(row.value)),
@@ -1533,7 +1584,7 @@ const select = async (index) => {
   if (activeIndex < 0) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "06",
-      title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
+      title: document.querySelector("#japan-mode-title")?.textContent || "積み重なるCO₂",
     };
   }
   activeIndex = requested;
@@ -1561,14 +1612,7 @@ const select = async (index) => {
   nextPoiAt = performance.now() + POI_MS;
   atmosphereAnchorPreviousIndex = selectedIndex;
   atmosphereAnchorChangedAt = performance.now() - ESTAT_WEBGL_ANCHOR_TRANSITION_MS;
-  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
-    lon: 137.4,
-    lat: 36.2,
-    zoom: innerWidth <= 720 ? MOBILE_START_ZOOM : DESKTOP_START_ZOOM,
-    targetX: 0.51,
-    targetY: innerWidth <= 720 ? 0.42 : 0.44,
-    label: "estat-japan-47-prefectures",
-  });
+  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.(japanPrefectureView(innerWidth));
   cancelAnimationFrame(frame);
   frame = requestAnimationFrame(draw);
   dispatchEvent(new CustomEvent("gaia:estat-exhibit-change", { detail: { index: activeIndex, id: currentExhibit().id } }));
@@ -1687,6 +1731,10 @@ const mount = () => {
   heatLegend.querySelector("[data-metric-title]").setAttribute("data-estat-heat-title", "");
   heatLegend.querySelector("[data-metric-minimum]").setAttribute("data-estat-heat-min", "");
   heatLegend.querySelector("[data-metric-maximum]").setAttribute("data-estat-heat-max", "");
+  const historyNote = document.createElement("small");
+  historyNote.className = "gaia-estat-history-note";
+  historyNote.setAttribute("data-estat-history-note", "");
+  heatLegend.append(historyNote);
   layer.append(heatLegend);
 
   readout = document.createElement("section");
@@ -1695,7 +1743,7 @@ const mount = () => {
   readout.setAttribute("aria-live", "polite");
   readout.innerHTML = `
     <div class="gaia-estat-chapter">
-      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="21 人の潮目。展示一覧を開く"><b data-estat-number>21</b><strong data-estat-title>人の潮目</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
+      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="21 人が動く、街が変わる。展示一覧を開く"><b data-estat-number>21</b><strong data-estat-title>人が動く、街が変わる</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
     </div>
     <div class="gaia-estat-place"><p>都道府県</p><strong data-estat-place>北海道（札幌市）</strong></div>
     <div class="gaia-estat-primary"><p data-estat-value-label>転入超過</p><strong data-estat-value>—</strong><span data-estat-unit>人</span></div>
@@ -1705,7 +1753,8 @@ const mount = () => {
       <div data-estat-months aria-hidden="true"></div>
     </div>
     <div class="gaia-estat-comparison"><span>都道府県順位<strong data-estat-rank>—</strong></span><span data-estat-delta-label>前月差<strong data-estat-delta>—</strong></span></div>
-    <div class="gaia-estat-copy"><p data-estat-caption></p><small data-estat-guide></small></div>
+    <small data-estat-mobile-history-note></small>
+    <div class="gaia-estat-copy"><p data-estat-caption></p><small data-estat-guide></small><small data-estat-quality hidden></small></div>
     <div class="gaia-estat-actions" aria-label="元データと統計分析">
       <a data-estat-source-action href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer"></a>
       <button type="button" data-estat-analysis></button>

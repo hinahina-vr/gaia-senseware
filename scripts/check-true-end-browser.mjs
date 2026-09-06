@@ -839,6 +839,7 @@ try {
       const finaleTitleRect = finaleTitle?.getBoundingClientRect();
       return {
         label: document.querySelector(".true-end-finale > span")?.textContent?.trim() || "",
+        labelFontFamily: getComputedStyle(document.querySelector(".true-end-finale > span")).fontFamily,
         title: finaleTitle?.textContent?.trim() || "",
         titleRect: finaleTitleRect ? finaleTitleRect.toJSON() : null,
         titleWhiteSpace: finaleTitle ? getComputedStyle(finaleTitle).whiteSpace : "",
@@ -858,6 +859,8 @@ try {
       };
     });
     assert.equal(finale.label, "星々の放課後");
+    assert.match(finale.labelFontFamily, /Mincho|明朝|Noto Serif/u, `${viewport.name}: finale Japanese label must use Mincho`);
+    assert.doesNotMatch(finale.labelFontFamily, /monospace|sans-serif/u);
     assert.equal(finale.title, "APEIRONCENE");
     assert(finale.titleRect && finale.titleRect.left >= -0.5, `${viewport.name}: finale title is clipped on the left (${JSON.stringify(finale.titleRect)})`);
     assert(finale.titleRect && finale.titleRect.right <= viewport.width + 0.5, `${viewport.name}: finale title is clipped on the right (${JSON.stringify(finale.titleRect)})`);

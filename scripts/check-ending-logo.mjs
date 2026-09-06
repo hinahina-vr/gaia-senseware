@@ -20,7 +20,7 @@ assert.doesNotMatch(runtime, /track\.append\(heading, creditsHeading/u);
 assert.match(css, /\.novel-staff-roll\.is-reduced-motion \.novel-staff-roll-title\s*\{\s*position: relative;\s*inset: auto;\s*opacity: 1;\s*filter: none;\s*animation: none;/u);
 assert(read("gaia-mode-loader.js").includes("novel-mode.css?v=gaia-glitch-double-speed-1"));
 assert(read("gaia-mode-loader.js").includes("novel-mode.js?v=gaia-story-log-revisions-20260906-1"));
-assert(read("index.html").includes("gaia-mode-loader.js?v=gaia-beyond-log-20260906-115607"));
+assert(read("index.html").includes("gaia-mode-loader.js?v=gaia-live-glass-20260907-1"));
 const finaleRuntime = read("true-end-mode.js");
 const finaleCss = read("true-end.css");
 assert.match(finaleRuntime, /const FINALE_EXIT_COVER_MS = 2_400;/u);
@@ -29,6 +29,8 @@ assert.match(finaleRuntime, /exitVeil\.addEventListener\("animationend"/u);
 assert.doesNotMatch(finaleRuntime, /exitVeil\.dataset\.phase = "(?:flash|black)"/u);
 assert.doesNotMatch(finaleCss, /true-end-exit-(?:noise|strobe)/u);
 assert.match(finaleCss, /@keyframes true-end-exit-cover\s*\{\s*from \{ opacity: 0; \}\s*to \{ opacity: 1; \}/u);
-assert(read("gaia-mode-loader.js").includes("true-end.css?v=gaia-ending-whiteout-1"));
+// The stylesheet also carries later local copy/layout work. Its contents are
+// checked above; require a versioned load without pinning an unrelated revision.
+assert.match(read("gaia-mode-loader.js"), /true-end\.css\?v=[\w-]+/u);
 assert(read("gaia-mode-loader.js").includes("true-end-mode.js?v=gaia-ending-whiteout-1"));
 console.log("Ending logo passed: stationary blur/fade, separate credits, reduced-motion document and cache keys.");

@@ -1,9 +1,12 @@
 // DOM counterpart of the map's CO2 quantitative legend. Values stay numeric;
 // formatting, source scope and units belong to the exhibit that owns the data.
 const instances = new WeakMap();
-export const metricLegendProgress = (value, minimum, maximum) =>
-  Number.isFinite(value) && Number.isFinite(minimum) && Number.isFinite(maximum) && maximum > minimum
-    ? Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum))) : null;
+export const metricLegendProgress = (value, minimum, maximum, scale = "linear") => {
+  if (![value, minimum, maximum].every(Number.isFinite) || maximum <= minimum) return null;
+  if (scale === "log" && (minimum < 0 || value < 0)) return null;
+  const transform = scale === "log" ? Math.log1p : value => value;
+  return Math.max(0, Math.min(1, (transform(value) - transform(minimum)) / (transform(maximum) - transform(minimum))));
+};
 
 export function createMetricLegend({ className = "", label = "観測値と色の目盛り" } = {}) {
   const element = document.createElement("section");
@@ -12,10 +15,10 @@ export function createMetricLegend({ className = "", label = "観測値と色の
   element.innerHTML = `
     <header class="gaia-metric-legend-heading"><span data-metric-scope></span></header>
     <div class="gaia-metric-legend-current"><span data-metric-title></span><strong data-metric-current>—</strong></div>
-    <div class="gaia-metric-legend-context"><span data-metric-period></span></div>
+    <div class="gaia-metric-legend-context"><span data-metric-period></span><span data-metric-scale-note hidden></span></div>
     <div class="gaia-metric-legend-track" aria-hidden="true"><i data-metric-marker hidden></i></div>
     <div class="gaia-metric-legend-range"><span data-metric-minimum></span><span data-metric-maximum></span></div>`;
-  const fields = Object.fromEntries(["title", "scope", "period", "current", "marker", "minimum", "maximum"].map(name => [name, element.querySelector(`[data-metric-${name}]`)]));
+  const fields = Object.fromEntries(["title", "scope", "period", "current", "marker", "minimum", "maximum", "scale-note"].map(name => [name, element.querySelector(`[data-metric-${name}]`)]));
   const row = element.querySelector(".gaia-metric-legend-current");
   const measure = document.createElement("canvas").getContext("2d");
   const fit = () => {
@@ -35,14 +38,17 @@ export function createMetricLegend({ className = "", label = "観測値と色の
 }
 
 export function updateMetricLegend(element, { title, scope = "", period = "", current = "—", value = null,
-  minimum = null, maximum = null, minimumLabel = "—", maximumLabel = "—", gradient = "", description = "" }) {
+  minimum = null, maximum = null, minimumLabel = "—", maximumLabel = "—", gradient = "", description = "", scale = "linear" }) {
   const instance = instances.get(element);
   if (!instance) return;
   const { fields, fit } = instance;
   for (const [name, content] of Object.entries({ title, scope, period, current, minimum: minimumLabel, maximum: maximumLabel })) {
     fields[name].textContent = String(content ?? "");
   }
-  const progress = metricLegendProgress(value, minimum, maximum);
+  const progress = metricLegendProgress(value, minimum, maximum, scale);
+  fields["scale-note"].textContent = scale === "log" ? "色：対数目盛" : "";
+  fields["scale-note"].hidden = scale !== "log";
+  element.dataset.metricScale = scale;
   fields.marker.hidden = progress === null;
   fields.marker.style.left = `${(progress ?? 0) * 100}%`;
   if (gradient) element.style.setProperty("--metric-gradient", gradient);
@@ -51,7 +57,7 @@ export function updateMetricLegend(element, { title, scope = "", period = "", cu
   element.dataset.metricMaximum = Number.isFinite(maximum) ? String(maximum) : "";
   element.dataset.metricProgress = progress === null ? "" : String(progress);
   element.title = description;
-  element.setAttribute("aria-label", [title, scope, period, current, `${minimumLabel}〜${maximumLabel}`, description].filter(Boolean).join("、"));
+  element.setAttribute("aria-label", [title, scope, period, current, `${minimumLabel}〜${maximumLabel}`, fields["scale-note"].textContent, description].filter(Boolean).join("、"));
   fit();
   requestAnimationFrame(() => globalThis.GaiaMapLegendDrag?.syncObservationPanels?.());
 }

@@ -513,7 +513,7 @@
 }
 
 .gaia-estat-timeline > div.is-long-term {
-  grid-template-columns: repeat(71, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--estat-period-count, 71), minmax(0, 1fr));
   gap: 1px;
 }
 
@@ -552,6 +552,8 @@
 .gaia-estat-copy { gap: 5px; }
 .gaia-estat-copy p { margin: 0; color: rgba(235, 255, 250, 0.82); font: 600 12px/1.55 var(--font-ja); }
 .gaia-estat-copy small { color: rgba(211, 238, 235, 0.54); font: 500 9px/1.5 var(--font-ja); }
+.gaia-estat-history-note { display: block; margin-top: 9px; color: rgba(222, 240, 233, 0.8); font: 400 11px/1.55 var(--font-ja); overflow-wrap: anywhere; }
+[data-estat-mobile-history-note] { display: none; }
 
 .gaia-estat-actions {
   display: grid;

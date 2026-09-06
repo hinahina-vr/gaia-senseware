@@ -107,6 +107,7 @@
   #japan-layer.is-mobile-map-shell .gaia-firms-timeline header { display: none; }
   #japan-layer.is-mobile-map-shell [data-firms-play] { min-height: 44px; min-width: 60px; font-size: 12px; }
   #japan-layer.is-mobile-map-shell [data-estat-months] { display: none; }
+  #japan-layer.is-mobile-map-shell [data-estat-mobile-history-note] { display: block; grid-column: 1 / -1; color: #b7cdc6; font: 400 11px/1.5 var(--font-ja); overflow-wrap: anywhere; }
   #japan-layer.is-mobile-map-shell .gaia-live-prefecture-picker { grid-column: 1 / -1; order: 0; }
   #japan-layer.is-mobile-map-shell .gaia-live-prefecture-picker > p { display: none; }
   #japan-layer.is-mobile-map-shell .gaia-live-exhibit-primary { grid-column: 1 / -1; order: 1; display: block !important; padding: 0; min-height: 0; }
@@ -136,6 +137,8 @@
   #japan-layer.is-mobile-map-shell .gaia-planet-copy small { font-size: 11px; line-height: 1.5; }
   #map-mobile-sheet .map-mobile-sheet-body > section { display: grid; gap: 6px; margin: 8px 0 20px; }
   #map-mobile-sheet [data-mobile-exhibit] { text-align: left; padding: 12px 14px; }
+  #map-mobile-sheet [data-mobile-exhibit] > b { display: block; font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; }
+  #map-mobile-sheet [data-mobile-exhibit] > small { display: block; margin-top: 5px; font-size: 13px; line-height: 1.8; color: #b8cfca; white-space: normal; overflow-wrap: anywhere; }
   #map-mobile-sheet [aria-current="true"] { color: #ffe1ac; border-color: #ffe1ac80; background: #3c352b; }
   #map-mobile-sheet [aria-current="true"]::after { content: " · 表示中"; font-size: 12px; }
   #map-mobile-sheet .map-mobile-tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 10px 0; }
@@ -146,6 +149,7 @@
   }
   #map-mobile-sheet .map-mobile-reading-copy :is(p, small, footer, em, time, dt) { font-size: 13px; line-height: 1.8; white-space: normal; overflow-wrap: anywhere; }
   #map-mobile-sheet .map-mobile-reading-copy :is(section, footer) { display: block !important; }
+  #japan-layer.is-mobile-map-shell #map-mobile-sheet .gaia-planet-copy > p { display: block !important; }
   #map-mobile-sheet .map-mobile-reading-copy section + section { margin-top: 16px; }
   #map-mobile-sheet .gaia-live-exhibit-path { display: none; }
   #japan-layer.is-mobile-map-shell #map-mobile-sheet .ecologies-exhibit {

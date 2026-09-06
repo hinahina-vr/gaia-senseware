@@ -22,10 +22,11 @@ const fixture = {
 };
 let page;
 try {
-  for (const [width, height] of [[3840, 2088], [2176, 1072], [1440, 900], [768, 844], [390, 844], [320, 844], [812, 390]]) {
+  const requestedWidths = process.argv[4]?.split(",").map(Number);
+  for (const [width, height] of [[3840, 2088], [2176, 1072], [1440, 900], [768, 844], [390, 844], [320, 844], [812, 390]].filter(([width]) => !requestedWidths || requestedWidths.includes(width))) {
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901, reducedMotion: width === 320 ? "reduce" : "no-preference" });
     await context.addInitScript(({ endpoint, testKey }) => {
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
       localStorage.setItem("gaia-senseware-ai-config-v1", JSON.stringify({ provider: "custom", endpoint, model: "qa-model" }));
       sessionStorage.setItem("gaia-senseware-ai-session-key-v1", testKey);
@@ -51,16 +52,22 @@ try {
       }
     });
     await page.goto(`${base}/?preview=statistics-ai#world`, { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && globalThis.GaiaStatisticsLab);
+    await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && globalThis.GaiaStatisticsLab && globalThis.GaiaMapDemo);
+    await page.evaluate(() => { GaiaMapDemo.stop(); GaiaModeEntryGuide.close("map", { restoreFocus: false }); });
     const settle = () => page.waitForFunction(() => ["解析済み", "条件不足"].includes(document.querySelector("#gaia-statistics-status").textContent));
     await page.evaluate(data => globalThis.GaiaStatisticsLab.open({ dataset: data }), fixture);
+    await settle();
+    await page.locator("#gaia-statistics-menu-toggle").click();
+    await page.locator('[data-analysis-group="descriptive"]').click();
+    await page.locator('[data-method="summary"]').click();
     await settle();
     const trigger = page.locator("#gaia-statistics-ai-open");
     assert.equal(await trigger.textContent(), "AIで分析する");
     const triggerBox = await trigger.boundingBox();
-    assert(triggerBox.height >= 44 && triggerBox.x >= 0 && triggerBox.x + triggerBox.width <= width);
+    assert(triggerBox.height >= 44 && triggerBox.x >= 0 && triggerBox.x + triggerBox.width <= width, `AI entry outside viewport: ${JSON.stringify(triggerBox)}`);
     await page.screenshot({ path: path.join(output, `${width}-button.jpg`), type: "jpeg", quality: 90 });
     await page.locator("#gaia-statistics-menu-toggle").click();
+    await page.locator(".gaia-statistics-data-options > summary").click();
     await page.locator("#gaia-statistics-record-filter").fill("Alpha");
     await page.waitForFunction(() => globalThis.GaiaStatisticsLab.getState().recordQuery === "Alpha");
     await settle();
@@ -149,6 +156,7 @@ try {
     await field("provider").selectOption("openrouter");
     await dialog.evaluate(node => { node.scrollTop = 0; });
     await page.screenshot({ path: path.join(output, `${width}-preset-provider.jpg`), type: "jpeg", quality: 90 });
+    await dialog.screenshot({ path: path.join(output, `${width}-dialog-crop.png`) });
     await field("provider").selectOption("custom");
     await privacy.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(output, `${width}-privacy.jpg`), type: "jpeg", quality: 90 });
@@ -240,6 +248,10 @@ try {
 } catch (error) {
   report.status = "failed"; report.failure = error.stack;
   if (page && !page.isClosed()) await page.screenshot({ path: path.join(output, "failure.jpg"), type: "jpeg" });
+  if (page && !page.isClosed()) report.failureGeometry = await page.evaluate(() => ["html", "body", "#gaia-statistics-lab", ".gaia-statistics-shell", ".gaia-statistics-controls", "#gaia-statistics-ai-open"].map(selector => {
+    const node = document.querySelector(selector); const style = getComputedStyle(node);
+    return { selector, rect: node.getBoundingClientRect().toJSON(), scrollLeft: node.scrollLeft, scrollTop: node.scrollTop, scrollWidth: node.scrollWidth, position: style.position, transform: style.transform };
+  }));
   throw error;
 } finally {
   fs.writeFileSync(path.join(output, "report.json"), JSON.stringify(report, null, 2));

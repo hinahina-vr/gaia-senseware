@@ -308,6 +308,13 @@
 .gaia-statistics-finding h5 { margin: 0 0 8px; color: #a3c8c1; font: 500 12px/1.5 var(--font-ui-ja); }
 .gaia-statistics-finding p { margin: 0; color: #b5c9cd; font: 400 14px/1.95 var(--font-ui-ja); }
 .gaia-statistics-findings > button { margin-block: 14px; }
+.gaia-statistics-finding[data-kind="question"] { padding: 20px 18px; margin-block: 12px; border-left: 3px solid #8adac2; background: rgba(89, 178, 152, .08); }
+.gaia-statistics-finding[data-kind="question"] p { color: #e1f3eb; font-size: 18px; line-height: 1.8; }
+.gaia-statistics-finding[data-kind="observation"] p { color: #c3d5db; }
+.gaia-statistics-finding .gaia-statistics-next-button { margin: 12px 12px 0 0; min-height: 44px; white-space: normal; text-align: left; }
+.gaia-statistics-discovery-alternatives { margin-top: 18px; border-top: 1px solid var(--stat-line); }
+.gaia-statistics-discovery-alternatives > summary { padding: 16px 0; color: #b7dcd0; font: 500 14px/1.8 var(--font-ja); cursor: pointer; }
+.gaia-statistics-discovery-alternatives > p { color: #b5c9cd; font: 400 14px/1.95 var(--font-ui-ja); }
 .gaia-statistics-lab .gaia-statistics-insight { padding: 20px 0; border: 0; border-bottom: 1px solid var(--stat-line); border-radius: 0; background: none; box-shadow: none; overflow: visible; }
 .gaia-statistics-lab .gaia-statistics-insight > p:first-child { font: 500 10px/1.5 var(--font-ui-ja); color: #a3c8c1; }
 .gaia-statistics-lab .gaia-statistics-insight h4 { margin: 10px 0; font: 500 17px/1.6 var(--font-ja); }
@@ -359,6 +366,111 @@
   width: 100%;
   max-height: none;
   box-shadow: none;
+}
+
+/* Visual method picker: choose a purpose, then open a concrete analysis. */
+.gaia-statistics-lab .gaia-statistics-controls {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 20px));
+  padding-inline: 24px;
+  overscroll-behavior: contain;
+  scroll-padding: 98px 0 20px;
+  grid-auto-rows: max-content;
+  scroll-snap-type: none;
+}
+.gaia-statistics-lab .gaia-statistics-controls-header { padding-block: 23px 19px; }
+.gaia-statistics-lab .gaia-statistics-controls-header strong { font-size: 25px; }
+.gaia-statistics-lab #gaia-statistics-menu-close { width: 44px; height: 44px; font: 300 26px/1 sans-serif; border-radius: 50%; }
+.gaia-statistics-lab .gaia-statistics-controls > section { gap: 12px; padding-block: 20px; min-height: auto; align-content: start; scroll-snap-align: none; }
+.gaia-statistics-lab .gaia-statistics-purpose-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.gaia-statistics-purpose-grid button,
+.gaia-statistics-methods { --stat-card-accent: #a4dbcb; --stat-card-bg: #102733; }
+.gaia-statistics-lab [data-tone="blue"] { --stat-card-accent: #aacff0; }
+.gaia-statistics-lab [data-tone="violet"] { --stat-card-accent: #c5b8e7; }
+.gaia-statistics-lab [data-tone="gold"] { --stat-card-accent: #e4c789; }
+.gaia-statistics-lab .gaia-statistics-purpose-grid button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 120px;
+  padding: 10px 6px;
+  border: 1px solid #a3b6c12b;
+  border-radius: 9px;
+  color: #d3e2e3;
+  background: var(--stat-card-bg);
+  box-shadow: none;
+  text-align: center;
+  cursor: pointer;
+}
+.gaia-statistics-lab .gaia-statistics-purpose-grid button:last-child { grid-column: span 2; }
+.gaia-statistics-purpose-grid button strong { font: 500 13px/1.5 var(--font-ui-ja); letter-spacing: 0; }
+.gaia-statistics-purpose-grid button small { color: #9aafb9; font-size: 11px; }
+.gaia-statistics-concept { display: block; width: 80px; height: 48px; color: var(--stat-card-accent); flex-shrink: 0; }
+.gaia-statistics-concept .stat-icon-axis { opacity: .35; }
+.gaia-statistics-concept .stat-icon-guide { opacity: .45; stroke-dasharray: 3 4; }
+.gaia-statistics-concept .stat-icon-secondary { color: #e9d0a0; opacity: .8; }
+.gaia-statistics-concept .stat-icon-fill { fill: currentColor; fill-opacity: .2; stroke: none; }
+.gaia-statistics-lab .gaia-statistics-purpose-grid button[aria-pressed="true"] {
+  border-color: var(--stat-card-accent);
+  background: #19323e;
+  box-shadow: inset 0 -3px var(--stat-card-accent);
+}
+.gaia-statistics-method-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
+.gaia-statistics-method-heading .gaia-statistics-control-label { margin: 0; }
+.gaia-statistics-method-heading > span { color: #91a8b2; font-size: 10px; }
+.gaia-statistics-lab .gaia-statistics-methods { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.gaia-statistics-lab .gaia-statistics-methods button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  gap: 10px 12px;
+  min-width: 0;
+  min-height: 158px;
+  padding: 16px 14px 12px;
+  border: 1px solid #a3b6c12b;
+  border-radius: 9px;
+  background: var(--stat-card-bg);
+  color: #e1edec;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+}
+.gaia-statistics-card-copy { display: grid; gap: 6px; min-width: 0; }
+.gaia-statistics-card-copy strong { font: 500 14px/1.55 var(--font-ui-ja); letter-spacing: 0; overflow-wrap: anywhere; }
+.gaia-statistics-card-description { color: #b4c6ce; font: 400 12px/1.6 var(--font-ui-ja); }
+.gaia-statistics-card-copy small { color: #8fa7b3; font: 400 10px/1.5 var(--font-ui-ja); overflow-wrap: anywhere; }
+.gaia-statistics-card-status { grid-column: 1 / -1; display: block; padding-top: 9px; border-top: 1px solid #abc1c512; color: #a6c5ca; font: 400 11px/1.5 var(--font-ui-ja); text-align: right; }
+.gaia-statistics-lab .gaia-statistics-methods button[aria-pressed="true"] { border-color: var(--stat-card-accent); background: #19323e; }
+.gaia-statistics-lab .gaia-statistics-methods button[aria-disabled="true"] { opacity: 1; }
+.gaia-statistics-methods button[aria-disabled="true"] .gaia-statistics-concept { opacity: .45; }
+.gaia-statistics-methods button[aria-disabled="true"] .gaia-statistics-card-status { color: #bfbdaf; }
+.gaia-statistics-lab .gaia-statistics-purpose-grid button:hover,
+.gaia-statistics-lab .gaia-statistics-methods button:not([aria-disabled="true"]):hover { border-color: var(--stat-card-accent); background: #1d3541; }
+.gaia-statistics-data-options { border-top: 1px solid var(--stat-line); }
+.gaia-statistics-data-options > summary { padding-block: 16px; min-height: 44px; box-sizing: border-box; color: #b2c6ce; font: 400 12px/1.5 var(--font-ui-ja); cursor: pointer; }
+.gaia-statistics-data-options > section { padding-block: 12px; }
+.gaia-statistics-data-options summary:focus-visible { outline: 2px solid var(--stat-cyan); outline-offset: -2px; }
+@media (max-width: 600px) {
+  .gaia-statistics-lab .gaia-statistics-controls { width: calc(100vw - 12px); padding-inline: 16px; }
+  .gaia-statistics-lab .gaia-statistics-controls-header strong { font-size: 22px; }
+  .gaia-statistics-lab .gaia-statistics-purpose-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .gaia-statistics-lab .gaia-statistics-purpose-grid button { grid-template-columns: 48px minmax(0, 1fr); justify-items: start; min-height: 80px; padding: 10px 8px; column-gap: 7px; text-align: left; }
+  .gaia-statistics-purpose-grid .gaia-statistics-concept { grid-row: 1 / 3; width: 48px; height: 38px; }
+  .gaia-statistics-purpose-grid button strong { align-self: end; font-size: 12px; }
+  .gaia-statistics-purpose-grid button small { align-self: start; font-size: 10px; }
+  .gaia-statistics-lab .gaia-statistics-purpose-grid button:last-child { grid-template-columns: 48px auto; justify-content: center; }
+  .gaia-statistics-lab .gaia-statistics-methods { grid-template-columns: minmax(0, 1fr); }
+  .gaia-statistics-lab .gaia-statistics-methods button { min-height: 140px; }
+  .gaia-statistics-lab .gaia-statistics-controls > section { padding-block: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gaia-statistics-lab .gaia-statistics-controls,
+  .gaia-statistics-lab .gaia-statistics-menu-scrim { transition: none; }
 }
 
 .gaia-statistics-ai-dialog {

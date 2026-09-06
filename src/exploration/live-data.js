@@ -2,6 +2,7 @@ import { createGaiaStore } from "./state.js";
 import { collectMeasurements } from "./transforms.js?v=gaia-live-loading-1";
 
 const FALLBACK_URL = "./data/live-observation-fallback-v1.json";
+const PREFECTURE_FALLBACK_URL = "./data/live-prefecture-fallback-v1.json";
 const RETRY_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
 const WIND_FIELD_REFRESH_MS = 5 * 60 * 1_000;
 const store = createGaiaStore({ events: [], measurements: {}, connected: false, source: "loading", requestState: "loading", lastEventId: "" });
@@ -14,6 +15,8 @@ let activeCity = "sapporo";
 let loadGeneration = 0;
 let windFieldRefreshTimer = 0;
 let windField = Object.freeze({ schemaVersion: 1, source: "unavailable", generatedAt: "", points: [] });
+let prefectureField = Object.freeze({ requestState: "loading" });
+let prefectureRequest = null;
 
 const permitsLiveEndpoint = () => location.protocol === "https:" || new URLSearchParams(location.search).get("live") === "1";
 const publish = (events, source, connected = store.getState().connected, requestState = "ready") => {
@@ -51,17 +54,41 @@ const publishWindField = (payload) => {
   return windField;
 };
 
-const loadWindField = async () => {
-  if (!permitsLiveEndpoint()) {
-    return publishWindField({ schemaVersion: 1, source: "unavailable", generatedAt: "", points: [] });
-  }
-  try {
-    return publishWindField(await readJson(new URL("/api/live/v1/wind-field", location.origin)));
-  } catch (error) {
-    console.warn("Live wind field unavailable; per-prefecture wind brushes are paused.", error);
-    return publishWindField({ schemaVersion: 1, source: "unavailable", generatedAt: new Date().toISOString(), points: [] });
-  }
+const publishPrefectureField = payload => {
+  prefectureField = Object.freeze(payload);
+  const weather = payload.weather;
+  publishWindField({ ...weather, points: (weather?.points || []).map(point => ({ ...point,
+    windSpeed: point.measurements?.weatherWindSpeed ?? null,
+    quality: point.measurements?.weatherWindSpeed == null ? "missing" : "estimated",
+  })) });
+  globalThis.dispatchEvent(new CustomEvent("gaia:live-prefecture-field", { detail: prefectureField }));
+  return prefectureField;
 };
+
+const loadPrefectureField = () => {
+  if (prefectureRequest) return prefectureRequest;
+  publishPrefectureField({ ...prefectureField, requestState: "loading" });
+  prefectureRequest = (async () => {
+    let payload;
+    try {
+      payload = await readJson(permitsLiveEndpoint() ? new URL("/api/live/v1/prefecture-field", location.origin) : PREFECTURE_FALLBACK_URL);
+      if (payload?.scope !== "japan-prefectures" || !Array.isArray(payload.weather?.points) || !Array.isArray(payload.air?.points)) throw new Error("National field malformed");
+    } catch {
+      payload = { ...prefectureField };
+      for (const provider of ["weather", "air"]) {
+        if (payload[provider]?.points?.length) payload[provider] = { ...payload[provider], source: payload[provider].source === "snapshot" ? "snapshot" : "stale-cache" };
+      }
+      if (!payload.weather?.points?.length && !payload.air?.points?.length) {
+        try { payload = await readJson(PREFECTURE_FALLBACK_URL); } catch { payload = {}; }
+      }
+    }
+    const available = [payload.weather, payload.air].some(field => field?.points?.some(point => Object.values(point.measurements || {}).some(Number.isFinite)));
+    return publishPrefectureField({ ...payload, requestState: available ? "ready" : "unavailable" });
+  })().finally(() => { prefectureRequest = null; });
+  return prefectureRequest;
+};
+
+const loadWindField = loadPrefectureField;
 
 const scheduleWindFieldRefresh = () => {
   clearInterval(windFieldRefreshTimer);
@@ -224,12 +251,14 @@ globalThis.GaiaLiveData = Object.freeze({
   mount,
   refresh: loadSnapshot,
   refreshWindField: loadWindField,
+  refreshPrefectureField: loadPrefectureField,
   reconnect: connectStream,
   close: closeStream,
   selectCity,
   getCity: () => activeCity,
   getState: store.getState,
   getWindField: () => windField,
+  getPrefectureField: () => prefectureField,
 });
 
 export { mount };

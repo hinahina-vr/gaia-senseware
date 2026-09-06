@@ -68,6 +68,7 @@
     content.append(clone);
   };
   const renderReading = () => {
+    addCopy(layer.querySelector("#japan-description")?.textContent);
     addCopy("数値はこのパネルを開いた時点の表示です。");
     const readout = activeReadout();
     if (readout) {
@@ -90,13 +91,16 @@
       copy(layer.querySelector(".map-reading-guide-body"));
       const legend = layer.querySelector("[data-signal-encoding-legend]");
       if (legend && !legend.hidden) { addCopy("凡例", "h3"); copy(legend); }
-      addCopy(layer.querySelector("#japan-description")?.textContent);
       const timeline = layer.querySelector("#co2-timeline-display");
       if (timeline && !timeline.hidden) addCopy(timeline.textContent.trim().replace(/\s+/gu, " "));
     }
   };
   const renderExhibits = () => {
     const current = globalThis.GaiaMapCategories?.buttons().find(button => button.getAttribute("aria-current") === "true");
+    const guide = document.createElement("p");
+    guide.className = "map-picker-profile-guide";
+    guide.textContent = globalThis.GaiaMapCategories.profileGuide;
+    content.append(guide);
     for (const category of globalThis.GaiaMapCategories?.definitions || []) {
       const section = document.createElement("section");
       const title = document.createElement("h3");
@@ -105,8 +109,39 @@
       for (const number of category.numbers) {
         const target = globalThis.GaiaMapCategories.buttons().find(button => Number(button.textContent) === number);
         if (!target) continue;
-        const name = target.getAttribute("aria-label")?.split(/[、。]/u)[0].replace(/の地図演出へ切り替える$/u, "") || String(number);
-        const button = makeButton(name, () => { close(); target.click(); });
+        // Read the catalog title directly: punctuation can be part of a title.
+        const exhibit = [
+          ...(globalThis.GaiaAppContent?.modes || []),
+          ...(globalThis.GaiaLiveExhibits?.definitions || []),
+          ...(globalThis.GaiaEstatExhibits?.definitions || []),
+          globalThis.GaiaFirmsExhibit?.definition,
+          ...(globalThis.GaiaPlanetSignals?.definitions || []),
+        ].find(item => item && Number(item.mapNumber || item.number) === number);
+        const publicNumber = String(number).padStart(2, "0");
+        const name = exhibit?.titleJa || exhibit?.shortTitle || target.getAttribute("aria-label") || publicNumber;
+        const button = makeButton("", () => { close(); target.click(); });
+        const title = document.createElement("b");
+        title.textContent = `${publicNumber} ${name}`;
+        button.append(title);
+        const profile = globalThis.GaiaMapCategories.getProfile(number);
+        if (profile) {
+          const labels = document.createElement("span");
+          labels.className = "map-exhibit-profile";
+          for (const text of [profile.scopeLabel, profile.timeLabel]) {
+            const label = document.createElement("span");
+            label.textContent = text;
+            labels.append(label);
+          }
+          button.append(labels);
+          button.dataset.mapScope = profile.scope;
+          button.dataset.mapTime = profile.time;
+        }
+        const subtitle = globalThis.GaiaAppContent?.MAP_TITLE_SUBTITLES[publicNumber];
+        if (subtitle) {
+          const why = document.createElement("small");
+          why.textContent = subtitle;
+          button.append(why);
+        }
         button.setAttribute("aria-current", String(target === current));
         button.dataset.mobileExhibit = String(number);
         section.append(button);
@@ -121,8 +156,17 @@
     const proxy = (label, target) => {
       if (!target) return;
       const button = makeButton(label, () => { close(); target.click(); });
-      button.disabled = target.disabled;
-      actions.append(button);
+      button.disabled = target.disabled || target.getAttribute("aria-disabled") === "true";
+      if (button.disabled && target.dataset.disabledReason) {
+        const item = document.createElement("div");
+        item.className = "map-mobile-tool-unavailable";
+        const reason = document.createElement("small");
+        reason.id = "map-mobile-analysis-unavailable-reason";
+        reason.textContent = target.dataset.disabledReason;
+        button.setAttribute("aria-describedby", reason.id);
+        item.append(button, reason);
+        actions.append(item);
+      } else actions.append(button);
     };
     proxy("データの出典", readout?.querySelector(".gaia-map-action--source") || layer.querySelector("#japan-data-button"));
     proxy("統計分析", readout?.querySelector(".gaia-map-action--analysis") || layer.querySelector("#gaia-statistics-button"));

@@ -16,6 +16,8 @@ export const buildPlanetStatistics = (definition, data) => {
     x: definition.renderer === "quake" ? point.time : index + 1,
     y: point[metric.key], value: point[metric.key],
     lat: point.lat, lon: point.lon,
+    ...Object.fromEntries(["windDirection", "pressure", "aerosol", "depth", "time"].filter(key => Number.isFinite(point[key])).map(key => [key, point[key]])),
+    ...(Number.isFinite(point.cloud) ? { cloudCover: point.cloud } : {}),
     provenance: "SOURCE",
   }));
   if (!rows.length) return null;
@@ -24,7 +26,8 @@ export const buildPlanetStatistics = (definition, data) => {
     title: `${definition.number} ${definition.shortTitle} — ${metric.label}（${definition.renderer === "quake" ? "" : "モデル値・"}${rows.length}地点）`,
     rows, unit: metric.unit,
     xLabel: definition.renderer === "quake" ? "発生時刻" : "地点番号（表示順）",
-    yLabel: metric.label, defaultMethod: "summary", provenance: ["SOURCE"],
+    yLabel: metric.label, defaultMethod: "discovery", provenance: ["SOURCE"],
+    insightContext: { measurementKind: definition.renderer === "quake" ? "OBSERVED" : "MODEL", axis: definition.renderer === "quake" ? "events" : "locations" },
     periodStart: data.observedAt, periodEnd: data.observedAt,
     sourceName: definition.sourceName, sourceUrl: definition.sourcePage,
   };

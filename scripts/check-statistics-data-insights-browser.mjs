@@ -40,7 +40,8 @@ try {
     if (width === 1440) {
       for (const methodId of METHOD_LOOKUP.keys()) {
         const datasetId = methodId === "paired" ? "jma-co2" : methodId === "discrete" ? "earthquakes"
-          : ["multiple", "anova", "logistic", "categorical", "fisher"].includes(methodId) ? "renewables" : "co2-trend";
+          : ["categorical", "fisher"].includes(methodId) ? "forest-urban"
+          : ["multiple", "anova", "logistic"].includes(methodId) ? "renewables" : "co2-trend";
         await open(datasetId); await select(methodId);
         const scan = await page.evaluate(async () => {
           const state = GaiaStatisticsLab.getState();
@@ -57,7 +58,7 @@ try {
         assert.doesNotMatch(JSON.stringify(scan.insight), /NaN|undefined|Infinity/);
         assert.doesNotMatch(scan.headline, /r=|R²|R-hat|回帰係数|p値/);
         if (methodId === "paired") {
-          assert.match(scan.headline, /綾里のCO₂.*0\.18ppm/);
+          assert.equal(scan.insight.primaryId, "shared-rise");
           assert.doesNotMatch(scan.headline, /綾里の綾里/);
           assert.match(scan.insight.scope, /対象 27行/);
         }
@@ -83,7 +84,7 @@ try {
         const input = document.querySelector("#gaia-statistics-record-filter"); input.value = "2020"; input.dispatchEvent(new Event("search"));
       });
       await settle();
-      let filtered = await page.locator("#gaia-statistics-takeaway-body").textContent();
+      let filtered = await page.locator('#gaia-statistics-findings [data-kind="observation"]').textContent();
       assert.match(filtered, /2020-/); assert.doesNotMatch(filtered, /2016-/);
       await page.evaluate(() => {
         const input = document.querySelector("#gaia-statistics-record-filter"); input.value = "no-such-record"; input.dispatchEvent(new Event("search"));
@@ -91,11 +92,12 @@ try {
       await settle(); assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /答えは出せません/);
       await open("earthquakes");
       await page.evaluate(() => { const input = document.querySelector("#gaia-statistics-derived"); input.checked = true; input.dispatchEvent(new Event("change")); });
-      await select("continuous"); assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /中央値.*日/);
+      await select("continuous"); assert.match(await page.locator("#gaia-statistics-findings").textContent(), /中央値.*日/);
       await open("waste"); await select("summary");
       const sourceHeadline = await page.locator("#gaia-statistics-takeaway-title").textContent();
       await page.evaluate(() => { const input = document.querySelector("#gaia-statistics-derived"); input.checked = true; input.dispatchEvent(new Event("change")); });
-      await settle(); assert.match(await page.locator("#gaia-statistics-findings").textContent(), /補完・派生値を含/);
+      await settle(); assert.match(await page.locator("#gaia-statistics-findings").textContent(), /補完値\d+行.*除外/);
+      assert.equal(await page.locator("#gaia-statistics-takeaway-title").textContent(), sourceHeadline);
       report.checks.push({ sourceHeadline, withImputed: await page.locator("#gaia-statistics-takeaway-title").textContent() });
       await page.evaluate(() => GaiaStatisticsLab.open({ dataset: {
         id: "external-null-test", title: "欠測を含む外部時系列", unit: "℃", xLabel: "年", yLabel: "平均気温", defaultMethod: "summary",
@@ -103,7 +105,7 @@ try {
       } }));
       await settle();
       assert.match(await page.locator("#gaia-statistics-findings").textContent(), /対象 3行/);
-      assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /5℃増え/);
+      assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /無理に特徴や原因を作らない/);
     }
     await open("co2-trend"); await select("regression");
     await page.locator('[data-stat-view="chart"]').click();
@@ -124,7 +126,7 @@ try {
       assert.equal(await page.locator(`[data-stat-view="${view}"]`).getAttribute("aria-selected"), "true");
       assert.equal(await page.locator(`#stat-panel-${view}`).evaluate(el => el.open), true);
       if (view === "findings") {
-        assert.match(await page.locator("#gaia-statistics-findings").textContent(), /約\d+年間.*ppm増え/);
+        assert.match(await page.locator("#gaia-statistics-findings").textContent(), /課題の候補.*まだ仮説/);
         if (width < 980) assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false, "No duplicate summary in mobile insight view");
         await page.screenshot({ path: path.join(output, `findings-${width}.png`) });
         await page.locator("#gaia-statistics-findings > button").click();

@@ -508,6 +508,7 @@ body.true-end-section-transition .gaia-audio-dock {
 
 .true-end-finale > span {
   color: var(--te-accent);
+  font-family: var(--font-ja);
   font-size: 11px;
   letter-spacing: 0.42em;
 }

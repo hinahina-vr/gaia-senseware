@@ -1991,7 +1991,7 @@ try {
       brazilRain: document.querySelector("#japan-overlay")?.dataset.forestRainBrazil || "",
     }));
     assert.equal(forestUi.guideTitle, "森林と、雨の多い場所はどこで重なる？");
-    assert.match(forestUi.guideSubject, /31代表地点.*相関係数/u);
+    assert.match(forestUi.guideSubject, /世界の国・地域.*参照地点.*国平均.*因果関係/u);
     assert.match(forestUi.guideReading, /大きな水色円.*ブラジルのアマゾン付近は5\.33 mm\/day/u);
     assert.match(forestUi.guideAction, /円のない場所.*雨がない.*ではなく/u);
     assert.match(forestUi.signalValue, /降水量.*mm\/day/u);

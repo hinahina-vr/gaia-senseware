@@ -1,4 +1,5 @@
 import { aiProviderPresets, readAiConfiguration, saveAiConfiguration, clearAiKey, validatedAiEndpoint, requestAiAnswer } from "./byok-ai.js?v=gaia-statistics-byok-1";
+import { analysisIcon } from "./statistics-menu.js?v=gaia-analysis-guide-1";
 
 const text = (value, limit = 400) => typeof value === "string" ? value.slice(0, limit) : "";
 const rowFields = ["id", "label", "value", "x", "y", "category", "group", "provenance", "observedAt", "receivedAt", "year", "month", "renewablePercent", "solarKwhM2Day", "windSpeedMs", "hydroTwh", "renewableTwh"];
@@ -15,7 +16,9 @@ export function statisticsAiSnapshot({ dataset, rows, method, result, includeDer
     return [];
   })));
   return {
-    dataset: { title: text(dataset.title), unit: text(dataset.unit), xLabel: text(dataset.xLabel), yLabel: text(dataset.yLabel), xUnit: text(dataset.xUnit), valueLabel: text(dataset.valueLabel) },
+    dataset: { title: text(dataset.title), unit: text(dataset.unit), xLabel: text(dataset.xLabel), yLabel: text(dataset.yLabel), xUnit: text(dataset.xUnit), valueLabel: text(dataset.valueLabel),
+      measurementKind: text(dataset.insightContext?.measurementKind), axis: text(dataset.insightContext?.axis), comparisonNote: text(dataset.comparisonNote),
+      ...(dataset.coverage ? { coverage: { targetCount: dataset.coverage.targetCount, availableCount: dataset.coverage.availableCount, missingCount: dataset.coverage.missingCount } } : {}) },
     selection: { includeDerived: Boolean(includeDerived), filter: text(recordQuery, 120), totalRows: dataset.rows.length, filteredRows: rows.length, sentRows: samples.length, samplePolicy: rows.length > 120 ? "表示順の先頭120件。全体の無作為標本ではありません。" : "絞り込み後の全観測値" },
     analysis: { category: text(method.group.name), method: text(method.label), status: text(result.kind), metrics: metrics(result.metrics), interpretation: text(result.insight?.interpretation, 1400), limitations: (result.insight?.limitations || []).slice(0, 8).map(value => text(value)), formula: text(result.formula, 1200) },
     samples,
@@ -50,7 +53,7 @@ export function createStatisticsAi({ lab, button, getContext }) {
       <form id="gaia-statistics-ai-form">
         <section class="gaia-statistics-ai-question-section" aria-labelledby="gaia-statistics-ai-question-title">
           <h3 class="gaia-statistics-ai-section-title" id="gaia-statistics-ai-question-title"><span>01</span>問いを選ぶ</h3>
-          <div class="gaia-statistics-ai-prompts" role="group" aria-label="AI分析の質問例">${statisticsAiQuestions.map((preset, index) => `<button type="button" data-ai-prompt="${preset.id}" aria-pressed="${index === 0}"><strong>${preset.label}</strong><small>${preset.hint}</small></button>`).join("")}</div>
+          <div class="gaia-statistics-ai-prompts" role="group" aria-label="AI分析の質問例">${statisticsAiQuestions.map((preset, index) => `<button type="button" data-ai-prompt="${preset.id}" aria-pressed="${index === 0}">${analysisIcon(["summary", "welch", "regression", "scatter", "discovery", "exercise"][index])}<span class="gaia-statistics-ai-prompt-copy"><strong>${preset.label}</strong><small>${preset.hint}</small></span></button>`).join("")}</div>
           <label class="gaia-statistics-ai-question-label">あなたの問い <span>例文は自由に書き換えられます</span><textarea name="question" rows="3" maxlength="1200" required>${statisticsAiQuestions[0].question}</textarea></label>
         </section>
         <section class="gaia-statistics-ai-connection" aria-labelledby="gaia-statistics-ai-connection-title">
@@ -71,7 +74,7 @@ export function createStatisticsAi({ lab, button, getContext }) {
       <section class="gaia-statistics-ai-result" aria-label="AIの分析結果" data-state="idle">
         <div class="gaia-statistics-ai-result-head"><h3>AIの読み取り</h3><span data-ai-status>送信前</span></div>
         <div class="gaia-statistics-ai-empty" data-ai-empty>
-          <svg class="gaia-statistics-ai-orbit" viewBox="0 0 240 160" fill="none" aria-hidden="true"><circle cx="120" cy="80" r="57"/><ellipse cx="120" cy="80" rx="24" ry="57"/><ellipse cx="120" cy="80" rx="87" ry="24" transform="rotate(-24 120 80)"/><path d="M40 80h160M120 12v136"/><circle cx="177" cy="80" r="3"/><circle cx="66" cy="123" r="2"/></svg>
+          <svg class="gaia-statistics-ai-orbit" viewBox="0 0 240 160" fill="none" aria-hidden="true"><defs><radialGradient id="gaia-ai-orbit-light" cx="34%" cy="24%" r="78%"><stop stop-color="#b8e3d3" stop-opacity=".28"/><stop offset=".55" stop-color="#aa91d0" stop-opacity=".14"/><stop offset="1" stop-color="#223853" stop-opacity=".06"/></radialGradient></defs><circle cx="120" cy="80" r="57" fill="url(#gaia-ai-orbit-light)"/><ellipse cx="120" cy="80" rx="24" ry="57"/><ellipse cx="120" cy="80" rx="87" ry="24" transform="rotate(-24 120 80)"/><path d="M40 80h160M120 12v136"/><circle cx="177" cy="80" r="3"/><circle cx="66" cy="123" r="2"/></svg>
           <p class="gaia-statistics-ai-empty-title">数値の向こうに、<br>新しい問いを。</p>
           <p class="gaia-statistics-ai-note">気になる切り口を選んで、<br>観測の読み取りを深めてみましょう。</p>
           <ol><li><span>01</span>数値を根拠に、特徴を読む</li><li><span>02</span>言えることと、限界を分ける</li><li><span>03</span>次に確かめたいことを見つける</li></ol>

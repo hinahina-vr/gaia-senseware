@@ -8,6 +8,8 @@
 
 この一覧は、審査者と利用者が「どの提供元の、何のデータを、どのように取得・加工し、どの条件で表示しているか」を短時間で確認するための索引です。データ提供元の名称やロゴを記載しても、各機関が本作品を承認・保証していることを意味しません。
 
+公開版は保存済みJSONと閲覧中の外部API通信を併用します。2026-09-06に取得状態の説明を実装と照合しました（上記の利用条件の確認日とは別です）。接続経路、`LIVE CACHE`、期限切れキャッシュ、演出用サンプルの区別は[アーキテクチャの「取得状態の読み方」](ARCHITECTURE.md#取得状態の読み方)を参照してください。MAP 27—30の `SAVED VALUES` は演出用サンプルであり、提供元の過去の実測データではありません。
+
 ## 重要な前提
 
 GAIA SENSEWAREは、広告・課金を伴わないコンテスト向け公開を現在の運用前提としています。外部データを作品全体のライセンスで再許諾せず、各データセット固有の利用条件を優先します。商用公開、広告掲載、有料提供、データ書き出し機能の追加、取得元や用途の変更を行う場合は、公開前に再監査します。
@@ -47,8 +49,8 @@ GAIA SENSEWAREは、広告・課金を伴わないコンテスト向け公開を
 | [NASA GIBS / MODIS MCD12Q1](https://gibs.earthdata.nasa.gov/) | 2023年土地被覆 | WMSを表示用PNGへ変換し背景層に使用 | NASA、MODIS、GIBSを出典表示。解析用の元画素ではなく加工済み表示画像と明記 | **可** |
 | [Global Biotic Interactions](https://www.globalbioticinteractions.org/) | `Apis mellifera` の送粉関係 | 関係を抽出し、非地理ネットワークへ変換 | [GloBIのデータライセンス](https://github.com/globalbioticinteractions/globalbioticinteractions)と取得元データセットを確認し、双方を可能な限り帰属表示 | **可** |
 | [GBIF occurrence records](https://www.gbif.org/terms) | 31か国の座標付き観察記録 | 各国最大2件を抽出し、観察点と分析へ使用 | レコードごとのCC0／CC BY／CC BY-NC、所有者識別子、データセットDOIを保持する必要がある。現行JSONは不足 | **要対応** |
-| [UN SDG 12.5.1](https://unstats.un.org/sdgs/dataportal/database) | 都市廃棄物の再資源化率 | 最新非欠測値を抽出。欠測国は地理的5近傍中央値で補完し、`SOURCE` と `IMPUTED` を分離 | [UNdata利用条件](https://data.un.org/Host.aspx?Content=UNdataUse)に従い、UNdata、担当機関、報告年、加工者、補完箇所を表示 | **条件付可** |
-| [Global Carbon Project / CICERO GCB2024](https://doi.org/10.5281/zenodo.13981696) | 国別化石燃料由来CO₂、1945〜2023年 | 31か国を抽出し、値を固定対数尺度へ変換 | CC BY 4.0。著者、版、DOI、変更内容を表示 | **可** |
+| [UN SDG 12.5.1](https://unstats.un.org/sdgs/dataportal/database) | 都市廃棄物の再資源化率 | 全ページから91の国・地域の最新公表値を抽出。欠測は推定・ゼロ埋めしない | [UNdata利用条件](https://data.un.org/Host.aspx?Content=UNdataUse)に従い、担当機関、報告年、加工者、Nature属性・注記を保持 | **条件付可** |
+| [Global Carbon Project / CICERO GCB2024](https://doi.org/10.5281/zenodo.13981696) | 国別化石燃料由来CO₂、1945〜2023年 | 213の国・地域、15,438年次値を固定対数尺度へ変換。年別欠測は非表示 | CC BY 4.0。著者、版、DOI、変更内容を表示 | **可** |
 | [NASA GIBS / VIIRS Night Lights](https://gibs.earthdata.nasa.gov/) | 2016年夜間光 | 固定背景PNGへ変換し、排出量とは独立した比較層に使用 | NASA、VIIRS、GIBSを出典表示し、2016年固定参照と明記 | **可** |
 | [気象庁 震度データベース](https://www.data.jma.go.jp/eqdb/data/shindo/) | 代表6地震の震度6弱以上の地点 | 地点を抽出して保存表示 | 気象庁出典と抽出・編集内容を表示し、公式警報・原票と誤認させない | **可** |
 | [USGS FDSN Event Web Service](https://earthquake.usgs.gov/fdsnws/event/1/) | 世界のM7.5以上の地震 | 年別集計、発生間隔、位置表示へ加工 | USGS出典、取得条件、加工内容を表示。個別に第三者権利が示される場合はその条件を優先 | **可** |
@@ -61,24 +63,26 @@ NASA由来データは、個別制限が示されていない場合の一般方�
 
 | 展示 | 提供元・データセット | 使用データ | 取得・保存 | 利用条件・表示 | 判定 |
 |---|---|---|---|---|---|
-| 10、12—14、27、30 | [Open-Meteo Forecast API](https://open-meteo.com/en/docs) | 風速、風向、気圧、降水、気温、雲量、短波放射 | MAP 27・30は球面上へ均等配置した全球240サンプル点を5分割してブラウザから取得。全体で5〜30分キャッシュし、失敗時は同じ項目・単位の保存値へ切替 | [APIデータはCC BY 4.0](https://open-meteo.com/en/license)。Open-Meteoと元モデルを表示し、変更を明記。無料APIは非商用・呼出上限内で使用 | **条件付可** |
+| 10、12—14、27、30 | [Open-Meteo Forecast API](https://open-meteo.com/en/docs) | 風速、風向、気圧、降水、気温、雲量、短波放射 | MAP 10・12—14はPages API経由で天気30分・風速場5分を基準にキャッシュ。MAP 27・30は全球240サンプル点を5分割して直接取得し、タブ内で5分キャッシュ。取得失敗時の演出用サンプルは実測と区別 | [APIデータはCC BY 4.0](https://open-meteo.com/en/license)。Open-Meteoと元モデルを表示し、変更を明記。無料APIは非商用・呼出上限内で使用 | **条件付可** |
 | 11、15、28 | [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) / CAMS | 格子CO₂、PM2.5、550nmエアロゾル光学的厚さ | MAP 28はCAMS Globalの全球240サンプル点を5分割してブラウザから取得。5分〜3時間キャッシュし、格子・モデル値として表示 | Open-MeteoとCAMSを表示。CC BY 4.0、無料APIの非商用条件、元モデルの条件を守る | **条件付可** |
 | 26 | [NASA LANCE FIRMS / MODIS C6.1 NRT](https://firms.modaps.eosdis.nasa.gov/active_fire/) | 全球・直近24時間の火災／熱異常 | Workerで15分キャッシュ。信頼度60以上を時空間セルで抽出し最大1,600点へ制限 | NASA LANCE FIRMS、データセット名、抽出条件を表示。点は火災境界や焼失面積ではない | **可** |
 | 29 | [USGS All Earthquakes Past Day GeoJSON Feed](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) | 全球・直近24時間の全規模イベント | ブラウザから最大1,000件取得し、5分キャッシュ | USGS、条件、時刻、加工を表示。波紋は震度分布・被害範囲ではない | **可** |
 
 [Open-Meteo Terms](https://open-meteo.com/en/terms)に基づき、無料APIは広告・課金を伴わない非商用公開でのみ使用します。商用化する場合は、有料API契約またはライセンス条件を満たすセルフホストへ切り替えます。
 
-## MAP 16—25の日本公的統計
+## MAP 21—30の日本公的統計（2026-09-07 年次系列更新）
 
 | 展示 | 提供元・統計 | 使用データ | 取得・加工 | 利用条件・表示 | 判定 |
 |---|---|---|---|---|---|
-| 16 | [e-Stat／住民基本台帳人口移動報告](https://www.e-stat.go.jp/stat-search/files?cycle=1&layout=datalist&month=12040606&result_back=1&tclass1=000001008739&tclass2val=0&toukei=00200523&tstat=000000070001&year=20260) | 2026年2〜6月の都道府県別転入超過数 | 47都道府県をJIS X 0401順に抽出し、正負・絶対値を流向、色、長さへ変換 | e-Stat、統計名、対象月を表示し、「加工して作成」と明記 | **可** |
-| 17 | [e-Stat／宿泊旅行統計調査](https://www.e-stat.go.jp/stat-search/files?cycle=1&layout=dataset&tclass1val=0&toukei=00601020&tstat=000001079597) | 2026年2〜6月の延べ宿泊者数、第2次速報 | 光の面積、光量、余韻へ変換 | 出典・加工表示を付け、速報値を確定値と誤認させない | **可** |
-| 18 | [e-Stat／建築着工統計調査](https://www.e-stat.go.jp/stat-search/files?cycle=1&layout=datalist&month=12040606&page=1&tclass1val=0&toukei=00600120&tstat=000001016966&year=20260) | 2026年2〜6月の新設住宅着工戸数 | 光柱の高さ、太さ、枝分かれへ変換 | 出典、統計名、期間、加工表示を維持 | **可** |
-| 19—21 | [気象庁 過去の気象データ検索](https://www.data.jma.go.jp/stats/etrn/index.php) | 1955〜2025年の年平均気温、日最高気温の年平均、日最低気温の年平均 | 都道府県の代表観測点を用い、71年間共通尺度で表示 | 観測点、指標定義、移転・都市化等の注意、反転尺度を表示。単日の最高・最低記録ではない | **可** |
-| 22—25 | [e-Stat／統計でみる都道府県のすがた](https://www.e-stat.go.jp/stat-search/files?cycle=0&layout=datalist&lid=000001477298&month=0&page=1&stat_infid=000040412523&tclass1=000001240737&tclass2val=0&toukei=00200502&tstat=000001240736&year=20260) | 2020〜2024年の相対湿度、日照時間、降水量、雨日数 | 年次表を接続し、光、雨筋、波紋へ変換。欠測は補完せず表示 | e-Stat、表名、指標年度、加工内容を表示。欠測を0として扱わない | **可** |
+| 21 | [統計局／住民基本台帳人口移動報告](https://www.stat.go.jp/data/idou/6.html) | 1954〜2025年の日本人移動者の転入超過数 | 第5表の年計を47都道府県順に抽出し、正負・絶対値を演出へ変換 | 統計名、期間、日本人のみの対象と加工を表示。沖縄は1973年から | **可** |
+| 22 | [観光庁／宿泊旅行統計調査](https://www.mlit.go.jp/kankocho/tokei_hakusyo/shukuhakutokei.html) | 2007〜2025年の延べ宿泊者数（従業者10人以上） | 推移表「旧5-1」年計を抽出。全施設系列とは接続しない | 出典・加工・対象規模を表示。実人数ではなく宿泊数に応じた延べ人数 | **可** |
+| 23 | [国土交通省／建築着工統計調査](https://www.mlit.go.jp/sogoseisaku/jouhouka/sosei_jouhouka_tk4_000002.html) | 1951〜2025年の新設住宅着工戸数 | 都道府県別「年計」表を抽出し、固定尺度の演出へ変換 | 出典・対象年・加工を表示。沖縄は1973年から。完成戸数ではない | **可** |
+| 24—26 | [気象庁 過去の気象データ検索](https://www.data.jma.go.jp/stats/etrn/index.php) | 1955〜2025年の年平均気温、日最高気温の年平均、日最低気温の年平均 | 47代表観測点を用い、71年間共通尺度で表示（既存値を維持） | 観測点、指標定義、移転・都市化等の注意、反転尺度を表示。単日の最高・最低記録ではない | **可** |
+| 27—30 | [気象庁 年ごとの値（詳細）](https://www.data.jma.go.jp/stats/etrn/index.php) | 1955〜2025年の相対湿度、日照時間、降水量、降水日数（1mm以上） | 47代表地点を抽出。資料不足値は欠測、準正常値は品質情報を保持 | 県平均ではないことと日照計変更を表示。欠測を0として扱わない | **可** |
 
 e-Statは[利用規約](https://www.e-stat.go.jp/terms-of-use)に基づき、出典を明示し、編集・加工した場合はその旨を表示します。閲覧時にe-Stat APIへ接続せず、取得・検証済みの表示用スナップショットを配信します。
+
+原本の直接URL、対象集団、欠測処理、再生成方法と検証は[長期年次系列の実装記録](PREFECTURE_ANNUAL_HISTORY.md)を参照してください。この年次更新は、文書上部に示す利用条件の確認日を更新するものではありません。
 
 ## ORBITALの宇宙データ
 

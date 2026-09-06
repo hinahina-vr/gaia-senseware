@@ -119,10 +119,11 @@ for (const select of [() => false, () => { throw new Error("unavailable"); }, (_
 }
 const root = new URL("../", import.meta.url);
 const read = name => fs.readFileSync(new URL(name, root), "utf8");
-assert.match(read("src/exploration/index.js"), /map-demo\.js\?v=gaia-demo-aurora-1/u);
+assert.match(read("src/exploration/index.js"), /map-demo\.js\?v=gaia-demo-default-on-1/u);
 assert.match(read("gaia-mode-loader.js"), /map-demo\.css\?v=gaia-demo-aurora-1/u);
 assert.match(read("src/exploration/map-demo.js"), /map-demo-controller\.js\?v=gaia-map-demo-1/u);
-assert.match(read("app.js"), /available:[\s\S]{0,240}is-demo-running/u);
+assert.match(read("app.js"), /version: "v4"/u);
+assert.match(read("src/exploration/map-demo.js"), /defaultPending = false;[\s\S]*start\(\{ automatic: true \}\)/u);
 assert.doesNotMatch(read("src/exploration/map-demo.js"), /(?:localStorage|sessionStorage|switchTrack|setVolume|setMuted)/u);
 assert.doesNotMatch(read("src/exploration/map-demo.js"), /data-demo-seconds/u);
 assert.match(read("src/exploration/map-demo.js"), /data-demo-fill/u);

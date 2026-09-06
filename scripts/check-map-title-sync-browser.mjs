@@ -25,7 +25,7 @@ try {
           surface_pressure: 1005, cloud_cover: 58, shortwave_radiation: 194,
           pm2_5: 9.9, aerosol_optical_depth: .18,
         } }));
-        return route.fulfill({ contentType: "application/json", body: JSON.stringify(rows) });
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify(count === 1 ? rows[0] : rows) });
       });
     }
     await context.route("https://earthquake.usgs.gov/**", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
@@ -57,16 +57,16 @@ try {
       assert.equal(scan.topLabel, `${number} ${scan.bankTitle}`);
       assert.deepEqual(scan.selected, [number], "Exactly the selected exhibit must be current");
     };
-    await select("01");
+    await select("06");
     // The same underlying mode is still active while an extension exhibit is shown.
     await select("26");
-    await select("01");
+    await select("06");
     await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
-    assert.equal(await page.locator("#japan-title").textContent(), "地球の一呼吸", "Title stays correct after the transition settles");
-    await page.screenshot({ path: path.join(output, `${width}-26-to-01.png`) });
+    assert.equal(await page.locator("#japan-title").textContent(), "積み重なるCO₂", "Title stays correct after the transition settles");
+    await page.screenshot({ path: path.join(output, `${width}-26-to-06.png`) });
     for (const number of ["27", "28", "29", "30", "16", "25", "10", "15"]) {
       await select(number);
-      await select("01");
+      await select("06");
     }
     await select("02");
     await select("26");

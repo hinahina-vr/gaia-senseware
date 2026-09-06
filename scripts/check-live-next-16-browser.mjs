@@ -97,7 +97,7 @@ try {
     const expectCity = async id => {
       await page.waitForFunction(id => document.querySelector("#gaia-live-exhibit-canvas").dataset.observationCity === id
         && document.querySelector("#japan-layer").dataset.livePoiTransition === "settled", id);
-      assert.equal(await page.locator(".gaia-live-prefecture-picker select").inputValue(), id);
+      assert.equal(await page.locator(".gaia-live-place-selector").getAttribute("data-city"), id);
     };
     const chooseCity = async id => {
       await page.evaluate(id => { GaiaLiveExhibits.selectObservationPoint(id); GaiaLiveExhibits.pausePoiAutoplay(); }, id);

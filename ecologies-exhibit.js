@@ -107,7 +107,7 @@
       return card;
     };
     const drawChart = current => {
-      const svg = svgElement("svg", { viewBox: "0 0 440 300", role: "group", "aria-label": "31か国の森林率と都市人口率。横軸と縦軸は0から100パーセント" });
+      const svg = svgElement("svg", { viewBox: "0 0 440 300", role: "group", "aria-label": `${current.rows.length}の国・地域の森林率と都市人口率。横軸と縦軸は0から100パーセント` });
       const x = value => 48 + value * 3.64, y = value => 246 - value * 1.96;
       for (const value of [0, 25, 50, 75, 100]) {
         svg.append(svgElement("line", { x1: x(value), y1: y(0), x2: x(value), y2: y(100), class: "eco-grid" }));
@@ -158,14 +158,14 @@
       find(".eco-country-pair").replaceChildren(countryCard(pair[0], "選んだ国"), countryCard(pair[1], "都市人口率が最も近い国"));
       find(".eco-insight").textContent = `都市人口率の差は${Math.abs(pair[0].urbanPercent - pair[1].urbanPercent).toFixed(1)}ポイント。森林率の差は${Math.abs(pair[0].forestPercent - pair[1].forestPercent).toFixed(1)}ポイント。`;
       find(".eco-pattern-reading").textContent = Math.abs(state.correlation) < .4
-        ? "この31か国では点が広く散らばり、一方向の強い関係は見られません。"
+        ? "収録した国・地域では点が広く散らばり、一方向の強い関係は見られません。"
         : "国ごとに二つの割合を対応させ、点の並び方を比べます。";
-      find(".eco-correlation").textContent = `細い破線は31か国の直線的な傾向。相関係数 r = ${state.correlation.toFixed(2)}（${state.correlationLabel}）です。都市化が森林を増減させたという因果関係や、同じ国の時間変化は示しません。`;
+      find(".eco-correlation").textContent = `細い破線は${state.rows.length}の国・地域の直線的な傾向。相関係数 r = ${state.correlation.toFixed(2)}（${state.correlationLabel}）です。都市化が森林を増減させたという因果関係や、同じ国の時間変化は示しません。`;
       if (view === "pattern") drawChart(state);
       const site = state.culture[cultureIndex] || state.culture[0];
       if (site) { find(".eco-site-card h3").textContent = site.nameJa; find(".eco-site-card p").textContent = `${site.categoryJa} / ${site.regionJa}`; }
       find(".eco-scope").textContent = view === "culture" ? "24例の選択標本 / 件数で国を順位づけしません。"
-        : `展示用に選んだ${state.rows.length}か国。世界全体の結論ではありません。森林率 ${state.selected.forestYear}年 / 都市人口率 ${state.selected.urbanYear}年。基準年と都市の定義が異なります。`;
+        : `両指標のある${state.rows.length}の国・地域。世界・地域合計と欠測を除外。森林率 ${state.selected.forestYear}年 / 都市人口率 ${state.selected.urbanYear}年。基準年と都市の定義が異なります。`;
     };
     setView("compare");
     // Live exhibits can take over without changing the underlying standard mode.

@@ -6726,8 +6726,8 @@ var require_LercDecode = __commonJS({
             var BITS_MAX = this.HUFFMAN_LUT_BITS_MAX;
             var view = new DataView(input, data.ptr, 16);
             data.ptr += 16;
-            var version = view.getInt32(0, true);
-            if (version < 2) {
+            var version2 = view.getInt32(0, true);
+            if (version2 < 2) {
               throw "unsupported Huffman version";
             }
             var size = view.getInt32(4, true);
@@ -20749,6 +20749,112 @@ async function fromUrl(url, options = {}, signal) {
 }
 __name(fromUrl, "fromUrl");
 
+// src/prefecture-field.ts
+var PREFECTURE_PROVIDERS = {
+  weather: {
+    url: "https://api.open-meteo.com/v1/forecast",
+    ttl: 3e5,
+    variables: { weatherWindSpeed: "wind_speed_10m", weatherTemperature: "temperature_2m", weatherPrecipitation: "precipitation", cloudCover: "cloud_cover" }
+  },
+  air: {
+    url: "https://air-quality-api.open-meteo.com/v1/air-quality",
+    ttl: 36e5,
+    variables: { forecastCo2: "carbon_dioxide", pm25: "pm2_5" }
+  }
+};
+var version = "japan-prefecture-models-v1";
+var numberOrNull = /* @__PURE__ */ __name((value) => typeof value === "number" && Number.isFinite(value) ? value : null, "numberOrNull");
+var emptyPrefectureField = /* @__PURE__ */ __name((provider, cities, reason) => ({
+  schemaVersion: 1,
+  source: "unavailable",
+  generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+  points: cities.map((city) => ({
+    ...city,
+    observedAt: null,
+    measurements: Object.fromEntries(Object.keys(PREFECTURE_PROVIDERS[provider].variables).map((key) => [key, null]))
+  })),
+  provenance: { sourceUrl: PREFECTURE_PROVIDERS[provider].url, licenseUrl: "https://open-meteo.com/en/pricing", transformVersion: version },
+  fallbackReason: reason
+}), "emptyPrefectureField");
+var fetchPrefectureField = /* @__PURE__ */ __name(async (provider, cities) => {
+  const definition = PREFECTURE_PROVIDERS[provider];
+  const url = new URL(definition.url);
+  url.search = new URLSearchParams({
+    latitude: cities.map((city) => city.lat).join(","),
+    longitude: cities.map((city) => city.lon).join(","),
+    current: Object.values(definition.variables).join(","),
+    timezone: "GMT",
+    forecast_days: "1",
+    ...provider === "weather" ? { wind_speed_unit: "ms" } : {}
+  }).toString();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1e4);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Open-Meteo ${provider} ${response.status}`);
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Open-Meteo body missing");
+    const chunks = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 256e3) {
+        await reader.cancel();
+        throw new Error("Open-Meteo body too large");
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const locations = JSON.parse(new TextDecoder().decode(bytes));
+    if (!Array.isArray(locations) || locations.length !== cities.length) throw new Error(`Open-Meteo ${provider} location count mismatch`);
+    const field = emptyPrefectureField(provider, cities, "");
+    field.source = "open-meteo";
+    delete field.fallbackReason;
+    field.provenance.sourceUrl = url.href;
+    field.points = cities.map((city, index) => {
+      const current = locations[index]?.current;
+      const rawTime = current?.time;
+      const time = typeof rawTime === "string" ? Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/u.test(rawTime) ? rawTime : `${rawTime}Z`) : NaN;
+      const observedAt = Number.isFinite(time) ? new Date(time).toISOString() : null;
+      return { ...city, observedAt, measurements: Object.fromEntries(Object.entries(definition.variables).map(([key, variable]) => [key, observedAt ? numberOrNull(current?.[variable]) : null])) };
+    });
+    if (!field.points.some((point) => Object.values(point.measurements).some((value) => value !== null))) throw new Error(`Open-Meteo ${provider} values missing`);
+    return field;
+  } finally {
+    clearTimeout(timeout);
+  }
+}, "fetchPrefectureField");
+var cachedPrefectureField = /* @__PURE__ */ __name(async (provider, cities, enabled, ctx) => {
+  const cacheKey = new Request(`https://gaia-live-cache.invalid/${version}/${provider}`);
+  const cache = caches.default;
+  let cached;
+  try {
+    cached = await (await cache.match(cacheKey))?.json();
+  } catch {
+  }
+  if (cached && Date.now() - Date.parse(cached.generatedAt) < PREFECTURE_PROVIDERS[provider].ttl) return cached;
+  try {
+    if (!enabled) throw new Error("LIVE_SENSEWARE_ENABLED is not true");
+    const field = await fetchPrefectureField(provider, cities);
+    ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(field), { headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=604800"
+    } })).catch(() => {
+    }));
+    return field;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "National model unavailable";
+    return cached ? { ...cached, source: "stale-cache", fallbackReason: reason } : emptyPrefectureField(provider, cities, reason);
+  }
+}, "cachedPrefectureField");
+
 // src/live-senseware.ts
 var HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3];
 var HAWAII_CENTER = { lat: 19.55, lon: -155.45 };
@@ -20808,8 +20914,6 @@ var TRANSFORM_VERSION = "live-senseware-v5-japan-wind-field";
 var STREAM_LIFETIME_MS = 10 * 60 * 1e3;
 var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;
-var WIND_FIELD_TTL_MS = 5 * 60 * 1e3;
-var WIND_FIELD_CACHE_KEY = "open-meteo-japan-wind-field-v1";
 var FIRMS_SOURCE_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/modis-c6.1/csv/MODIS_C6_1_Global_24h.csv";
 var FIRMS_SOURCE_PAGE = "https://firms.modaps.eosdis.nasa.gov/active_fire/";
 var FIRMS_CACHE_KEY = "nasa-firms-modis-global-24h-v1";
@@ -21080,7 +21184,7 @@ var openMeteoObservedAt = /* @__PURE__ */ __name((value) => {
   return date.toISOString();
 }, "openMeteoObservedAt");
 var numericOrNull = /* @__PURE__ */ __name((value) => {
-  if (value === null || value === void 0 || value === "") return null;
+  if (typeof value !== "number" && (typeof value !== "string" || !value.trim())) return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }, "numericOrNull");
@@ -21126,94 +21230,13 @@ var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers, city) => {
     ...sourceHeaders(response)
   };
 }, "loadOpenMeteoWeather");
-var emptyWindField = /* @__PURE__ */ __name((reason) => ({
-  schemaVersion: 1,
-  source: "unavailable",
-  generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-  points: Object.values(CITY_LOCATIONS).map((city) => ({
-    id: city.id,
-    name: city.name,
-    lat: city.lat,
-    lon: city.lon,
-    windSpeed: null,
-    observedAt: null,
-    quality: "missing"
-  })),
-  provenance: {
-    sourceUrl: "https://api.open-meteo.com/v1/forecast",
-    licenseUrl: "https://open-meteo.com/en/pricing",
-    transformVersion: TRANSFORM_VERSION
-  },
-  fallbackReason: reason
-}), "emptyWindField");
-var loadOpenMeteoWindField = /* @__PURE__ */ __name(async (headers) => {
-  const cities = Object.values(CITY_LOCATIONS);
-  const sourceUrl = new URL("https://api.open-meteo.com/v1/forecast");
-  sourceUrl.search = new URLSearchParams({
-    latitude: cities.map((city) => city.lat).join(","),
-    longitude: cities.map((city) => city.lon).join(","),
-    current: "wind_speed_10m",
-    wind_speed_unit: "ms",
-    timezone: "GMT",
-    forecast_days: "1"
-  }).toString();
-  const response = await fetchWithTimeout(sourceUrl, { headers });
-  if (response.status === 304) throw new Error("Open-Meteo wind field 304 not-modified");
-  if (!response.ok) throw new Error(`Open-Meteo wind field ${response.status}`);
-  const payload = await response.json();
-  const locations = Array.isArray(payload) ? payload : [payload];
-  if (locations.length !== cities.length) throw new Error(`Open-Meteo wind field expected ${cities.length} locations, received ${locations.length}`);
-  const points = cities.map((city, index) => {
-    const current = locations[index]?.current;
-    const windSpeed = numericOrNull(current?.wind_speed_10m);
-    let observedAt = null;
-    try {
-      observedAt = openMeteoObservedAt(current?.time);
-    } catch {
-    }
-    return {
-      id: city.id,
-      name: city.name,
-      lat: city.lat,
-      lon: city.lon,
-      windSpeed,
-      observedAt,
-      quality: windSpeed === null ? "missing" : "estimated"
-    };
-  });
-  if (!points.some((point) => point.windSpeed !== null)) throw new Error("Open-Meteo wind field values missing");
-  return {
-    field: {
-      schemaVersion: 1,
-      source: "open-meteo",
-      generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      points,
-      provenance: {
-        sourceUrl: sourceUrl.href,
-        licenseUrl: "https://open-meteo.com/en/pricing",
-        transformVersion: TRANSFORM_VERSION
-      }
-    },
-    ...sourceHeaders(response)
-  };
-}, "loadOpenMeteoWindField");
 var liveWindField = /* @__PURE__ */ __name(async (env, ctx) => {
-  const cached = await readCacheJson(WIND_FIELD_CACHE_KEY);
-  const cachedAge = cached ? Date.now() - Date.parse(cached.field.generatedAt) : Number.POSITIVE_INFINITY;
-  if (cached && cachedAge < WIND_FIELD_TTL_MS) return cached.field;
-  if (env.LIVE_SENSEWARE_ENABLED !== "true") {
-    if (!cached) return emptyWindField("LIVE_SENSEWARE_ENABLED is not true");
-    return { ...cached.field, source: "stale-cache", fallbackReason: "LIVE_SENSEWARE_ENABLED is not true" };
-  }
-  try {
-    const fresh = await loadOpenMeteoWindField(conditionalHeaders(cached));
-    ctx.waitUntil(writeCacheJson(WIND_FIELD_CACHE_KEY, fresh));
-    return fresh.field;
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "Open-Meteo wind field unavailable";
-    if (cached) return { ...cached.field, source: "stale-cache", fallbackReason: reason };
-    return emptyWindField(reason);
-  }
+  const field = await cachedPrefectureField("weather", Object.values(CITY_LOCATIONS), env.LIVE_SENSEWARE_ENABLED === "true", ctx);
+  return { ...field, points: field.points.map((point) => ({
+    ...point,
+    windSpeed: point.measurements.weatherWindSpeed ?? null,
+    quality: point.measurements.weatherWindSpeed == null ? "missing" : "estimated"
+  })) };
 }, "liveWindField");
 var loadOpenMeteoAir = /* @__PURE__ */ __name(async (headers, city) => {
   const sourceUrl = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
@@ -21507,7 +21530,7 @@ var streamResponse = /* @__PURE__ */ __name((request, env, ctx) => {
 }, "streamResponse");
 var handleLiveSenseware = /* @__PURE__ */ __name(async (request, env, ctx) => {
   const url = new URL(request.url);
-  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field", "/api/live/v1/firms"].includes(url.pathname)) return null;
+  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field", "/api/live/v1/prefecture-field", "/api/live/v1/firms"].includes(url.pathname)) return null;
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (url.pathname.endsWith("/stream")) return request.method === "HEAD" ? new Response(null, { headers: { "Content-Type": "text/event-stream; charset=utf-8" } }) : streamResponse(request, env, ctx);
   if (url.pathname.endsWith("/firms")) {
@@ -21519,6 +21542,12 @@ var handleLiveSenseware = /* @__PURE__ */ __name(async (request, env, ctx) => {
   if (url.pathname.endsWith("/wind-field")) {
     const field = await liveWindField(env, ctx);
     return new Response(request.method === "HEAD" ? null : JSON.stringify(field), {
+      headers: { ...jsonHeaders, "Cache-Control": "public, max-age=60, stale-while-revalidate=240" }
+    });
+  }
+  if (url.pathname.endsWith("/prefecture-field")) {
+    const [weather, air] = await Promise.all(["weather", "air"].map((provider) => cachedPrefectureField(provider, Object.values(CITY_LOCATIONS), env.LIVE_SENSEWARE_ENABLED === "true", ctx)));
+    return new Response(request.method === "HEAD" ? null : JSON.stringify({ schemaVersion: 1, scope: "japan-prefectures", targetCount: 47, weather, air }), {
       headers: { ...jsonHeaders, "Cache-Control": "public, max-age=60, stale-while-revalidate=240" }
     });
   }

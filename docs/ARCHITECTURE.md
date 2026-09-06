@@ -1,6 +1,6 @@
 # GAIA SENSEWARE アーキテクチャ
 
-この文書は、2026-09-04時点の実装を審査・保守時に追いやすい単位へ整理したものです。作品内容は[README](../README.md)、応募時の確認順は[コンテスト提出ガイド](CONTEST_2026_SUBMISSION.md)、データ利用条件は[外部データ監査](EXTERNAL_DATA_USAGE_AUDIT.md)を参照してください。
+この文書は実装を審査・保守時に追いやすい単位へ整理したものです。2026-09-06にデータ取得経路とキャッシュ・取得失敗時の説明を実装と照合しました。作品内容は[README](../README.md)、応募時の確認順は[コンテスト提出ガイド](CONTEST_2026_SUBMISSION.md)、データ利用条件は[外部データ監査](EXTERNAL_DATA_USAGE_AUDIT.md)を参照してください。
 
 ## 実行構成
 
@@ -61,11 +61,32 @@ flowchart LR
 |---|---|---|
 | 01—09 | `app.js`, `app-content.js` | `data/gaia-signals.json` 等の版管理データ。01のオーロラ層はNOAA SWPC OVATIONと保存値を切替 |
 | 10—15 | `src/exploration/live-exhibits.js`, `live-data.js` | `/api/live/v1/snapshot`、`/stream`、`/wind-field`。表示値はOpen-Meteo／CAMS |
-| 16—25 | `src/exploration/estat-exhibits.js`, `estat-prefecture-data.js` | e-Stat／気象庁から生成済みの `data/estat-prefecture-series.json` |
+| 21—30 | `src/exploration/estat-exhibits.js`, `estat-exhibit-catalog.js` | 統計局・国土交通省・観光庁・気象庁の長期年次値 `data/estat-prefecture-series.json`。月次の旧モジュールは年次展示のフォールバックに使わない |
 | 26 | `src/exploration/firms-exhibit.js` | `/api/live/v1/firms`。NASA FIRMS取得失敗時は `data/firms-active-fire-snapshot.json` |
 | 27—30 | `src/exploration/planet-signals-exhibit.js` | Open-Meteo Forecast／Air Qualityの全球240サンプル点とUSGS全地震フィードへブラウザから直接接続 |
 
-MAP 10—15のPages APIはCloudflare Cache APIを使用し、D1へ観測値を保存しません。MAP 27—30は5分のブラウザキャッシュを使い、外部取得値をファイルへ書き出しません。すべてのライブ系展示は提供元、データ時刻、取得状態を画面に出し、失敗時の保存値をライブ値と区別します。
+公開版は保存済みデータと外部APIを併用します。外部JavaScriptランタイムライブラリを使わないことは、外部データAPIへ接続しないことを意味しません。保存JSONだけを表示する展示があっても、ページ全体の外部通信を無効にする設定ではありません。
+
+MAP 21—30の年次期間・母集団・品質フラグ・再生成とテストは[長期年次系列](PREFECTURE_ANNUAL_HISTORY.md)を参照。分析は選択中の県・観測地点の年系列を受け取り、欠測年を除外する。
+
+MAP 10—15・26のPages APIはCloudflare Cache APIを使用し、D1へこれらの観測値を保存しません。MAP 27—30は5分のタブ内キャッシュ（`sessionStorage`）を使い、外部取得値をファイルへ書き出しません。
+
+### 取得状態の読み方
+
+取得状態は通信・再利用の状態であり、`SOURCE / DERIVED / SCENARIO` という加工・仮定の区分とは別です。`LIVE` や `LIVE CACHE` は最新性、常時更新、実測値であることを保証しません。気象・大気質はモデル値を含み、取得した時刻とデータ自体の時刻は異なります。
+
+| 対象と表示 | 現行実装での意味 | 取得できない場合 |
+|---|---|---|
+| MAP 01 オーロラ層 | NOAA SWPCへ直接取得。5分間隔で再取得を試行 | 同梱のOVATIONスナップショット。これも読めなければ利用不可 |
+| MAP 10—15 ライブ／保存・取得状態 | サイト側APIから都市別の値を取得。天気30分、大気質3時間、風速場5分を基準にサーバーでキャッシュ。SSE接続自体は新しい観測の保証ではない | 最後の取得値、対応地点の同梱保存値、または欠測。東京用保存値を他都市の実測として流用しない |
+| MAP 26 `LIVE CACHE` | APIが返す `source: nasa-firms-modis`。新規取得と15分以内のサーバーキャッシュを同じ表示で扱う。ブラウザは読込済みの値を保持するため、15分ごとの画面更新を保証しない | `source: stale-cache` または `snapshot` を `SAVED SNAPSHOT` と表示 |
+| MAP 27—30 `LIVE` | APIへの直接取得に成功 | 有効なキャッシュがなく取得にも失敗した場合は下記のサンプル値 |
+| MAP 27—30 `LIVE CACHE` | 取得後5分以内のタブ内キャッシュを再利用。展示選択時に有効期限を判定し、常時ポーリングしない | 期限切れなら再取得を試行 |
+| MAP 27—30 `SAVED VALUES` | コード内の演出用サンプル。過去の実測を保存したデータではない | サンプルは統計分析の対象外 |
+
+MAP 26の `SAVED SNAPSHOT` は、期限切れAPIキャッシュと版管理スナップショットを表示名だけでは区別できません。API応答の `source` / `fallbackReason` で区別し、画面ではデータ時刻と経過時間も確認します。現在のラベルを、すべての取得状態を一対一に区別するものとは説明しません。
+
+照合先: `app.js` の `loadOvationAuroraForecast`、`src/exploration/live-data.js`、`src/exploration/firms-exhibit.js` の `loadSnapshot` / `renderSnapshot`、`src/exploration/planet-signals-exhibit.js` の `readCache` / `loadData`、`sensor-platform/src/live-senseware.ts` のキャッシュ・フォールバック処理。作品内の対応説明は `index.html` の `#architecture-data-policy` にあります。
 
 MAP 10—25は、固定データと画面の実行処理を分離しています。以下はすべて `src/exploration/` 内のモジュールです。
 
@@ -75,7 +96,11 @@ MAP 10—25は、固定データと画面の実行処理を分離しています
 
 `scripts/check-exhibit-catalog.mjs` で定義・地点順序・共有依存を検査し、`scripts/check-live-next-16-browser.mjs` でモジュールの重複読込、展示境界、地点の前後移動と自動巡回を確認します。
 
-地図の「デモ」は明示的な開始操作から全30展示を25秒間隔で巡回します。`map-demo-controller.js` が単一の期限タイマー、周回、停止、非表示タブの残り時間保持を担当し、`map-demo.js` が既存の展示ボタンに接続します。訪問者の操作・地図退出・別のガイドや分析画面の開始で停止し、音量やミュート設定は変更しません。初期状態は停止で、再入場時も自動再開しません。`scripts/check-map-demo.mjs` と `scripts/check-map-demo-browser.mjs` で確認します。
+地図の「デモ」は通常の地図入場時（再入場を含む）に初期オンとなり、全30展示を25秒間隔で巡回します。`map-demo-controller.js` が単一の期限タイマー、周回、停止、残り時間保持を担当し、`map-demo.js` が既存の展示ボタンに接続します。地図ガイド中と非表示タブではオンを保ったまま切り替えを一時停止し、両方が解除されると残り時間から再開します。訪問者の地図操作・地図退出・分析画面などの開始で停止し、同じ入場中は勝手に再開しません。ガイドの再表示は手動オフを維持し、物語内の地図ではデモを自動開始しません。音量やミュート設定は変更しません。`scripts/check-map-demo.mjs` と `scripts/check-map-demo-browser.mjs` で確認します。
+
+地図の初回ガイド（セッションごとの `map:v4`）は、現在の展示UIが準備できてから、左下の展示選択 → 観測値 → 時間 → 出典 → 統計分析 → 凡例 → デモの順に案内します。スマホでは展示一覧・読み方・操作の各ボタンへ案内先を切り替えます。共有の `mode-entry-guide.js/css` が「次へ・戻る・閉じる」、フォーカス管理、画面内配置とデモに通知する開閉イベントを担当します。`scripts/check-map-guide-demo-browser.mjs` で6画面サイズの配置、ガイド中の切り替え停止、再入場、物語内の除外を確認します。
+
+MAP 01〜05は下部ドックの共通「リアルタイム展示」表示を主役とし、`realtime-exhibit-status.js` と `realtime-exhibits.css` で接続状態・データ時刻（JST）・提供元・衛星観測／モデル値の区分を常時表示します。NASA FIRMSの保存観測、生成した参考値、取得失敗、24時間を超えるデータ時刻の遅れはLIVEとは別の状態で表示します。生成した参考値の時刻は現在の観測時刻として表示しません。時刻の経過による状態表示だけを1分ごと・タブ復帰時に再評価し、データ取得頻度の変更や自動ポーリングは行いません。右上の平均値・凡例・出典詳細は開閉式にまとめ、MAP 06以降にはリアルタイム表示を出しません。`check:realtime-exhibits` と `check:realtime-exhibits:browser` で確認します。
 
 ## 主要アダプター
 
@@ -146,7 +171,7 @@ story/USER_SCRIPT_2026-08-24.txt
 ## 耐障害性とライフサイクル
 
 - WebGL 2が使えない場合も、静的な数値、変換説明、出典、ガイド終了先を操作できます。
-- JSONや外部APIの読込に失敗した展示は、同じ区分・単位・提供元を持つ保存値へ切り替えます。
+- 外部APIの読込失敗時は、展示ごとに過去の取得値、保存スナップショット、演出用サンプル、欠測を使い分けます。詳細は「取得状態の読み方」を参照してください。保存ファイル自体も読み込めない場合があり、初回を含む完全オフライン動作を保証する構成ではありません。
 - 開閉処理は既存インスタンスを再利用し、Canvasや音声プレイヤーを重複生成しません。
 - 物語への新規遷移はベース画面を先に隠し、フェードアウト後に物語をフェードインします。
 - ガイドは物語のセーブデータを書き換えません。

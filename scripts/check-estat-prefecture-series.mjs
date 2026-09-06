@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 const data = JSON.parse(fs.readFileSync(new URL("../data/estat-prefecture-series.json", import.meta.url), "utf8"));
 const prefectureCount = 47;
-const monthlyKeys = ["migration", "lodging", "housing"];
+const socialKeys = ["migration", "lodging", "housing"];
 const annualKeys = [
   "averageTemperature",
   "summerHigh",
@@ -16,21 +16,16 @@ const annualKeys = [
 const temperatureKeys = ["averageTemperature", "summerHigh", "winterLow"];
 const longTermYears = Array.from({ length: 71 }, (_, index) => String(1955 + index));
 
-assert.deepEqual(data.months, ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06"]);
-for (const key of monthlyKeys) {
-  for (const period of data.months) {
-    assert.equal(data[key]?.[period]?.length, prefectureCount, `${key}/${period} must contain 47 prefectures`);
-    assert.ok(data[key][period].every(Number.isFinite), `${key}/${period} must not contain missing values`);
-  }
-}
+assert.equal(data.months, undefined, "Annual exhibits must not use a monthly fallback");
+const startBySeries = { migration: 1954, housing: 1951, lodging: 2007 };
+const expectedMissing = { migration: 19, housing: 22, lodging: 0, averageTemperature: 0, summerHigh: 0, winterLow: 0, relativeHumidity: 6, sunshineHours: 11, precipitation: 2, rainyDays: 1 };
 
 const missingBySeries = {};
 const changedPrefecturesBySeries = {};
-for (const key of annualKeys) {
+for (const key of [...socialKeys, ...annualKeys]) {
   const periods = data.periodsBySeries?.[key];
-  const expectedPeriods = temperatureKeys.includes(key)
-    ? longTermYears
-    : ["2020", "2021", "2022", "2023", "2024"];
+  const start = startBySeries[key] || 1955;
+  const expectedPeriods = Array.from({ length: 2026 - start }, (_, index) => String(start + index));
   assert.deepEqual(periods, expectedPeriods, `${key} periods are incomplete`);
   const rows = periods.map((period) => {
     const values = data[key]?.[period];
@@ -39,7 +34,7 @@ for (const key of annualKeys) {
     return values;
   });
   missingBySeries[key] = rows.flat().filter((value) => value === null).length;
-  assert.ok(missingBySeries[key] <= (temperatureKeys.includes(key) ? 0 : 2), `${key} has too many missing observations`);
+  assert.equal(missingBySeries[key], expectedMissing[key], `${key} missing observations changed`);
   changedPrefecturesBySeries[key] = Array.from({ length: prefectureCount }, (_, index) => (
     new Set(rows.map((values) => values[index]).filter(Number.isFinite)).size
   )).filter((distinct) => distinct > 1).length;
@@ -74,14 +69,41 @@ const warmingTrendBySeries = Object.fromEntries(temperatureKeys.map((key) => {
   }];
 }));
 
-assert.deepEqual(Object.keys(data.naturalEnvironmentSource?.publicationStatInfIds || {}), ["2022", "2023", "2024", "2025", "2026"]);
-assert.equal(data.naturalEnvironmentSource?.missingValuePolicy, "欠損補完なし");
+for (const key of socialKeys) {
+  assert.equal(data.annualHistorySources[key].frequency, "年次");
+  assert.equal(data.annualHistorySources[key].missingValuePolicy, "欠損補完なし");
+  assert.match(data.annualHistorySources[key].sha256, /^[a-f0-9]{64}$/u);
+  assert.match(data.annualHistorySources[key].sourceUrl, /^https:\/\/(www\.e-stat\.go\.jp|www\.mlit\.go\.jp)\//u);
+}
+assert.equal(data.annualHistorySources.migration.population, "日本人移動者・男女計");
+assert.equal(data.annualHistorySources.lodging.population, "従業者数10人以上の宿泊施設");
+for (const key of ["migration", "housing"]) {
+  for (const year of data.periodsBySeries[key]) assert.equal(data[key][year][46] === null, Number(year) < 1973);
+}
+for (const values of Object.values(data.migration)) assert.equal(values.filter(Number.isFinite).reduce((a, b) => a + b, 0), 0, "Annual net migration reconciles nationally");
+assert.equal(data.migration[1954][12], 242139);
+assert.equal(data.weatherHistorySource.rainyDayThresholdMm, 1);
+assert.equal(data.weatherHistorySource.stations.length, 47);
+assert.match(data.weatherHistorySource.comparisonNote, /1986〜1990年/u);
+assert.equal(data.weatherHistorySource.qualityFlags.length, 20);
+for (const flag of data.weatherHistorySource.qualityFlags) {
+  assert.equal(flag.flag, "insufficient");
+  assert.equal(data[flag.series][flag.year][Number(flag.code) - 1], null);
+}
+// Independently checked Tokyo 1955 cells in JMA a1/a2/a4. Rainy days use >=1.0mm,
+// not the adjacent >=0mm / >=0.5mm columns (188 and 122 days).
+assert.equal(data.relativeHumidity[1955][12], 70);
+assert.equal(data.sunshineHours[1955][12], 2018.1);
+assert.equal(data.precipitation[1955][12], 1553.9);
+assert.equal(data.rainyDays[1955][12], 110);
+assert.equal(data.precipitation[2022][8], null);
+assert.equal(data.rainyDays[2022][8], null);
 
 console.log(JSON.stringify({
   status: "passed",
-  exhibits: monthlyKeys.length + annualKeys.length,
+  exhibits: socialKeys.length + annualKeys.length,
   prefectures: prefectureCount,
-  annualPeriods: { temperature: longTermYears.length, other: 5 },
+  annualPeriods: Object.fromEntries(Object.entries(data.periodsBySeries).map(([key, years]) => [key, years.length])),
   missingBySeries,
   changedPrefecturesBySeries,
   warmingTrendBySeries,

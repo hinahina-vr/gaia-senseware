@@ -12,7 +12,7 @@ const browser = await chromium.launch({ executablePath: "C:/Program Files/Google
 let page;
 const boot = async context => {
   await context.addInitScript(() => {
-    sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
     localStorage.setItem("gaia-senseware-bgm-muted", "true");
   });
   await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ path: "data/ovation-aurora-snapshot.json", contentType: "application/json" }));
@@ -22,6 +22,7 @@ const boot = async context => {
   await tab.waitForFunction(() => globalThis.GaiaMapObservationAdapter && globalThis.GaiaMapCategories?.buttons().length === 30);
   await tab.evaluate(async () => {
     await GaiaMapObservationAdapter.waitSignalsReady();
+    GaiaMapDemo.stop();
     GaiaModeEntryGuide.close("map", { restoreFocus: false });
     GaiaMapObservationAdapter.selectMode(4);
   });

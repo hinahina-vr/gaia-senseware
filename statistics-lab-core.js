@@ -943,7 +943,7 @@ const analyzeBayes = ({ successes, trials, successLabel, provenance = ["SOURCE"]
       evidence: [["事前", `Beta(${priorAlpha}, ${priorBeta})`, ""], ["観測", `${successes}/${trials}`, ""], ["事後", `Beta(${model.posteriorAlpha}, ${model.posteriorBeta})`, ""], ["事後平均", model.posteriorMean, ""]],
       interpretation: `観測比率${formatNumber(model.observedRate * 100, 1)}%を受け、事前平均${formatNumber(model.priorMean * 100, 1)}%から事後平均${formatNumber(model.posteriorMean * 100, 1)}%へ更新されました。`,
       limitations: ["事後分布は事前分布と確率モデルの選択に依存します。", "選定事例の比率を母集団全体へ一般化できるとは限りません。", ...extraLimitations],
-      nextActions: ["09 Fisher検定", "15 総合演習"],
+      nextActions: ["09 Fisher検定", "15 分析の進め方"],
       provenance,
     }),
   };
