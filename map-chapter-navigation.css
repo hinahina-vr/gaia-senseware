@@ -145,7 +145,6 @@
   }
 
   /* Keep the existing data legible in the compact strip. */
-  body.map-grid-desktop #japan-layer .gaia-live-deck-waveform { height: clamp(12px, 1.7vh, 32px); }
   body.map-grid-desktop #japan-layer .gaia-live-exhibit-primary p { margin-bottom: 4px; }
   body.map-grid-desktop #japan-layer .gaia-live-exhibit-primary h3 { gap: 3px; }
   body.map-grid-desktop #japan-layer .gaia-estat-place small { font-size: 10px; }
@@ -169,6 +168,65 @@
   body.map-grid-desktop #japan-layer.is-live-exhibit .japan-credits {
     bottom: calc(var(--map-command-dock-height) + 6px) !important;
   }
+}
+
+/* Live maps use the same question-first reading format as MAP 01–09. */
+#japan-layer .gaia-live-deck-question {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 7px;
+  align-content: center;
+  min-width: 0;
+}
+#japan-layer .gaia-live-deck-question > span {
+  color: rgba(118, 222, 236, 0.78);
+  font: 700 clamp(7px, .37vw, 9px)/1 Consolas, "Courier New", monospace;
+  letter-spacing: .13em;
+}
+#japan-layer .gaia-live-deck-question > strong {
+  align-self: center;
+  min-width: 0;
+  color: #f0fcff;
+  font: 600 clamp(11px, .92vw, 15px)/1.3 var(--font-ja);
+  letter-spacing: .025em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body.map-grid-desktop #japan-layer .gaia-live-deck-question {
+  row-gap: 7px;
+  padding-block: 7px 5px;
+}
+#japan-layer .gaia-live-data-freshness {
+  display: grid;
+  gap: 3px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(var(--map-accent-rgb), .15);
+}
+#japan-layer .gaia-live-data-freshness > :is(strong, time) {
+  min-width: 0;
+  margin: 0;
+  color: #b5ccd3;
+  font: 400 10px/1.5 var(--font-ui-ja);
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#japan-layer .gaia-live-data-freshness > strong { color: #d5edf2; }
+@media (max-width: 900px) {
+  #japan-layer .gaia-live-deck-question {
+    grid-template-rows: auto auto;
+    margin-top: 10px;
+    gap: 5px;
+  }
+  #japan-layer .gaia-live-deck-question > span { font-size: 9px; }
+  #japan-layer .gaia-live-deck-question > strong { font-size: 13px; line-height: 1.45; text-wrap: balance; }
+  #japan-layer .gaia-live-exhibit-readout:not(.is-mobile-expanded) { max-height: 250px !important; }
+}
+@media (min-width: 2400px) {
+  #japan-layer .gaia-live-data-freshness > :is(strong, time) { font-size: 12px; }
 }
 
 @media (min-width: 901px) and (max-width: 1500px) {

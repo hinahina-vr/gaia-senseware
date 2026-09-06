@@ -12,6 +12,32 @@ fs.mkdirSync(output, { recursive: true });
 const report = { status: "running", checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 let page;
+const checkSourceIcon = async (link, width) => {
+  const geometry = await link.evaluate(node => {
+    const label = node.querySelector(".data-source-link-label");
+    const icon = node.querySelector("svg.data-source-link-icon");
+    if (!label || !icon) return { missingIcon: true };
+    const r = node.getBoundingClientRect();
+    const text = document.createRange();
+    text.selectNodeContents(label);
+    const t = text.getBoundingClientRect();
+    const i = icon.getBoundingClientRect();
+    const labelBox = label.getBoundingClientRect();
+    return {
+      lineCount: new Set([...text.getClientRects()].map(rect => Math.round(rect.y))).size,
+      centerDifference: Math.abs((labelBox.y + labelBox.height / 2) - (i.y + i.height / 2)),
+      gap: i.x - t.right, iconWidth: i.width, iconHeight: i.height,
+      fits: t.x >= r.x && i.right <= r.right && node.scrollWidth <= node.clientWidth + 1,
+      hasLegacyArrow: node.textContent.includes("↗"),
+      accessible: node.getAttribute("aria-label") === `${label.textContent}（新しいタブで開く）`
+        && icon.getAttribute("aria-hidden") === "true" && icon.getAttribute("focusable") === "false",
+    };
+  });
+  assert(!geometry.missingIcon && geometry.lineCount === 1 && geometry.centerDifference <= 1
+    && geometry.gap >= 5 && geometry.iconWidth === 14 && geometry.iconHeight === 14
+    && geometry.fits && !geometry.hasLegacyArrow && geometry.accessible,
+  `${width}: source icon alignment/accessibility ${JSON.stringify(geometry)}`);
+};
 try {
   for (const width of [1440, 3840, 390, 320]) {
     const height = width === 3840 ? 2088 : width < 901 ? 844 : 900;
@@ -32,6 +58,7 @@ try {
     }
     await opener.click();
     await page.waitForFunction(() => document.querySelector("#japan-data-panel").getAttribute("aria-hidden") === "false");
+    await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(380);
     const initial = await page.evaluate(() => {
       const scroller = document.querySelector(".japan-data-scroll");
@@ -50,19 +77,29 @@ try {
       assert(initial.overflow <= 1, `${width}: horizontal overflow`);
       const before = baseline?.checks.find(check => check.width === width);
       if (before) {
-        const content = state => state.cards.map(({ title, organisation, links }) => ({ title, organisation, links }));
+        // The external-link glyph was intentionally replaced by a decorative SVG.
+        const content = state => state.cards.map(({ title, organisation, links }) => ({
+          title, organisation,
+          links: links.map(link => ({ ...link, text: link.text.replace(/\s*↗$/u, "") })),
+        }));
         assert.deepEqual(content(initial), content(before), "Source metadata or links changed during a layout-only edit");
         const totalHeight = state => state.cards.reduce((sum, card) => sum + card.height, 0);
         assert(totalHeight(initial) < totalHeight(before) * .9, `${width}: insufficient reduction ${totalHeight(initial)}/${totalHeight(before)}`);
       }
       for (const link of await page.locator(".data-ledger-card a").all()) {
         await link.scrollIntoViewIfNeeded();
+        await checkSourceIcon(link, width);
         const geometry = await link.evaluate(node => {
           const rect = node.getBoundingClientRect();
           const title = node.closest(".data-ledger-card").querySelector("h3");
           return { height: rect.height, width: rect.width, hit: node.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)), textFits: title.scrollWidth <= title.clientWidth + 1 };
         });
         assert(geometry.height >= 44 && geometry.width >= 44 && geometry.hit && geometry.textFits, `${width}: inaccessible source link ${JSON.stringify(geometry)}`);
+      }
+      if (width === 1440) {
+        await page.locator(".japan-data-scroll").evaluate(node => { node.scrollTop = 0; });
+        const firstCard = await page.locator(".data-ledger-card").first().boundingBox();
+        await page.screenshot({ path: path.join(output, "source-link-detail.png"), clip: firstCard });
       }
       // Exercise the optional terms link, including long provider and source names.
       await page.evaluate(() => globalThis.GaiaDataLedger.create().updateLiveExhibit({ number: "10", shortTitle: "QA", id: "qa", key: "qa", caption: "QA", location: { label: "QA" } }, {
@@ -72,7 +109,10 @@ try {
       await page.locator(".japan-data-scroll").evaluate(node => { node.scrollTop = 0; });
       for (const link of await page.locator(".data-ledger-card a").all()) {
         await link.scrollIntoViewIfNeeded();
+        await checkSourceIcon(link, width);
+        await page.keyboard.press("Tab");
         await link.focus();
+        assert(await link.evaluate(node => node === document.activeElement && getComputedStyle(node).outlineStyle !== "none"), `${width}: no keyboard focus indicator`);
         assert(await link.evaluate(node => {
           const r = node.getBoundingClientRect();
           return r.height >= 44 && node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
@@ -85,7 +125,7 @@ try {
       await page.locator("#japan-data-close").click();
       assert(await opener.evaluate(node => node === document.activeElement));
     }
-    report.checks.push({ width, ...initial });
+    report.checks.push({ width, ...initial, singleLineSvgIcons: !baselineOnly });
     console.log(`${baselineOnly ? "BASELINE" : "PASS"} ${width}px: ${initial.cards.length} sources, ${initial.visibleCards} fully visible, ${initial.scrollHeight}px scroll height`);
     await context.close();
   }

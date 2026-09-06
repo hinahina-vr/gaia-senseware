@@ -118,7 +118,7 @@
     grid-template-columns: var(--map-chapter-width) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .8fr) minmax(0, .9fr) minmax(0, 1.45fr) minmax(0, .7fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) minmax(0, .8fr) minmax(max-content, .9fr) minmax(0, 1.45fr) minmax(max-content, .7fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
     grid-template-columns: var(--map-chapter-width) minmax(0, .98fr) minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, .82fr) minmax(0, 1.3fr) var(--map-exhibit-actions-width);
@@ -129,7 +129,7 @@
 }
 @media (min-width: 901px) and (max-width: 1500px) {
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .85fr) minmax(0, .9fr) minmax(0, 1.45fr) minmax(0, .72fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) minmax(0, .85fr) minmax(max-content, .9fr) minmax(0, 1.45fr) max-content var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
     grid-template-columns: var(--map-chapter-width) minmax(0, .98fr) minmax(0, .8fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);

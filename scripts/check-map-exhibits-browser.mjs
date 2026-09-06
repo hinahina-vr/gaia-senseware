@@ -398,6 +398,7 @@ try {
         { index: 3, title: "再資源化率を比べる", id: "recycling-rate" },
         { index: 4, title: "人類世の傷跡", id: "fossil-co2" },
         { index: 5, title: "地球からのメッセージ", id: "earthquake-magnitude" },
+        { index: 7, title: "人工物の共生化", id: "renewable-electricity" },
         { index: 8, title: "人口のうねり", id: "population" },
       ];
       scan.quantitativeLegends = [];
@@ -444,17 +445,6 @@ try {
         await page.screenshot({ path: screenshot });
         scan.screenshots.push(screenshot);
         scan.quantitativeLegends.push(observed);
-      }
-      for (const reference of [
-        // Three Ecologies has a dedicated responsive DOM panel, tested separately.
-        { index: 7, title: "人工物の共生化", panelId: "earth-organ-scale" },
-      ]) {
-        await selectMode(page, reference.index, reference.title);
-        await page.waitForFunction((panelId) => (
-          !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
-          && document.querySelector("#japan-overlay")?.dataset.auxiliaryPanelId === panelId
-        ), reference.panelId, { timeout: 12_000 });
-        assert.equal(await page.locator("#japan-overlay").getAttribute("data-quantitative-legend-id"), null);
       }
       report.scans.push(scan);
       await context.close();

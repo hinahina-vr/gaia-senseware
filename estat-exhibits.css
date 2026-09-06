@@ -347,7 +347,7 @@
   bottom: 10px;
   left: 12px;
   display: grid;
-  grid-template-columns: minmax(230px, 1.1fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
+  grid-template-columns: minmax(230px, 1.1fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(max-content, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
   min-height: 116px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--estat-accent) 32%, transparent);
@@ -435,6 +435,13 @@
 }
 .gaia-estat-chapter b { color: var(--estat-accent); font: 800 clamp(26px, 1.3vw, 32px)/1 Consolas, monospace; }
 .gaia-estat-chapter strong { overflow: hidden; font: 650 clamp(21px, 1.1vw, 28px)/1.2 var(--font-ja); text-overflow: ellipsis; white-space: nowrap; }
+.gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-chapter strong {
+  white-space: normal;
+  overflow: visible;
+  font-size: clamp(16px, 1.05vw, 26px);
+  line-height: 1.15;
+  text-wrap: balance;
+}
 .gaia-estat-place strong { font: 650 clamp(20px, 1.05vw, 26px)/1.2 var(--font-ja); }
 .gaia-estat-place small { color: rgba(211, 239, 236, 0.64); font: 700 clamp(12px, 0.62vw, 15px)/1 Consolas, var(--font-ja); }
 
@@ -484,6 +491,9 @@
 }
 .gaia-estat-timeline header { display: flex; justify-content: space-between; gap: 8px; }
 .gaia-estat-timeline header b { color: #fff; }
+@media (min-width: 1101px) {
+  .gaia-estat-primary > span { white-space: nowrap; }
+}
 
 .gaia-estat-timeline input {
   width: 100%;
@@ -520,13 +530,14 @@
 }
 
 .gaia-estat-timeline i span { position: absolute; top: 7px; left: 50%; color: rgba(219, 242, 240, 0.5); font: 700 9px/1 Consolas, monospace; transform: translateX(-50%); }
-.gaia-estat-comparison { grid-template-columns: 1fr 1fr; gap: 8px; }
+.gaia-estat-comparison { grid-template-columns: max-content max-content; column-gap: 16px; align-items: start; }
 .gaia-estat-comparison span {
   display: grid;
   gap: 8px;
   font-size: clamp(12px, 0.68vw, 16px);
   line-height: 1.2;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 .gaia-estat-comparison strong {
   color: #fff;
@@ -629,7 +640,7 @@
 }
 @media (max-width: 1500px) {
   .gaia-estat-readout {
-    grid-template-columns: 0.95fr 0.85fr 0.9fr 1.45fr 0.72fr 1.35fr;
+    grid-template-columns: 0.95fr 0.85fr 0.9fr 1.45fr max-content 1.35fr;
   }
   .gaia-estat-copy { display: none; }
 }
@@ -672,6 +683,46 @@
     padding: 9px 10px 8px;
   }
   .japan-layer.is-estat-exhibit .japan-map { padding-bottom: 230px; }
+}
+
+@media (max-width: 900px) {
+  /* Annual metric names need a full-width row, not the old narrow poetic-title slot. */
+  #japan-layer:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) #japan-title {
+    font-size: clamp(20px, 3vw, 26px);
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) {
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-chapter {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding: 8px 12px 0;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-primary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 6px;
+    padding: 4px 12px;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-primary > p {
+    grid-column: auto;
+    margin: 0;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-timeline {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding: 8px 12px;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) .gaia-estat-actions {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+  #japan-layer .gaia-estat-readout:is([data-estat-exhibit="summerHigh"], [data-estat-exhibit="winterLow"]) :is(.gaia-estat-place, .gaia-estat-comparison, .gaia-estat-copy) {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

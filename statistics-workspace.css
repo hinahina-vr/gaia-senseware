@@ -353,60 +353,149 @@
 
 .gaia-statistics-ai-dialog {
   box-sizing: border-box;
-  width: min(1000px, calc(100vw - 32px));
+  width: min(1180px, calc(100vw - 48px));
   max-width: none;
   max-height: calc(100dvh - 32px);
   margin: auto;
-  padding: 26px;
+  padding: 0 36px 30px;
   overflow: auto;
-  border: 1px solid #9ab8c34d;
-  border-radius: 16px;
-  background: #0b202b;
-  color: #dae9e8;
-  box-shadow: 0 24px 100px #0009;
+  border: 1px solid #a5c6b94d;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 96% 8%, #83b48b10, transparent 52%), #071b24;
+  color: #dce8e2;
+  box-shadow: 0 32px 120px #000b, inset 0 1px #c7e4bf17;
   font: 400 13px/1.7 var(--font-ui-ja);
   color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: #49605e transparent;
 }
-.gaia-statistics-ai-dialog::backdrop { background: #000a; backdrop-filter: blur(5px); }
-.gaia-statistics-ai-head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: #0b202b; }
-.gaia-statistics-ai-head p { margin: 0 0 5px; color: #9ec6c2; font: 400 10px/1.5 Consolas, monospace; letter-spacing: .1em; }
-.gaia-statistics-ai-head h2 { margin: 0; color: #e7f1ee; font: 500 24px/1.5 var(--font-ja); }
+.gaia-statistics-ai-dialog *, .gaia-statistics-ai-dialog *::before, .gaia-statistics-ai-dialog *::after { box-sizing: border-box; }
+.gaia-statistics-ai-dialog [hidden] { display: none !important; }
+.gaia-statistics-ai-dialog::backdrop { background: #020b10b8; backdrop-filter: blur(9px); }
+.gaia-statistics-ai-head { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 26px 0 20px; background: #071b24; }
+.gaia-statistics-ai-head p { margin: 0 0 8px; color: #adc8b4; font: 400 10px/1.5 Consolas, monospace; letter-spacing: .15em; }
+.gaia-statistics-ai-head p span { margin: 0 8px; color: #728b7e; }
+.gaia-statistics-ai-head h2 { margin: 0; color: #edf1df; font: 500 clamp(25px, 2.1vw, 31px)/1.6 var(--font-ja); letter-spacing: .07em; }
+.gaia-statistics-ai-head h2 span { display: inline-block; white-space: nowrap; }
+.gaia-statistics-ai-head .gaia-statistics-ai-intro { margin: 7px 0 0; color: #a9bcb9; font: 400 12px/1.6 var(--font-ui-ja); letter-spacing: .04em; }
 .gaia-statistics-ai-dialog button {
-  min-height: 44px; padding: 10px 14px; border: 1px solid #9bbec34d; border-radius: 7px;
-  background: #97c3bd09; color: #d0e7e2; font: 500 12px/1.5 var(--font-ui-ja); box-shadow: none; transform: none;
+  min-height: 44px; padding: 10px 14px; border: 1px solid #a8c3b938; border-radius: 9px;
+  background: #a8c3b908; color: #d5e5dc; font: 500 12px/1.5 var(--font-ui-ja); box-shadow: none; transform: none; cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
 }
-.gaia-statistics-ai-head button { flex: 0 0 44px; width: 44px; height: 44px; padding: 0; font-size: 25px; }
+.gaia-statistics-ai-dialog button:hover:not(:disabled) { border-color: #b7d5b585; background: #b7d5b514; }
+.gaia-statistics-ai-head button { flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 25px; }
 .gaia-statistics-ai-dialog button:disabled { opacity: .5; cursor: wait; }
-.gaia-statistics-ai-dialog button[type="submit"] { border-color: #acd7c980; background: #a1d2c923; }
-.gaia-statistics-ai-target { margin: 18px 0 22px; padding-bottom: 18px; border-bottom: 1px solid #9bbec329; color: #b2cbc9; overflow-wrap: anywhere; }
-.gaia-statistics-ai-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: 28px; }
-.gaia-statistics-ai-layout form { display: grid; gap: 15px; min-width: 0; }
-.gaia-statistics-ai-dialog label { display: grid; gap: 5px; min-width: 0; color: #b1c7c9; }
-.gaia-statistics-ai-provider { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gaia-statistics-ai-target { display: flex; align-items: baseline; gap: 16px; margin: 0 0 24px; padding: 12px 0; border-block: 1px solid #a8c3b926; color: #bbd0c5; overflow-wrap: anywhere; }
+.gaia-statistics-ai-target > span { flex: 0 0 auto; color: #95aea7; font-size: 10px; letter-spacing: .08em; }
+.gaia-statistics-ai-target p { margin: 0; font-size: 12px; }
+.gaia-statistics-ai-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.gaia-statistics-ai-layout form { display: grid; gap: 24px; min-width: 0; }
+.gaia-statistics-ai-dialog .gaia-statistics-ai-section-title { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; color: #dce8db; font: 500 14px/1.5 var(--font-ui-ja); }
+.gaia-statistics-ai-section-title > span { color: #a7c5ad; font: 400 10px/1.5 Consolas, monospace; letter-spacing: .08em; }
+.gaia-statistics-ai-prompts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 15px; }
+.gaia-statistics-ai-prompts button { position: relative; display: grid; align-content: center; gap: 3px; min-height: 64px; padding: 10px 11px; text-align: left; }
+.gaia-statistics-ai-prompts button strong { color: inherit; font: 500 12px/1.5 var(--font-ui-ja); }
+.gaia-statistics-ai-prompts button small { color: #a0b6ad; font: 400 10px/1.5 var(--font-ui-ja); }
+.gaia-statistics-ai-prompts button[aria-pressed="true"] { border-color: #b4d0a987; background: linear-gradient(120deg, #c6d8ab20, #7bb9ae12); color: #e8efd9; box-shadow: inset 2px 0 #c4d9ad; }
+.gaia-statistics-ai-dialog label { display: grid; gap: 6px; min-width: 0; color: #b7c9c0; font-size: 11px; }
+.gaia-statistics-ai-dialog .gaia-statistics-ai-question-label { grid-template-columns: auto 1fr; align-items: baseline; }
+.gaia-statistics-ai-question-label > span { text-align: right; color: #9eb3ab; font-size: 10px; }
+.gaia-statistics-ai-question-label textarea { grid-column: 1 / -1; }
+.gaia-statistics-ai-connection { display: grid; gap: 12px; padding-top: 22px; border-top: 1px solid #a8c3b926; }
+.gaia-statistics-ai-connection .gaia-statistics-ai-section-title { margin-bottom: 0; }
+.gaia-statistics-ai-provider { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .gaia-statistics-ai-dialog :is(input:not([type="checkbox"]), select, textarea) {
-  box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
-  border: 1px solid #9bbec342; border-radius: 6px; background: #051722; color: #e1eeec; font: 400 13px/1.6 var(--font-ui-ja);
+  width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px;
+  border: 1px solid #a8c3b938; border-radius: 8px; background: #02131c80; color: #e1eae3; font: 400 13px/1.6 var(--font-ui-ja);
 }
-.gaia-statistics-ai-dialog textarea { resize: vertical; }
+.gaia-statistics-ai-dialog textarea { resize: vertical; min-height: 90px; }
+.gaia-statistics-ai-dialog input::placeholder { color: #829c95; }
+.gaia-statistics-ai-privacy { padding: 11px 13px; border-left: 2px solid #94b69375; background: #9fcaaa08; }
+.gaia-statistics-ai-privacy p { margin: 0; color: #abc1b7; font-size: 11px; line-height: 1.8; }
+.gaia-statistics-ai-privacy strong { display: block; margin-bottom: 3px; color: #c9dec9; font-weight: 500; }
 .gaia-statistics-ai-dialog .gaia-statistics-ai-remember { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; }
-.gaia-statistics-ai-remember input { flex: 0 0 auto; width: 17px; height: 17px; margin: 3px 0 0; accent-color: #9bd7cf; }
-.gaia-statistics-ai-remember small { display: block; color: #94aeb5; font-size: 11px; }
-.gaia-statistics-ai-dialog .gaia-statistics-ai-note { margin: 0; color: #9ab1b9; font: 400 12px/1.8 var(--font-ui-ja); }
-.gaia-statistics-ai-preview { min-width: 0; border: 1px solid #9bbec329; border-radius: 6px; padding: 10px; }
-.gaia-statistics-ai-preview summary { cursor: pointer; }
+.gaia-statistics-ai-remember input { flex: 0 0 auto; width: 17px; height: 17px; margin: 3px 0 0; accent-color: #b9d2ad; }
+.gaia-statistics-ai-remember small { display: block; margin-top: 4px; color: #9ab0a6; font-size: 10px; line-height: 1.7; }
+.gaia-statistics-ai-dialog .gaia-statistics-ai-note { margin: 0; color: #9eb5ac; font: 400 11px/1.8 var(--font-ui-ja); }
+.gaia-statistics-ai-endpoint, .gaia-statistics-ai-preview { min-width: 0; font-size: 11px; }
+.gaia-statistics-ai-dialog summary { min-height: 44px; padding: 12px 0; color: #b7c9c0; cursor: pointer; }
+.gaia-statistics-ai-dialog summary span { margin-left: 8px; color: #8da99d; font-size: 10px; overflow-wrap: anywhere; }
+.gaia-statistics-ai-endpoint label { margin: 0 0 8px; }
+.gaia-statistics-ai-dialog .gaia-statistics-ai-clear { justify-self: start; margin-top: -10px; padding: 8px 0; min-height: 44px; border: 0; color: #9db7ac; background: none; font-size: 10px; text-decoration: underline; text-decoration-color: #9db7ac60; text-underline-offset: 4px; }
+.gaia-statistics-ai-send { display: grid; gap: 12px; padding-top: 6px; border-top: 1px solid #a8c3b926; }
 .gaia-statistics-ai-preview pre { max-height: 220px; margin: 10px 0 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 11px/1.6 Consolas, monospace; }
 .gaia-statistics-ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.gaia-statistics-ai-result { min-width: 0; padding-left: 24px; border-left: 1px solid #9bbec329; }
-.gaia-statistics-ai-result h3 { margin: 0 0 10px; color: #d7ebe5; font: 500 17px/1.5 var(--font-ja); }
-.gaia-statistics-ai-result output { display: block; margin-top: 18px; scroll-margin-top: 80px; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 14px/1.9 var(--font-ui-ja); }
+.gaia-statistics-ai-dialog button[type="submit"] { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex: 1 1 auto; min-height: 50px; padding: 12px 18px; border-color: #bed5b57d; background: linear-gradient(110deg, #c5d8ab29, #7dbab921); color: #e3eed9; font-size: 13px; }
+.gaia-statistics-ai-dialog button[type="submit"] span { font-size: 21px; color: #c0d6b6; }
+.gaia-statistics-ai-result { position: sticky; top: 156px; min-width: 0; padding: 22px; border: 1px solid #a8c3b926; border-radius: 12px; background: radial-gradient(ellipse at 50% 30%, #a4c8980d, transparent 68%), #02151b50; }
+.gaia-statistics-ai-result-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-bottom: 17px; border-bottom: 1px solid #a8c3b926; }
+.gaia-statistics-ai-result h3 { margin: 0; color: #d7e6d6; font: 500 17px/1.5 var(--font-ja); }
+.gaia-statistics-ai-result-head > span { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; color: #a0b9ab; font-size: 10px; }
+.gaia-statistics-ai-result-head > span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #a9c298; box-shadow: 0 0 9px #aac99870; }
+.gaia-statistics-ai-empty { padding: 12px 0 4px; text-align: center; }
+.gaia-statistics-ai-orbit { display: block; width: min(240px, 100%); height: 160px; margin: 6px auto 0; stroke: #bbd4b661; stroke-width: .8; }
+.gaia-statistics-ai-orbit path { stroke: #bbd4b624; stroke-dasharray: 2 5; }
+.gaia-statistics-ai-orbit circle[r="3"], .gaia-statistics-ai-orbit circle[r="2"] { fill: #cdddba; stroke: none; }
+.gaia-statistics-ai-empty-title { margin: 5px 0 17px; color: #dfe8d5; font: 400 23px/1.8 var(--font-ja); letter-spacing: .08em; }
+.gaia-statistics-ai-empty ol { display: grid; gap: 14px; margin: 27px 0 16px; padding: 19px 0 0; border-top: 1px solid #a8c3b926; list-style: none; text-align: left; color: #b5c8bc; font-size: 11px; }
+.gaia-statistics-ai-empty li { display: flex; gap: 12px; align-items: baseline; }
+.gaia-statistics-ai-empty li span { color: #8da694; font: 400 10px/1.5 Consolas, monospace; }
+.gaia-statistics-ai-result output { display: block; margin-top: 18px; scroll-margin-top: 170px; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 14px/1.95 var(--font-ui-ja); }
+.gaia-statistics-ai-empty:not([hidden]) + output { color: #9ab0a5; font-size: 11px; }
+.gaia-statistics-ai-result-caution { margin: 24px 0 0; padding-top: 16px; border-top: 1px solid #a8c3b926; color: #97afa2; font-size: 10px; line-height: 1.8; }
 .gaia-statistics-ai-result output[data-state="error"] { color: #f2b6a9; }
-.gaia-statistics-ai-dialog :is(button, input, textarea, select, summary):focus-visible { outline: 2px solid #9bd7cf; outline-offset: 3px; }
+@media (min-width: 901px) {
+  .gaia-statistics-ai-result:not([data-state="idle"]) { display: flex; flex-direction: column; max-height: calc(100dvh - 280px); }
+  .gaia-statistics-ai-result:not([data-state="idle"]) output { min-height: 60px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #49605e transparent; padding-right: 8px; }
+  .gaia-statistics-ai-result:not([data-state="idle"]) :is(.gaia-statistics-ai-result-head, .gaia-statistics-ai-result-caution) { flex: 0 0 auto; }
+}
+.gaia-statistics-ai-result[data-state="loading"] .gaia-statistics-ai-result-head > span::before { animation: gaia-ai-thinking 1.8s ease-in-out infinite; }
+.gaia-statistics-ai-dialog :is(button, input, textarea, select, summary, output):focus-visible { outline: 2px solid #c1d8ad; outline-offset: 3px; }
+@keyframes gaia-ai-thinking { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .gaia-statistics-ai-dialog *, .gaia-statistics-ai-dialog *::before { animation: none !important; transition: none !important; } }
+@media (min-width: 2000px) and (min-height: 1100px) {
+  .gaia-statistics-ai-dialog { width: 1440px; padding-inline: 42px; }
+  .gaia-statistics-ai-head { padding-top: 32px; }
+  .gaia-statistics-ai-head h2 { font-size: 36px; }
+  .gaia-statistics-ai-target p, .gaia-statistics-ai-head .gaia-statistics-ai-intro { font-size: 14px; }
+  .gaia-statistics-ai-dialog .gaia-statistics-ai-section-title { font-size: 16px; }
+  .gaia-statistics-ai-prompts button { min-height: 72px; padding: 12px 15px; }
+  .gaia-statistics-ai-prompts button strong { font-size: 14px; }
+  .gaia-statistics-ai-prompts button small { font-size: 11px; }
+  .gaia-statistics-ai-dialog label, .gaia-statistics-ai-privacy p, .gaia-statistics-ai-dialog .gaia-statistics-ai-note { font-size: 12px; }
+  .gaia-statistics-ai-dialog :is(input:not([type="checkbox"]), select, textarea) { font-size: 15px; }
+  .gaia-statistics-ai-result h3 { font-size: 20px; }
+  .gaia-statistics-ai-empty-title { font-size: 27px; }
+  .gaia-statistics-ai-empty ol, .gaia-statistics-ai-result-caution { font-size: 12px; }
+  .gaia-statistics-ai-result output { font-size: 16px; }
+}
+@media (max-width: 900px) {
+  .gaia-statistics-ai-dialog { padding-inline: 24px; }
+  .gaia-statistics-ai-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .gaia-statistics-ai-result { position: static; }
+  .gaia-statistics-ai-empty { padding-top: 0; }
+  .gaia-statistics-ai-orbit { height: 120px; }
+}
 @media (max-width: 720px) {
   .gaia-statistics-lab .gaia-statistics-header { display: grid; grid-template-columns: minmax(0, 1fr); }
   .gaia-statistics-lab .gaia-statistics-header-actions { justify-content: flex-end; }
-  .gaia-statistics-ai-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 18px 14px; }
-  .gaia-statistics-ai-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  .gaia-statistics-ai-result { border-left: 0; border-top: 1px solid #9bbec329; padding: 20px 0 0; }
+  .gaia-statistics-ai-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 0 16px 22px; border-radius: 14px; }
+  .gaia-statistics-ai-head { gap: 8px; padding: 18px 0 16px; }
+  .gaia-statistics-ai-head p { font-size: 8px; letter-spacing: .09em; }
+  .gaia-statistics-ai-head p span { margin-inline: 4px; }
+  .gaia-statistics-ai-head h2 { font-size: clamp(19px, 5.2vw, 26px); letter-spacing: .015em; }
+  .gaia-statistics-ai-head .gaia-statistics-ai-intro { font-size: 10px; }
+  .gaia-statistics-ai-head button { flex-basis: 40px; width: 40px; min-width: 40px; min-height: 44px; }
+  .gaia-statistics-ai-target { display: block; margin-bottom: 20px; }
+  .gaia-statistics-ai-target p { margin-top: 5px; font-size: 11px; }
+  .gaia-statistics-ai-prompts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gaia-statistics-ai-prompts button { padding: 10px; }
+  .gaia-statistics-ai-dialog .gaia-statistics-ai-question-label { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .gaia-statistics-ai-question-label > span { text-align: left; margin-bottom: 4px; }
+  .gaia-statistics-ai-dialog textarea { min-height: 144px; }
+  .gaia-statistics-ai-result { padding: 18px; }
+  .gaia-statistics-ai-result output { scroll-margin-top: 140px; }
   .gaia-statistics-ai-provider { grid-template-columns: minmax(0, 1fr); }
   .gaia-statistics-ai-dialog :is(input:not([type="checkbox"]), select, textarea) { font-size: 16px; }
 }

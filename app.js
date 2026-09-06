@@ -4894,18 +4894,21 @@
       ctx.beginPath();
       ctx.roundRect(panelX + .5, panelY + .5, panelWidth - 1, panelHeight - 1, 12);
       ctx.fill(); ctx.stroke();
+      const scope = title.includes(" / ") ? title.split(" / ").slice(1).join(" / ") : "";
+      ctx.font = '500 10px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+      const scopeWidth = scope ? Math.min(ctx.measureText(scope).width, panelWidth * .46) : 0;
       ctx.fillStyle = "#a7bec8";
       ctx.font = '500 11px "Yu Gothic UI", "Noto Sans JP", sans-serif';
       ctx.textAlign = "left";
-      ctx.fillText(title.split(" / ")[0], panelX + 18, panelY + 22, panelWidth - 36);
+      ctx.fillText(title.split(" / ")[0], panelX + 18, panelY + 22, panelWidth - 36 - (scope ? scopeWidth + 10 : 0));
       ctx.fillStyle = "#e3eef0";
       ctx.font = '500 21px "Yu Gothic UI", "Noto Sans JP", sans-serif';
       ctx.fillText(current.replace(/^平均\s*/u, ""), panelX + 18, panelY + 49, panelWidth - 36);
-      if (title.includes(" / ") && !compact) {
+      if (scope) {
         ctx.textAlign = "right";
         ctx.fillStyle = "#829eaa";
         ctx.font = '500 10px "Yu Gothic UI", "Noto Sans JP", sans-serif';
-        ctx.fillText(title.split(" / ").slice(1).join(" / "), panelX + panelWidth - 18, panelY + 22, panelWidth * .48);
+        ctx.fillText(scope, panelX + panelWidth - 18, panelY + 22, scopeWidth);
       }
       const gradient = ctx.createLinearGradient(gradientX, 0, gradientX + gradientWidth, 0);
       colors.forEach((color, index) => gradient.addColorStop(index / (colors.length - 1), color));
@@ -6066,53 +6069,21 @@
       japanOverlay.dataset.renewableSelectionLabelVisible = japanOverlay.dataset.selectionLabelVisible;
 
       if (state && now >= mapPlotRevealStartedAt) {
-        const compact = rect.width < 680;
-        const panelWidth = compact ? Math.min(180, rect.width - 28) : 330;
-        const panelHeight = compact ? 92 : 104;
-        const panelX = compact ? rect.width - panelWidth - 14 : rect.width - panelWidth - 30;
-        const panelY = getLegendSafePanelY(panelX, panelWidth, compact ? 92 : 54);
-        const gradientX = panelX + 16;
-        const gradientY = panelY + (compact ? 48 : 54);
-        const gradientWidth = panelWidth - 32;
-        recordAuxiliaryPanel("earth-organ-scale", panelX, panelY, panelWidth, panelHeight);
-        japanOverlay.dataset.energyPanelScreenLeft = (rect.left + panelX).toFixed(2);
-        japanOverlay.dataset.energyPanelScreenTop = (rect.top + panelY).toFixed(2);
-        japanOverlay.dataset.energyPanelScreenRight = (rect.left + panelX + panelWidth).toFixed(2);
-        japanOverlay.dataset.energyPanelScreenBottom = (rect.top + panelY + panelHeight).toFixed(2);
-        japanOverlay.dataset.energyPanelLegendClearance =
-          japanOverlay.dataset.auxiliaryPanelLegendClearance;
-        ctx.save();
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = "rgba(3,18,31,.9)";
-        ctx.strokeStyle = "rgba(111,218,255,.38)";
-        ctx.lineWidth = 1;
-        ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
-        ctx.strokeRect(panelX + 0.5, panelY + 0.5, panelWidth - 1, panelHeight - 1);
-        ctx.fillStyle = "rgba(222,249,255,.96)";
-        ctx.font = '600 11px "Noto Sans JP", sans-serif';
-        ctx.textAlign = "left";
-        ctx.fillText("再生可能電力比率 / 国別", panelX + 16, panelY + 21);
-        ctx.fillStyle = "rgba(139,229,255,.9)";
-        ctx.font = '600 9px Consolas, "Courier New", monospace';
-        ctx.fillText(`${selected?.countryJa || selected?.country || "—"}  ${selected?.renewablePercent?.toFixed(1) || "—"}%`, panelX + 16, panelY + 38);
-        const gradient = ctx.createLinearGradient(gradientX, 0, gradientX + gradientWidth, 0);
-        gradient.addColorStop(0, "rgb(14,72,150)");
-        gradient.addColorStop(0.5, "rgb(30,151,203)");
-        gradient.addColorStop(1, "rgb(46,230,255)");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(gradientX, gradientY, gradientWidth, 12);
-        const markerX = gradientX + clamp((selected?.renewablePercent || 0) / 100, 0, 1) * gradientWidth;
-        ctx.fillStyle = "rgba(255,240,152,.98)";
-        ctx.fillRect(markerX - 1.5, gradientY - 3, 3, 18);
-        ctx.fillStyle = "rgba(180,225,238,.82)";
-        ctx.font = '8px Consolas, "Courier New", monospace';
-        ctx.textAlign = "left";
-        ctx.fillText("0%", gradientX, gradientY + 27);
-        ctx.textAlign = "center";
-        ctx.fillText("50", gradientX + gradientWidth / 2, gradientY + 27);
-        ctx.textAlign = "right";
-        ctx.fillText("100%", gradientX + gradientWidth, gradientY + 27);
-        ctx.restore();
+        const panel = drawQuantitativeLegendPanel({
+          id: "renewable-electricity",
+          title: `再生可能電力比率 / ${selected?.countryJa || selected?.country || "国別"}`,
+          current: `${selected?.year || "—"}　${selected?.renewablePercent?.toFixed(1) ?? "—"}%`,
+          value: selected?.renewablePercent,
+          minimum: 0, maximum: 100, minimumLabel: "0%", maximumLabel: "100%",
+          colors: ["rgb(14,72,150)", "rgb(30,151,203)", "rgb(46,230,255)"],
+        });
+        if (panel) {
+          japanOverlay.dataset.energyPanelScreenLeft = (rect.left + panel.panelX).toFixed(2);
+          japanOverlay.dataset.energyPanelScreenTop = (rect.top + panel.panelY).toFixed(2);
+          japanOverlay.dataset.energyPanelScreenRight = (rect.left + panel.panelX + panel.panelWidth).toFixed(2);
+          japanOverlay.dataset.energyPanelScreenBottom = (rect.top + panel.panelY + panel.panelHeight).toFixed(2);
+          japanOverlay.dataset.energyPanelLegendClearance = japanOverlay.dataset.auxiliaryPanelLegendClearance;
+        }
       }
     } else if (signalMode.id === "population-tide") {
       const state = getMapSequenceState(signalMode);

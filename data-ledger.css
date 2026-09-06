@@ -409,7 +409,7 @@
 
 .data-ledger-card {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 104px;
+  grid-template-columns: 18px minmax(0, 1fr) 120px;
   gap: 3px 10px;
   align-items: start;
   padding: 10px 0;
@@ -463,23 +463,34 @@
 }
 
 .data-ledger-card .data-source-links a {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   box-sizing: border-box;
   min-height: 44px;
   margin: 0;
-  padding: 6px;
+  padding: 6px 8px;
   border: 1px solid rgba(143, 236, 210, 0.2);
   border-radius: 3px;
   color: rgba(184, 241, 225, 0.78);
   background: rgba(16, 58, 50, 0.15);
-  font-family: var(--font-ja);
+  font-family: var(--font-ui-ja);
   font-size: 11px;
   line-height: 1.4;
   text-align: center;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
   letter-spacing: 0.02em;
+}
+
+.data-source-link-label { flex: 0 0 auto; }
+
+.data-source-link-icon {
+  display: block;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
 }
 
 .data-ledger-card .data-source-links a:is(:hover, :focus-visible) {
@@ -498,6 +509,6 @@
   .japan-data-scroll { padding: 10px 14px 20px; }
 }
 @media (max-width: 520px) {
-  .data-ledger-card { grid-template-columns: 16px minmax(0, 1fr) 76px; column-gap: 7px; }
+  .data-ledger-card { grid-template-columns: 16px minmax(0, 1fr) 120px; column-gap: 7px; }
   .data-ledger-card h3 { font-size: 14px; }
 }

@@ -1,7 +1,8 @@
-import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-weather-credit-2";
+import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-live-map-question-1";
 import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
+import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
 
 const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);
 const PREFECTURE_TOPOLOGY_URL = new URL("../../data/japan-prefectures.topojson?v=gaia-estat-choropleth-1", import.meta.url);
@@ -55,7 +56,7 @@ const EXHIBITS = Object.freeze([
     shortTitle: "旅の灯",
     title: "旅の灯 — STAYING LIGHTS",
     key: "lodging",
-    unit: "人泊",
+    unit: "人",
     valueLabel: "延べ宿泊者数",
     accent: "#ffd36e",
     secondary: "#f4b58b",
@@ -105,8 +106,8 @@ const EXHIBITS = Object.freeze([
   Object.freeze({
     id: "estat-summer-high",
     number: "20",
-    shortTitle: "夏の頂",
-    title: "夏の頂 — SUMMER CREST",
+    shortTitle: "日最高気温の年平均",
+    title: "日最高気温の年平均 — ANNUAL MEAN DAILY HIGH",
     key: "summerHigh",
     unit: "℃",
     decimals: 1,
@@ -114,7 +115,7 @@ const EXHIBITS = Object.freeze([
     accent: "#ff765f",
     secondary: "#ffd76d",
     caption: "毎日の最高気温を一年で平均した値を、1955年から県境ごとの熱色で追います。",
-    guide: "紫から赤・黄へ進むほど高温。単日の記録ではなく、日最高気温の年平均です。",
+    guide: "紫から赤・黄へ進むほど高温。夏だけの平均や一年の最高記録ではなく、毎日の日最高気温の年平均です。",
     frequency: "年次",
     provider: "気象庁",
     longTerm: true,
@@ -126,8 +127,8 @@ const EXHIBITS = Object.freeze([
   Object.freeze({
     id: "estat-winter-low",
     number: "21",
-    shortTitle: "冬の底",
-    title: "冬の底 — WINTER DEPTH",
+    shortTitle: "日最低気温の年平均",
+    title: "日最低気温の年平均 — ANNUAL MEAN DAILY LOW",
     key: "winterLow",
     unit: "℃",
     decimals: 1,
@@ -135,7 +136,7 @@ const EXHIBITS = Object.freeze([
     accent: "#83d8ff",
     secondary: "#c9b8ff",
     caption: "毎日の最低気温を一年で平均した値を、1955年から県境ごとの冷色で追います。",
-    guide: "濃青から水色・白へ進むほど低温。単日の記録ではなく、日最低気温の年平均です。",
+    guide: "濃青から水色・白へ進むほど低温。冬だけの平均や一年の最低記録ではなく、毎日の日最低気温の年平均です。",
     frequency: "年次",
     provider: "気象庁",
     longTerm: true,
@@ -1107,6 +1108,19 @@ const paletteCss = (palette) => `linear-gradient(90deg, ${palette
   .map(([stop, color]) => `rgb(${color.join(" ")}) ${Math.round(stop * 100)}%`)
   .join(", ")})`;
 
+const legendPaletteFor = (exhibit, range) => {
+  const palette = paletteFor(exhibit);
+  const start = heatmapRatio(range.minimum, exhibit);
+  const end = heatmapRatio(range.maximum, exhibit);
+  // Show low → high values while keeping the exact map colors, including
+  // the reversed cold scale and the asymmetric, zero-centred migration scale.
+  if (start === end) return [[0, interpolatePalette(palette, start)], [1, interpolatePalette(palette, end)]];
+  return [[0, interpolatePalette(palette, start)],
+    ...palette.filter(([stop]) => stop > Math.min(start, end) && stop < Math.max(start, end))
+      .map(([stop, color]) => [(stop - start) / (end - start), color]),
+    [1, interpolatePalette(palette, end)]].sort((a, b) => a[0] - b[0]);
+};
+
 const drawPrefectureHeatmap = (currentProjection, values, exhibit, timestamp) => {
   if (prefectureShapes.length !== 47) {
     canvas.dataset.estatHeatmap = "loading";
@@ -1498,11 +1512,19 @@ const renderReadout = () => {
   sourceAction.title = `${exhibit.sourceName}を${exhibit.provider || "e-Stat"}で確認`;
   sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データを${exhibit.provider || "e-Stat"}で確認する（新しいタブ）`);
   const range = valueRangeFor(exhibit);
-  const palette = paletteFor(exhibit);
-  heatLegend.style.setProperty("--estat-heat-gradient", paletteCss(palette));
-  heatLegend.querySelector("[data-estat-heat-title]").textContent = `47都道府県 / ${exhibit.valueLabel}`;
-  heatLegend.querySelector("[data-estat-heat-min]").textContent = `${formatNumber(range.minimum, exhibit.key === "migration", exhibit.decimals || 0)}${exhibit.unit}`;
-  heatLegend.querySelector("[data-estat-heat-max]").textContent = `${formatNumber(range.maximum, exhibit.key === "migration", exhibit.decimals || 0)}${exhibit.unit}`;
+  const gradient = paletteCss(legendPaletteFor(exhibit, range));
+  heatLegend.style.setProperty("--estat-heat-gradient", gradient);
+  updateMetricLegend(heatLegend, {
+    title: exhibit.valueLabel,
+    scope: longTermTemperature ? temperatureStation?.station || city.city : city.prefecture,
+    period: period.replace("-", "/"),
+    current: Number.isFinite(value) ? `${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}` : "欠測",
+    value, minimum: range.minimum, maximum: range.maximum,
+    minimumLabel: `${formatNumber(range.minimum, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}`,
+    maximumLabel: `${formatNumber(range.maximum, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}`,
+    gradient,
+    description: `${periods[0]}〜${periods.at(-1)}の47${longTermTemperature ? "観測地点" : "都道府県"}に共通の色の範囲。針は選択中の値。`,
+  });
   const slider = readout.querySelector("[data-estat-month]");
   slider.max = String(periods.length - 1);
   slider.value = String(periodIndex);
@@ -1847,15 +1869,11 @@ const mount = () => {
   map.append(prefectureRegionTooltip);
   syncPrefectureRegionPaths();
 
-  heatLegend = document.createElement("section");
-  heatLegend.className = "gaia-estat-heat-legend";
+  heatLegend = createMetricLegend({ className: "gaia-estat-heat-legend", label: "都道府県の観測値と色の目盛り" });
   heatLegend.hidden = true;
-  heatLegend.setAttribute("aria-label", "都道府県ヒートマップの色凡例");
-  heatLegend.innerHTML = `
-    <strong data-estat-heat-title>47都道府県 / 観測値</strong>
-    <i aria-hidden="true"></i>
-    <span><small data-estat-heat-min>低</small><small data-estat-heat-max>高</small></span>
-  `;
+  heatLegend.querySelector("[data-metric-title]").setAttribute("data-estat-heat-title", "");
+  heatLegend.querySelector("[data-metric-minimum]").setAttribute("data-estat-heat-min", "");
+  heatLegend.querySelector("[data-metric-maximum]").setAttribute("data-estat-heat-max", "");
   map.append(heatLegend);
 
   readout = document.createElement("section");
@@ -1866,7 +1884,7 @@ const mount = () => {
     <div class="gaia-estat-chapter">
       <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="16 人の潮目。展示一覧を開く"><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
     </div>
-    <div class="gaia-estat-place"><p>47 PREFECTURES / AUTO RELAY</p><strong data-estat-place>01 北海道</strong><small data-estat-city>札幌</small></div>
+    <div class="gaia-estat-place"><strong data-estat-place>01 北海道</strong><small data-estat-city>札幌</small></div>
     <div class="gaia-estat-primary"><p data-estat-value-label>転入超過</p><strong data-estat-value>—</strong><span data-estat-unit>人</span></div>
     <div class="gaia-estat-timeline">
       <header><span>PERIOD / <b data-estat-period>2026 / 06</b></span><strong data-estat-frequency>e-Stat · 月次</strong></header>

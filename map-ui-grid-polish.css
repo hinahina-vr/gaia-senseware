@@ -2463,7 +2463,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 /* All map chapters remain reachable from the live planetary instrument deck. */
 .gaia-live-deck-chapter,
 .gaia-live-deck-location,
-.gaia-live-deck-wave,
+.gaia-live-deck-question,
 .gaia-live-deck-modes,
 .gaia-live-deck-actions {
   min-width: 0;
@@ -3027,8 +3027,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 }
 
 .gaia-live-deck-chapter > p,
-.gaia-live-deck-location > p,
-.gaia-live-deck-wave header > span {
+.gaia-live-deck-location > p {
   margin: 0;
   color: rgba(var(--map-accent-rgb), 0.68);
   font: 700 7px/1 Consolas, monospace;
@@ -3115,7 +3114,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     .gaia-live-deck-chapter,
     .gaia-live-deck-location,
     .gaia-live-exhibit-primary,
-    .gaia-live-deck-wave,
+    .gaia-live-deck-question,
     .gaia-live-deck-actions
   ) {
     align-self: stretch;
@@ -3267,35 +3266,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     line-height: 0.96;
   }
 
-  .gaia-live-deck-wave {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 8px;
-    align-content: center;
-  }
-
-  .gaia-live-deck-wave header,
-  .gaia-live-deck-wave footer {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    justify-content: space-between;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .gaia-live-deck-wave header strong,
-  .gaia-live-deck-wave footer :is(time, b) {
-    overflow: hidden;
-    color: rgba(218, 244, 248, 0.64);
-    font: 650 7px/1.2 Consolas, monospace;
-    letter-spacing: 0.07em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .gaia-live-deck-location-control {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr) 34px;
@@ -3308,46 +3278,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     height: 32px;
     border-radius: 50%;
     background: transparent;
-  }
-
-  .gaia-live-deck-wave footer time {
-    min-width: 0;
-    flex: 1 1 auto;
-    color: rgba(232, 252, 255, 0.94);
-    font: 750 clamp(12px, 0.55vw, 18px)/1.15 Consolas, monospace;
-    letter-spacing: 0.035em;
-    text-shadow: 0 0 14px rgba(var(--map-accent-rgb), 0.28);
-  }
-
-  .gaia-live-deck-wave footer b {
-    flex: 0 1 auto;
-  }
-
-  .gaia-live-deck-wave header strong {
-    color: rgb(var(--map-accent-rgb));
-  }
-
-  .gaia-live-deck-waveform {
-    display: flex;
-    height: 38px;
-    gap: 2px;
-    align-items: center;
-    overflow: hidden;
-    border-block: 1px solid rgba(var(--map-accent-rgb), 0.08);
-    background: linear-gradient(90deg, transparent, rgba(var(--map-accent-rgb), 0.035), transparent);
-  }
-
-  .gaia-live-deck-waveform i {
-    width: 2px;
-    height: calc(3px + var(--live-wave, 0.2) * 30px);
-    flex: 1 1 auto;
-    max-width: 4px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(var(--map-accent-rgb), 0.18), rgb(var(--map-accent-rgb)), rgba(var(--map-accent-rgb), 0.18));
-    box-shadow: 0 0 8px rgba(var(--map-accent-rgb), 0.22);
-    transform-origin: center;
-    animation: gaia-live-deck-wave 2.8s ease-in-out infinite alternate;
-    animation-delay: calc(var(--live-wave-index) * -70ms);
   }
 
   .gaia-live-deck-modes {
@@ -3641,7 +3571,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .gaia-live-exhibit-readout > :is(
     .gaia-live-deck-chapter,
     .gaia-live-deck-location,
-    .gaia-live-deck-wave,
     .gaia-live-deck-modes
   ) {
     display: none !important;
@@ -3679,13 +3608,4 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     grid-column: 1 / -1;
     order: 3;
   }
-}
-
-@keyframes gaia-live-deck-wave {
-  from { transform: scaleY(0.72); opacity: 0.58; }
-  to { transform: scaleY(1); opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gaia-live-deck-waveform i { animation: none; }
 }

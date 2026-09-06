@@ -278,13 +278,16 @@
 }
 
 .character-book-selector [data-character-select="mizuha"] img {
-  top: -55%;
-  height: 780%;
+  /* Match Amane's eye-to-chin scale and chin position, not the file bounds. */
+  top: -59.8%;
+  left: 33.3%;
+  height: 908.2%;
 }
 
 .character-book-selector [data-character-select="sakuya"] img {
-  top: -51%;
-  height: 840%;
+  top: -38.7%;
+  left: 56.1%;
+  height: 756.5%;
 }
 
 .character-book-selector b {
@@ -306,18 +309,19 @@
   border-color: rgba(250, 254, 255, 0.92);
   background: rgba(var(--character-accent-rgb), 0.3);
   box-shadow: 0 0 0 4px rgba(var(--character-accent-rgb), 0.16), 0 16px 38px rgba(2, 18, 34, 0.28);
-  transform: translateY(-4px);
+  transform: none;
 }
 
 .character-book-selector button[aria-current="true"] > span::after { border-color: rgba(249, 254, 255, 0.62); }
 .character-book-selector button:hover img,
 .character-book-selector button:focus-visible img,
-.character-book-selector button[aria-current="true"] img { filter: saturate(1) brightness(1.04); transform: translateX(-50%) scale(1.035); }
+.character-book-selector button[aria-current="true"] img { filter: saturate(1) brightness(1.04); }
 .character-book-selector button[aria-current="true"] { color: #fff; }
 
 .character-book-hero-detail {
   position: absolute;
-  z-index: 5;
+  /* The five-line biography must remain readable across the portrait silhouette. */
+  z-index: 9;
   top: calc(clamp(96px, 10vh, 128px) + clamp(190px, 24vh, 260px));
   right: auto;
   bottom: auto;

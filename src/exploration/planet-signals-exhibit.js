@@ -3,6 +3,7 @@ import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-acti
 import { buildPlanetStatistics } from "./planet-statistics.js?v=gaia-unified-actions-1";
 import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-satellite-clouds-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
+import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
 
 const GLOBAL_SAMPLE_COUNT = 240;
 const formatCoordinates = (point, digits = 1, separator = " ") =>
@@ -144,6 +145,7 @@ let atmosphereRenderer;
 let initializeAtmosphere;
 let readout;
 let legend;
+let metricLegend;
 let buttons = [];
 let activeIndex = -1;
 let selectionRevision = 0;
@@ -731,6 +733,41 @@ const applyHeading = (definition) => {
   }
 };
 
+const updatePlanetLegend = (definition, data = null) => {
+  const metric = {
+    wind: { key: "windSpeed", title: "風速", unit: "m/s", decimals: 1 },
+    air: { key: "pm25", title: "PM2.5", unit: "µg/m³", decimals: 1 },
+    quake: { key: "magnitude", title: "マグニチュード", unit: "M", decimals: 1 },
+    cloud: { key: "cloud", title: "雲量", unit: "%", decimals: 1 },
+  }[definition.renderer];
+  const values = (data?.points || []).map(point => point[metric.key]).filter(Number.isFinite);
+  const isQuake = definition.renderer === "quake";
+  const sample = data?.sourceState === "SAVED VALUES";
+  const value = values.length ? isQuake ? Math.max(...values) : average(values) : null;
+  const minimum = definition.renderer === "cloud" ? 0 : values.length ? Math.min(...values) : null;
+  const maximum = definition.renderer === "cloud" ? 100 : values.length ? Math.max(...values) : null;
+  const formatted = number => !Number.isFinite(number) ? "—" : isQuake ? `M${formatNumber(number, 1)}` : `${formatNumber(number, metric.decimals)} ${metric.unit}`;
+  const stamp = data ? formatJst(data.observedAt) : "";
+  updateMetricLegend(metricLegend, {
+    title: metric.title,
+    scope: !data ? "読込中" : sample ? "演出用サンプル" : isQuake ? "直近24時間の最大" : `${values.length}格子平均`,
+    period: stamp.replace(/^\d{4}\//u, "").replace(" JST", ""),
+    current: formatted(value), value, minimum, maximum,
+    minimumLabel: definition.renderer === "cloud" ? "0%" : formatted(minimum),
+    maximumLabel: definition.renderer === "cloud" ? "100%" : formatted(maximum),
+    gradient: `linear-gradient(90deg, rgba(${definition.rgb}, .04), rgba(${definition.rgb}, .44), rgb(${definition.rgb}))`,
+    description: !data ? "データを読み込んでいます" : `${stamp}。${isQuake ? "公開された地震の規模" : "取得できた格子のモデル値の単純平均（全球の面積加重平均ではありません）"}。${sample ? "参考用に生成した値であり、ライブ観測ではありません。" : ""}`,
+  });
+  legend.querySelector("[data-planet-detail-summary]").textContent = sample ? "演出用サンプル" : "データと出典";
+  const notice = legend.querySelector("[data-planet-reference-notice]");
+  notice.hidden = definition.renderer !== "cloud";
+  notice.textContent = "雲の形は過去の参考画像";
+  legend.querySelector("[data-planet-scope-note]").textContent = sample
+    ? "参考用に生成した値です。ライブ観測・現在値ではありません。"
+    : isQuake ? "USGSが公開する直近24時間の地震。針は最大規模。"
+      : "取得できた格子のモデル値の単純平均です。全球の面積加重平均ではありません。";
+};
+
 const renderReadout = (definition, data) => {
   const summary = summarize(definition, data);
   readout.style.setProperty("--planet-accent", definition.accent);
@@ -756,12 +793,8 @@ const renderReadout = (definition, data) => {
   const analysis = readout.querySelector("[data-planet-analysis]");
   analysis.disabled = !data.points.length || data.sourceState === "SAVED VALUES";
   analysis.title = analysis.disabled ? "実データの取得後に分析できます（現在は表示用の参考値）" : "表示中の地点データを統計分析する";
-  legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
+  updatePlanetLegend(definition, data);
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
-  const scaleLabels = { wind: ["弱い風", "強い風"], air: ["透明", "濃い霞"], cloud: ["切れ間", "濃い雲"], quake: ["小規模", "大規模"] };
-  legend.querySelector("[data-planet-legend-low]").textContent = scaleLabels[definition.renderer][0];
-  legend.querySelector("[data-planet-legend-mid]").textContent = definition.renderer === "quake" ? "観測値" : definition.renderer === "cloud" ? "雲量で濃淡を調整" : "地点間を補間";
-  legend.querySelector("[data-planet-legend-high]").textContent = scaleLabels[definition.renderer][1];
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
   legend.querySelector("[data-planet-data-time]").textContent = formatJst(data.observedAt);
   legend.querySelector("[data-planet-data-age]").textContent = formatAge(data.observedAt);
@@ -827,8 +860,12 @@ const select = async (index) => {
   readout.querySelector("[data-planet-title]").textContent = definition.shortTitle;
   readout.querySelector("[data-planet-primary]").textContent = "—";
   readout.querySelector("[data-planet-unit]").textContent = "";
-  legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
+  updatePlanetLegend(definition);
+  legend.querySelector("details").open = false;
   legend.querySelector("[data-planet-legend-state]").textContent = "FETCHING";
+  legend.querySelector("[data-planet-legend-count]").textContent = "—";
+  legend.querySelector("[data-planet-data-time]").textContent = "読込中";
+  legend.querySelector("[data-planet-data-age]").textContent = "—";
   legend.querySelector("[data-cloud-image-credit]").hidden = definition.renderer !== "cloud";
   const data = await loadData(definition);
   if (activeIndex !== index || revision !== selectionRevision) return;
@@ -937,13 +974,25 @@ const mount = () => {
   legend.hidden = true;
   legend.setAttribute("aria-label", "地球ライブデータの描画凡例");
   legend.innerHTML = `
-    <header><strong data-planet-legend-title>LIVE PLANET SIGNAL</strong><span data-planet-legend-state>FETCHING</span></header>
-    <i aria-hidden="true"></i>
-    <p><span data-planet-legend-low>薄い</span><span data-planet-legend-mid>地点間を補間</span><span data-planet-legend-high>濃い</span><em data-planet-legend-count>—</em></p>
-    <div class="gaia-planet-data-time"><span data-planet-time-label>DATA TIME</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
-    <a class="gaia-planet-cloud-credit" data-cloud-image-credit href="https://visibleearth.nasa.gov/images/57747/blue-marble-clouds" target="_blank" rel="noopener noreferrer" hidden><span>雲の参考画像 · NASA Blue Marble ↗</span><small>2002年公開 · 現在の雲分布ではありません</small></a>
-    <p class="gaia-planet-poi-key"><i aria-hidden="true"></i><span>観測点 · クリック／タップで詳細</span></p>
+    <details class="gaia-metric-legend-details"><summary><span data-planet-detail-summary>データと出典</span><span data-planet-reference-notice hidden>雲の形は過去の参考画像</span></summary>
+      <div class="gaia-metric-legend-details-body">
+        <div class="gaia-planet-data-time"><span data-planet-time-label>数値の時刻</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
+        <p><span data-planet-legend-state>FETCHING</span> · <span data-planet-legend-count>—</span></p>
+        <p data-planet-scope-note></p>
+        <a class="gaia-planet-cloud-credit" data-cloud-image-credit href="https://visibleearth.nasa.gov/images/57747/blue-marble-clouds" target="_blank" rel="noopener noreferrer" hidden><span>雲の参考画像 · NASA Blue Marble ↗</span><small>2002年公開 · 現在の雲分布ではありません</small></a>
+        <p class="gaia-planet-poi-key"><span>観測点 · クリック／タップで詳細</span></p>
+      </div>
+    </details>
   `;
+  metricLegend = createMetricLegend({ label: "地球の観測値と色の目盛り" });
+  metricLegend.querySelector("[data-metric-title]").setAttribute("data-planet-legend-title", "");
+  legend.prepend(metricLegend);
+  // Keep the map's drag capture and zoom shortcuts off the source disclosure.
+  for (const type of ["pointerdown", "wheel", "keydown", "keyup"]) {
+    legend.addEventListener(type, event => {
+      if (event.target instanceof Element && event.target.closest("details")) event.stopPropagation();
+    });
+  }
   map.append(legend);
   atmosphereCanvas.addEventListener("gaia:cloud-reference-state", () => {
     legend.querySelector("[data-cloud-image-credit] small").textContent = atmosphereCanvas.dataset.cloudTextureState === "unavailable"

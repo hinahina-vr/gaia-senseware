@@ -38,6 +38,27 @@
     return node;
   };
 
+  const sourceLink = (label, url) => {
+    const link = element("a", "data-source-link");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", `${label}（新しいタブで開く）`);
+
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.classList.add("data-source-link-icon");
+    for (const [name, value] of Object.entries({
+      viewBox: "0 0 24 24", width: "14", height: "14", fill: "none",
+      stroke: "currentColor", "stroke-width": "1.75", "stroke-linecap": "round",
+      "stroke-linejoin": "round", "aria-hidden": "true", focusable: "false",
+    })) icon.setAttribute(name, value);
+    const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    outline.setAttribute("d", "M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5M15 3h6v6M10 14 21 3");
+    icon.append(outline);
+    link.append(element("span", "data-source-link-label", label), icon);
+    return link;
+  };
+
   const renderDataset = (dataset, index) => {
     const section = element("section", "japan-data-section data-ledger-card");
     section.dataset.kind = dataset.kind || "SOURCE";
@@ -50,17 +71,9 @@
     const organisation = element("p", "data-ledger-organisation", dataset.organisation);
 
     const links = element("div", "data-source-links");
-    const sourceLink = element("a", "", "元データを開く ↗");
-    sourceLink.href = dataset.url;
-    sourceLink.target = "_blank";
-    sourceLink.rel = "noopener noreferrer";
-    links.append(sourceLink);
+    links.append(sourceLink("元データを開く", dataset.url));
     if (dataset.termsUrl) {
-      const termsLink = element("a", "", "利用条件 ↗");
-      termsLink.href = dataset.termsUrl;
-      termsLink.target = "_blank";
-      termsLink.rel = "noopener noreferrer";
-      links.append(termsLink);
+      links.append(sourceLink("利用条件", dataset.termsUrl));
     }
 
     section.append(heading, title, organisation, links);

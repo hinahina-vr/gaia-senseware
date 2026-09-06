@@ -32,7 +32,7 @@ import {
   varianceConfidenceInterval,
 } from "./statistics-lab-core.js";
 import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-statistical-categories-1";
-import { createStatisticsAi } from "./statistics-ai.js?v=gaia-statistics-byok-1";
+import { createStatisticsAi } from "./statistics-ai.js?v=gaia-observation-dialogue-1";
 
 const q = (selector) => document.querySelector(selector);
 const lab = q("#gaia-statistics-lab");

@@ -223,8 +223,8 @@ try {
     assert.equal(mizuha.tagline, "星の呼吸を言葉にする語り部");
     assert.equal(normalizeAnimatedText(mizuha.fullName), "青野 瑞葉");
     assert.equal(normalizeAnimatedText(mizuha.reading), "あおの みずは");
-    assert.equal(mizuha.profile, "海色の長い髪とおっとりした丁寧語が印象的な大学2年生。大気と水系の循環プロセスに関心を持ち、観測データの科学考証と、地球の動態を読み解くストーリーテリングを担当する。穏やかな見た目の一方で、データの出典や数字の正確さ、観測条件の厳密さには決して妥協しない。");
-    assert.equal(mizuha.profileLines, 3, viewport.name + ": Mizuha profile is not split at sentence endings");
+    assert.equal(mizuha.profile, "海色の長い髪とおっとりした丁寧語が印象的な大学2年生。大気と水系の循環に関心を持ち、観測データの科学考証と、地球の動態を読み解くストーリーテリングを担当する。物腰は穏やかだが、データの出典や数字の正確さ、観測条件の厳密さには決して妥協しない。");
+    assert.equal(mizuha.profileLines, 5, viewport.name + ": Mizuha profile must use five authored lines");
     assert.equal(mizuha.quote, "「46億年、ずっと変わり続けている星ですから」");
     assert.equal(mizuha.activeSelectors, 1, viewport.name + ": Mizuha selection produced multiple active portraits");
     assert.equal(mizuha.expressions, 4, viewport.name + ": Mizuha expression selector is incomplete");
@@ -248,8 +248,8 @@ try {
     assert.equal(normalizeAnimatedText(sakuya.fullName), "木下 咲弥");
     assert.equal(normalizeAnimatedText(sakuya.reading), "きのした さくや");
     assert.match(sakuya.imageSource, /sakuya-calm-07-v1\.png/u, viewport.name + ": Sakuya art did not load");
-    assert.equal(sakuya.profile, "海外からオンラインで参加している、サークル『惑星の放課後』のプロデューサー。普段のチャットでは無駄口を叩かないが、要件定義やデータ構造の議論では圧倒的な速度と解像度で仕様を組み上げる。プロジェクトの骨格を支える名付け親であり、システムアーキテクト。");
-    assert.equal(sakuya.profileLines, 3, viewport.name + ": Sakuya profile is not split at sentence endings");
+    assert.equal(normalizeAnimatedText(sakuya.profile), "海外からオンラインで参加するサークルのプロデューサー。普段のチャットでは無駄口を叩かないが、作品の構想やシステムデザインの議論では、圧倒的な解像度を発揮する。『GAIA SENSEWARE』の名付け親であり、プロジェクトの骨格を支えるシステムアーキテクト。");
+    assert.equal(sakuya.profileLines, 5, viewport.name + ": Sakuya profile must use five authored lines");
     assert.equal(sakuya.quote, "「まだ気づいてないだけでしょ。世界は満ちてるよ」");
     assert.equal(sakuya.expressions, 4, viewport.name + ": Sakuya expression selector is incomplete");
     assert.equal(sakuya.expressionId, "calm", viewport.name + ": Sakuya did not open with the calm expression");

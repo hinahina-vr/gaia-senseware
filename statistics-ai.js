@@ -29,27 +29,56 @@ export function statisticsAiPrompt(snapshot, question) {
   };
 }
 
+export const statisticsAiQuestions = Object.freeze([
+  { id: "overview", label: "全体をつかむ", hint: "特徴と読み取り", question: "このデータの主な特徴を、計算済みの統計量と観測値を根拠に説明してください。読み取れることと、まだ言えないことを分けてください。" },
+  { id: "compare", label: "違いを比べる", hint: "地域・グループ", question: "地域やグループ間で、どのような違いが見られますか。比較できる区分と件数を確かめ、数値的な根拠と比較の限界を示してください。比較用の区分がなければ、その不足を説明してください。" },
+  { id: "change", label: "変化をたどる", hint: "時間と傾向", question: "時間に沿った変化や傾向を読み取れますか。まず時点・期間・観測間隔が確認できるかを確かめ、確認できる範囲の変化を説明してください。時系列データでなければ、変化を推測せず不足を示してください。" },
+  { id: "relation", label: "つながりを探る", hint: "関係と相関", question: "このデータの変数間に、どのような関係が見られますか。提示された変数と計算済みの統計量だけを根拠に、関係の強さ・限界を説明してください。関係を調べる変数が足りなければその旨を示し、相関から因果を断定しないでください。" },
+  { id: "outliers", label: "気になる値を見る", hint: "偏り・欠測・外れ値", question: "極端な値、偏り、欠測など、読み取る前に注意すべき点はありますか。観測値と計算結果を根拠に、確認すべき点を整理してください。外れ値を誤測定と決めつけず、実測・補完・派生を区別してください。" },
+  { id: "next", label: "次の問いを見つける", hint: "仮説と確かめ方", question: "この分析から次に確かめたい問いを3つ挙げてください。それぞれ、現時点の根拠、まだ確かめられていない点、追加で必要な観測や比較を示してください。仮説と確認済みの事実を分けてください。" },
+].map(question => Object.freeze(question)));
+
 export function createStatisticsAi({ lab, button, getContext }) {
   const dialog = document.createElement("dialog");
   dialog.id = "gaia-statistics-ai-dialog";
   dialog.className = "gaia-statistics-ai-dialog";
   dialog.setAttribute("aria-labelledby", "gaia-statistics-ai-title");
   dialog.innerHTML = `
-    <header class="gaia-statistics-ai-head"><div><p>YOUR API / AI ANALYSIS</p><h2 id="gaia-statistics-ai-title">AIで分析する</h2></div><button type="button" data-ai-close aria-label="AI分析を閉じる">×</button></header>
-    <p class="gaia-statistics-ai-target" data-ai-target></p>
+    <header class="gaia-statistics-ai-head"><div><p>GAIA <span aria-hidden="true">/</span> OBSERVATION DIALOGUE</p><h2 id="gaia-statistics-ai-title"><span>観測から、</span><span>問いをひらく。</span></h2><p class="gaia-statistics-ai-intro">AIと読み解く、いま見ているデータ。</p></div><button type="button" data-ai-close aria-label="AI分析を閉じる">×</button></header>
+    <div class="gaia-statistics-ai-target"><span>分析する観測</span><p data-ai-target></p></div>
     <div class="gaia-statistics-ai-layout">
       <form id="gaia-statistics-ai-form">
-        <p class="gaia-statistics-ai-note">以前のセンサー分析と同じ持ち込みAPI設定を使えます。送信ボタンを押すまで、外部APIには送信しません。</p>
-        <div class="gaia-statistics-ai-provider"><label>APIサービス<select name="provider" required></select></label><label>モデル<input name="model" maxlength="160" autocomplete="off" spellcheck="false" required></label></div>
-        <label>エンドポイント<input name="endpoint" type="url" maxlength="500" autocomplete="off" spellcheck="false" required></label>
-        <label>APIキー<input name="apiKey" type="password" maxlength="500" autocomplete="off" spellcheck="false" placeholder="ご自身のAPIキー" required></label>
-        <label class="gaia-statistics-ai-remember"><input name="rememberKey" type="checkbox"><span>この端末に暗号化せず保存する<small>未選択ならこのタブ内のみ。共有PCでは保存しないでください。</small></span></label>
-        <label>データについて聞く<textarea name="question" rows="3" maxlength="1200" required>このデータの特徴と読み取れること、分析の限界、次に確かめるべきことを教えてください。</textarea></label>
-        <details class="gaia-statistics-ai-preview"><summary>送信するデータを確認</summary><pre data-ai-preview></pre></details>
-        <p class="gaia-statistics-ai-note">APIキーと上記データを、指定したAPIへブラウザから直接送ります。GAIAのサーバーでは中継しません。利用料金・データ保持は送信先の規約に従います。CORSで拒否される場合は対応ゲートウェイを指定してください。</p>
-        <div class="gaia-statistics-ai-actions"><button type="submit">このデータを送って分析</button><button type="button" data-ai-cancel hidden>送信を中止</button><button type="button" data-ai-clear>保存したキーを削除</button></div>
+        <section class="gaia-statistics-ai-question-section" aria-labelledby="gaia-statistics-ai-question-title">
+          <h3 class="gaia-statistics-ai-section-title" id="gaia-statistics-ai-question-title"><span>01</span>問いを選ぶ</h3>
+          <div class="gaia-statistics-ai-prompts" role="group" aria-label="AI分析の質問例">${statisticsAiQuestions.map((preset, index) => `<button type="button" data-ai-prompt="${preset.id}" aria-pressed="${index === 0}"><strong>${preset.label}</strong><small>${preset.hint}</small></button>`).join("")}</div>
+          <label class="gaia-statistics-ai-question-label">あなたの問い <span>例文は自由に書き換えられます</span><textarea name="question" rows="3" maxlength="1200" required>${statisticsAiQuestions[0].question}</textarea></label>
+        </section>
+        <section class="gaia-statistics-ai-connection" aria-labelledby="gaia-statistics-ai-connection-title">
+          <h3 class="gaia-statistics-ai-section-title" id="gaia-statistics-ai-connection-title"><span>02</span>あなたのAIにつなぐ</h3>
+          <div class="gaia-statistics-ai-provider"><label>APIサービス<select name="provider" required></select></label><label>モデル<input name="model" maxlength="160" autocomplete="off" spellcheck="false" required></label></div>
+          <label>APIキー<input name="apiKey" type="password" maxlength="500" autocomplete="off" spellcheck="false" placeholder="ご自身のAPIキーを入力" aria-describedby="gaia-statistics-ai-privacy" required></label>
+          <div class="gaia-statistics-ai-privacy" id="gaia-statistics-ai-privacy"><p><strong>APIキーの保存先は、このブラウザだけ。</strong>GAIAのサーバーには保管・中継しません。分析時は、キーと対象データを指定したAIサービスへ直接送信します。</p></div>
+          <label class="gaia-statistics-ai-remember"><input name="rememberKey" type="checkbox"><span>次回も使えるよう、このブラウザに保存する<small>未選択ならこのタブ内のみ。保存時は暗号化されません。共有PCでは選択しないでください。</small></span></label>
+          <details class="gaia-statistics-ai-endpoint"><summary>送信先の詳細 <span data-ai-endpoint-host></span></summary><label>エンドポイント<input name="endpoint" type="url" maxlength="500" autocomplete="off" spellcheck="false" required></label><p class="gaia-statistics-ai-note">独自の接続先も指定できます。CORSで拒否される場合は対応ゲートウェイを指定してください。</p></details>
+          <button class="gaia-statistics-ai-clear" type="button" data-ai-clear>保存したキーを削除</button>
+        </section>
+        <div class="gaia-statistics-ai-send">
+          <details class="gaia-statistics-ai-preview"><summary>送信するデータを確認 <span data-ai-sample-count></span></summary><pre data-ai-preview></pre></details>
+          <div class="gaia-statistics-ai-actions"><button type="submit">このデータを送って分析 <span aria-hidden="true">↗</span></button><button type="button" data-ai-cancel hidden>送信を中止</button></div>
+          <p class="gaia-statistics-ai-note">送信ボタンを押すまで外部へ送信しません。API利用料・データ保持は送信先の規約に従います。</p>
+        </div>
       </form>
-      <section class="gaia-statistics-ai-result" aria-label="AIの分析結果"><h3>AIの読み取り</h3><p class="gaia-statistics-ai-note">AIの回答には誤りが含まれます。観測値と計算根拠に照らして確認してください。</p><output data-ai-answer data-state="idle" aria-live="polite">送信すると、ここに分析結果が表示されます。</output></section>
+      <section class="gaia-statistics-ai-result" aria-label="AIの分析結果" data-state="idle">
+        <div class="gaia-statistics-ai-result-head"><h3>AIの読み取り</h3><span data-ai-status>送信前</span></div>
+        <div class="gaia-statistics-ai-empty" data-ai-empty>
+          <svg class="gaia-statistics-ai-orbit" viewBox="0 0 240 160" fill="none" aria-hidden="true"><circle cx="120" cy="80" r="57"/><ellipse cx="120" cy="80" rx="24" ry="57"/><ellipse cx="120" cy="80" rx="87" ry="24" transform="rotate(-24 120 80)"/><path d="M40 80h160M120 12v136"/><circle cx="177" cy="80" r="3"/><circle cx="66" cy="123" r="2"/></svg>
+          <p class="gaia-statistics-ai-empty-title">数値の向こうに、<br>新しい問いを。</p>
+          <p class="gaia-statistics-ai-note">気になる切り口を選んで、<br>観測の読み取りを深めてみましょう。</p>
+          <ol><li><span>01</span>数値を根拠に、特徴を読む</li><li><span>02</span>言えることと、限界を分ける</li><li><span>03</span>次に確かめたいことを見つける</li></ol>
+        </div>
+        <output data-ai-answer data-state="idle" aria-live="polite" aria-label="AIの回答" tabindex="0">送信すると、ここに分析結果が表示されます。</output>
+        <p class="gaia-statistics-ai-result-caution">AIの回答は観測事実そのものではありません。<br>元のデータと計算根拠に照らして確認してください。</p>
+      </section>
     </div>`;
   lab.append(dialog);
   const form = dialog.querySelector("form");
@@ -57,6 +86,21 @@ export function createStatisticsAi({ lab, button, getContext }) {
   const answer = dialog.querySelector("[data-ai-answer]");
   const submit = form.querySelector("[type=submit]");
   const cancel = form.querySelector("[data-ai-cancel]");
+  const promptButtons = [...form.querySelectorAll("[data-ai-prompt]")];
+  const endpointDetails = form.querySelector(".gaia-statistics-ai-endpoint");
+  const syncQuestion = () => promptButtons.forEach(button => {
+    button.setAttribute("aria-pressed", String(statisticsAiQuestions.find(preset => preset.id === button.dataset.aiPrompt).question === fields.question.value));
+  });
+  promptButtons.forEach(button => button.addEventListener("click", () => {
+    fields.question.value = statisticsAiQuestions.find(preset => preset.id === button.dataset.aiPrompt).question;
+    syncQuestion();
+  }));
+  fields.question.addEventListener("input", syncQuestion);
+  const syncEndpoint = () => {
+    let hostname = "未設定";
+    try { hostname = new URL(fields.endpoint.value).hostname || "未設定"; } catch { /* Keep the unset label for incomplete edits. */ }
+    form.querySelector("[data-ai-endpoint-host]").textContent = hostname;
+  };
   Object.entries(aiProviderPresets).forEach(([value, preset]) => fields.provider.add(new Option(preset.label, value)));
   let snapshot = null;
   let controller = null;
@@ -67,9 +111,15 @@ export function createStatisticsAi({ lab, button, getContext }) {
     cancel.hidden = !busy;
     form.setAttribute("aria-busy", String(busy));
     for (const name of ["provider", "endpoint", "model", "apiKey", "rememberKey", "question"]) fields[name].disabled = busy;
+    promptButtons.forEach(button => { button.disabled = busy; });
   };
   const abort = () => { requestId += 1; controller?.abort(); controller = null; setBusy(false); };
-  const show = (state, message) => { answer.dataset.state = state; answer.textContent = message; };
+  const show = (state, message, initial = false) => {
+    answer.dataset.state = state; answer.textContent = message;
+    dialog.querySelector(".gaia-statistics-ai-result").dataset.state = state;
+    dialog.querySelector("[data-ai-empty]").hidden = !initial;
+    dialog.querySelector("[data-ai-status]").textContent = ({ idle: "送信前", loading: "分析中", complete: "読み取り完了", error: "接続を確認" })[state];
+  };
   const close = () => { abort(); if (dialog.open) dialog.close(); };
   const open = () => {
     const context = getContext();
@@ -80,20 +130,29 @@ export function createStatisticsAi({ lab, button, getContext }) {
     for (const name of ["provider", "endpoint", "model", "apiKey"]) fields[name].value = config[name];
     fields.rememberKey.checked = config.rememberKey;
     if (config.provider === "custom") custom = { endpoint: config.endpoint, model: config.model };
+    endpointDetails.open = config.provider === "custom";
+    syncEndpoint(); syncQuestion();
     dialog.querySelector("[data-ai-target]").textContent = `${snapshot.dataset.title} ／ ${snapshot.analysis.method} ／ 対象${snapshot.selection.filteredRows}件${snapshot.selection.sentRows < snapshot.selection.filteredRows ? `（送信は先頭${snapshot.selection.sentRows}件と集計結果）` : ""}`;
     dialog.querySelector("[data-ai-preview]").textContent = JSON.stringify(snapshot, null, 2);
-    show("idle", "送信すると、ここに分析結果が表示されます。");
+    dialog.querySelector("[data-ai-sample-count]").textContent = `${snapshot.selection.sentRows}件 + 集計結果`;
+    show("idle", "送信すると、ここに分析結果が表示されます。", true);
     dialog.showModal();
+    dialog.scrollTop = 0;
     (fields.apiKey.value ? fields.question : fields.apiKey).focus({ preventScroll: true });
   };
   fields.provider.addEventListener("change", () => {
     const preset = fields.provider.value === "custom" ? custom : aiProviderPresets[fields.provider.value];
     fields.endpoint.value = preset.endpoint;
     fields.model.value = preset.model;
+    endpointDetails.open = fields.provider.value === "custom";
+    syncEndpoint();
   });
   for (const name of ["endpoint", "model"]) fields[name].addEventListener("input", () => {
     if (fields.provider.value === "custom") custom[name] = fields[name].value;
+    if (name === "endpoint") syncEndpoint();
   });
+  // A browser cannot focus an invalid required input inside a closed disclosure.
+  fields.endpoint.addEventListener("invalid", () => { endpointDetails.open = true; });
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (controller || !snapshot) return;

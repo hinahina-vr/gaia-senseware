@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { aiProviderPresets, readAiConfiguration, saveAiConfiguration, clearAiKey, validatedAiEndpoint, buildAiRequest, extractAiText, requestAiAnswer } from "../byok-ai.js";
-import { statisticsAiSnapshot, statisticsAiPrompt } from "../statistics-ai.js";
+import { statisticsAiSnapshot, statisticsAiPrompt, statisticsAiQuestions } from "../statistics-ai.js";
 
 const globals = ["location", "localStorage", "sessionStorage", "fetch"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
 const memoryStorage = () => {
@@ -12,6 +12,15 @@ try {
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: memoryStorage() });
   Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: memoryStorage() });
   assert.equal(Object.keys(aiProviderPresets).length, 14);
+  assert.equal(statisticsAiQuestions.length, 6);
+  assert.equal(new Set(statisticsAiQuestions.map(preset => preset.id)).size, 6);
+  assert.equal(new Set(statisticsAiQuestions.map(preset => preset.question)).size, 6);
+  for (const preset of statisticsAiQuestions) {
+    assert(preset.label && preset.hint && preset.question.length <= 1200);
+    assert.match(preset.question, /根拠|確かめ|観測/);
+  }
+  assert.match(statisticsAiQuestions.find(preset => preset.id === "change").question, /時系列データでなければ/);
+  assert.match(statisticsAiQuestions.find(preset => preset.id === "relation").question, /因果を断定しない/);
   assert.equal(readAiConfiguration().provider, "openrouter");
   const config = { provider: "custom", endpoint: "https://ai-qa.example/chat", model: "qa-model", apiKey: "qa-only-not-a-real-key", rememberKey: false };
   saveAiConfiguration(config);

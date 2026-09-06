@@ -8,6 +8,7 @@ const EXHIBITS = Object.freeze([
     number: "10",
     title: "風脈 — WIND FIELD",
     shortTitle: "風脈",
+    question: "風の強さは、場所によってどう違う？",
     key: "weatherWindSpeed",
     accent: "#79f7ff",
     rgb: "121, 247, 255",
@@ -25,6 +26,7 @@ const EXHIBITS = Object.freeze([
     number: "11",
     title: "炭素の呼吸 — CARBON PULSE",
     shortTitle: "炭素の呼吸",
+    question: "CO₂濃度の予測値は、場所でどう違う？",
     key: "forecastCo2",
     accent: "#ffd06f",
     rgb: "255, 208, 111",
@@ -42,6 +44,7 @@ const EXHIBITS = Object.freeze([
     number: "12",
     title: "雨の記憶 — RAIN CHORUS",
     shortTitle: "雨の記憶",
+    question: "雨の量は、場所によってどう違う？",
     key: "weatherPrecipitation",
     accent: "#82bfff",
     rgb: "130, 191, 255",
@@ -59,6 +62,7 @@ const EXHIBITS = Object.freeze([
     number: "13",
     title: "熱の輪郭 — TEMPERATURE FIELD",
     shortTitle: "熱の輪郭",
+    question: "気温は、場所によってどう違う？",
     key: "weatherTemperature",
     accent: "#ff9b69",
     rgb: "255, 155, 105",
@@ -76,6 +80,7 @@ const EXHIBITS = Object.freeze([
     number: "14",
     title: "雲の層 — CLOUD DRIFT",
     shortTitle: "雲の層",
+    question: "雲の多さは、場所によってどう違う？",
     key: "cloudCover",
     accent: "#c8e8ff",
     rgb: "200, 232, 255",
@@ -93,6 +98,7 @@ const EXHIBITS = Object.freeze([
     number: "15",
     title: "微粒子の霞 — PM2.5 HAZE",
     shortTitle: "微粒子の霞",
+    question: "PM2.5の予測値は、場所でどう違う？",
     key: "pm25",
     accent: "#d49bff",
     rgb: "212, 155, 255",
@@ -1247,8 +1253,9 @@ const renderReadout = () => {
   exhibitTitle.querySelector("[data-live-exhibit-title-en]").textContent = titleEn;
   readout.querySelector("[data-live-exhibit-value]").textContent = missing && pending ? "取得中" : formatValue(measurement);
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption.replaceAll("東京", locationCity.city);
-  readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
-  readout.querySelector("[data-live-exhibit-feed-time]").textContent = missing ? "データ時刻 —" : `データ時刻 ${observedAt}`;
+  readout.querySelector("[data-live-deck-question]").textContent = exhibit.question;
+  cityPicker.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
+  cityPicker.querySelector("[data-live-exhibit-feed-time]").textContent = missing ? "データ時刻 —" : `データ時刻 ${observedAt}`;
   readout.querySelector("[data-live-exhibit-feed-copy]").textContent = pending
     ? missing ? "選択した地点のデータを取得しています。別の地点の値で補わず、到着した値から表示します。"
       : "同じ地点の前回取得値を表示しながら更新しています。データ時刻は前回取得値のものです。"
@@ -1260,7 +1267,6 @@ const renderReadout = () => {
     : state.source === "live"
       ? `この項目は保存済み${modelMeasurement ? "モデル" : "観測"}値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。`
       : `現在は保存済み${modelMeasurement ? "モデル" : "観測"}データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。`;
-  readout.querySelector("[data-live-exhibit-level]").textContent = missing ? pending ? "取得中 / LOADING" : "未取得 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? pending ? "LOADING" : "STANDBY" : formatValue(measurement);
   readout.querySelector("[data-live-stage-location]").textContent = `${locationCity.code} ${locationCity.prefecture}`;
@@ -1292,11 +1298,6 @@ const renderReadout = () => {
     cityPicker.querySelector("select").value = selectedCityId;
     cityPicker.querySelector("[data-live-city-caption]").textContent = `${locationCity.code} ${locationCity.name} · ${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
   }
-  readout.querySelectorAll("[data-live-wave-bar]").forEach((bar, index) => {
-    const phase = (index + 1) * (0.54 + activeIndex * 0.07);
-    const harmonic = Math.abs(Math.sin(phase) * 0.58 + Math.sin(phase * 0.37 + activeIndex) * 0.26);
-    bar.style.setProperty("--live-wave", String(Math.min(1, 0.12 + harmonic * (0.42 + strength * 0.72))));
-  });
 };
 
 const applyHeading = () => {
@@ -1636,6 +1637,10 @@ const mount = () => {
       <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
       <span>／加工表示</span>
     </div>
+    <div class="gaia-live-data-freshness" aria-label="データの取得状態と時刻" aria-live="polite">
+      <strong data-live-exhibit-feed-state></strong>
+      <time data-live-exhibit-feed-time></time>
+    </div>
   `;
   cityPicker.querySelector("select").value = selectedCityId;
   layer.append(cityPicker);
@@ -1679,7 +1684,6 @@ const mount = () => {
   readout.className = "gaia-live-exhibit-readout";
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
-  const liveWaveBars = Array.from({ length: 34 }, (_, index) => `<i data-live-wave-bar style="--live-wave-index:${index}"></i>`).join("");
   readout.innerHTML = `
     <div class="gaia-live-deck-chapter">
       <p>CHAPTER / LIVE MAP</p>
@@ -1711,10 +1715,9 @@ const mount = () => {
       </div>
       <strong data-live-exhibit-value></strong>
     </div>
-    <section class="gaia-live-deck-wave" aria-label="ライブデータの更新状態">
-      <header><span>LIVE WAVE / 15 MIN</span><strong data-live-exhibit-feed-state></strong></header>
-      <div class="gaia-live-deck-waveform" aria-hidden="true">${liveWaveBars}</div>
-      <footer><time data-live-exhibit-feed-time></time><b data-live-exhibit-level>0% SIGNAL</b></footer>
+    <section class="gaia-live-deck-question" aria-labelledby="gaia-live-deck-question-label">
+      <span id="gaia-live-deck-question-label">この地図で確かめること</span>
+      <strong data-live-deck-question></strong>
     </section>
     <nav class="gaia-live-deck-modes" id="gaia-live-deck-modes" aria-label="すべての地図展示から選ぶ"></nav>
     <div class="gaia-live-deck-actions gaia-live-exhibit-actions">
