@@ -164,10 +164,33 @@
       || layer.matches(".is-live-exhibit, .is-estat-exhibit, .is-firms-exhibit, .is-planet-signals-exhibit");
     if (unavailable) { metric.hidden = true; finish(true); }
     applyLegend();
+    syncObservationPanels();
+    requestAnimationFrame(() => syncObservationPanels());
+  };
+  // DOM instruments use the same clear lane as canvas instruments. Their
+  // height is content-driven now, so stack from actual legend bounds.
+  const observedPanels = new WeakSet();
+  const panelResize = new ResizeObserver(() => syncObservationPanels());
+  const syncObservationPanels = () => {
+    if (layer.hidden || document.body.classList.contains("novel-mode-detour")) return;
+    const legendBox = visible(legend) && getComputedStyle(legend).visibility !== "hidden" ? legend.getBoundingClientRect() : null;
+    const layerBox = layer.getBoundingClientRect();
+    for (const panel of layer.querySelectorAll(".gaia-firms-legend, .gaia-planet-signals-legend, .gaia-live-metric-legend, .gaia-estat-heat-legend")) {
+      if (!observedPanels.has(panel)) { observedPanels.add(panel); panelResize.observe(panel); }
+      panel.style.removeProperty("top");
+      if (!visible(panel) || !legendBox?.width || !legendBox.height) continue;
+      const box = panel.getBoundingClientRect();
+      if (box.left < legendBox.right && box.right > legendBox.left && box.top < legendBox.bottom && box.bottom > legendBox.top) {
+        const top = legendBox.bottom + 10 - layerBox.top;
+        if (top + box.height < layerBox.height - 100) panel.style.top = `${top}px`;
+      }
+    }
+    globalThis.GaiaLiveExhibits?.reflowObservationLabel?.();
   };
   new MutationObserver(syncVisibility).observe(layer, { attributes: true, attributeFilter: ["class", "hidden", "aria-hidden"] });
-  new ResizeObserver(() => { if (states.legend.position) applyLegend(); }).observe(legend);
+  new ResizeObserver(() => { if (states.legend.position) applyLegend(); syncObservationPanels(); }).observe(legend);
   globalThis.GaiaMapLegendDrag = Object.freeze({
+    syncObservationPanels,
     beginFrame: () => { metricDrawn = false; },
     placeMetric: bounds => {
       metricDrawn = true;

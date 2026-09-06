@@ -4,7 +4,7 @@ import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-acti
 import { buildLiveStatistics } from "./live-statistics.js?v=gaia-unified-actions-1";
 import { LIVE_EXHIBITS as EXHIBITS } from "./live-exhibit-catalog.js?v=gaia-exhibit-order-1";
 import { OBSERVATION_CITIES, findObservationCity, adjacentObservationCity } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
-import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
+import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
 
 // Preserve the existing module export for callers outside the map runtime.
 export { OBSERVATION_CITIES };
@@ -64,10 +64,10 @@ const formatValue = (measurement) => {
   return `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: digits })} ${unit}`.trim();
 };
 
-const formatJptDateTime = (value) => {
+const formatJstDateTime = (value) => {
   if (!value) return "観測時刻なし";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return `${String(value)} JPT`;
+  if (Number.isNaN(date.getTime())) return "観測時刻なし";
   return `${new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
@@ -77,7 +77,7 @@ const formatJptDateTime = (value) => {
     minute: "2-digit",
     second: "2-digit",
     hourCycle: "h23",
-  }).format(date)} JPT`;
+  }).format(date)} JST`;
 };
 
 const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "loading", requestState: "loading", connected: false };
@@ -208,6 +208,21 @@ const updateCityMarkers = (projection) => {
     button.setAttribute("aria-current", String(city.id === selectedCityId));
     const wind = fieldById.get(city.id);
     const strength = windStrength(wind?.windSpeed);
+    const exhibit = EXHIBITS[activeIndex];
+    const measurement = exhibit && city.id === selectedCityId ? currentMeasurement(exhibit) : null;
+    const hasMeasurement = measurement?.value != null && Number.isFinite(Number(measurement.value));
+    const windAvailable = activeIndex === 0 && strength !== null;
+    const signature = [exhibit?.id, hasMeasurement, measurement?.value, measurement?.observedAt,
+      windAvailable, wind?.windSpeed, wind?.observedAt || currentWindField().observedAt].join("|");
+    if (button.dataset.observationSignature !== signature) {
+      button.dataset.observationSignature = signature;
+      button.querySelector("[data-live-marker-value]").textContent = hasMeasurement
+        ? `${exhibit.signalLabel}　${formatValue(measurement)}`
+        : windAvailable ? `風速　${Number(wind.windSpeed).toFixed(1)} m/s` : "値は未取得";
+      button.querySelector("[data-live-marker-detail]").textContent = hasMeasurement
+        ? `${formatJstDateTime(measurement.observedAt)} · モデル値`
+        : windAvailable ? `${formatJstDateTime(wind.observedAt || currentWindField().observedAt)} · モデル値` : "地点を選んで取得";
+    }
     if (activeIndex === 0 && strength !== null) {
       const rgb = windColor(strength);
       button.dataset.windSpeed = Number(wind.windSpeed).toFixed(1);
@@ -976,9 +991,35 @@ const updateAnchorMarker = (exhibit, location, anchor) => {
   anchorMarker.style.left = `${(x * 100).toFixed(3)}%`;
   anchorMarker.style.top = `${(y * 100).toFixed(3)}%`;
   anchorMarker.dataset.exhibit = exhibit.id;
-  anchorMarker.querySelector("[data-live-anchor-source]").textContent = "MODEL GRID";
-  anchorMarker.querySelector("[data-live-anchor-label]").textContent = location.label;
-  anchorMarker.querySelector("[data-live-anchor-coordinates]").textContent = `${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
+  const measurement = currentMeasurement(exhibit);
+  const signature = [exhibit.id, location.label, location.lat, location.lon, measurement?.value, measurement?.observedAt].join("|");
+  if (anchorMarker.dataset.observationSignature !== signature) {
+    anchorMarker.dataset.observationSignature = signature;
+    anchorMarker.querySelector("[data-live-anchor-source]").textContent = `${exhibit.signalLabel}　${formatValue(measurement)}`;
+    anchorMarker.querySelector("[data-live-anchor-label]").textContent = location.label;
+    anchorMarker.querySelector("[data-live-anchor-coordinates]").textContent = `${formatJstDateTime(measurement?.observedAt)} · モデル格子 ${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
+  }
+  const label = anchorMarker.querySelector("span");
+  if (!onScreen || !label.getClientRects().length) return;
+  const bounds = label.getBoundingClientRect();
+  const baseX = bounds.left - (parseFloat(label.style.left) || 0), baseY = bounds.top - (parseFloat(label.style.top) || 0);
+  const obstacles = [...layer.querySelectorAll(".gaia-live-metric-legend, .signal-encoding-legend-dock, .gaia-live-exhibit-readout, #gaia-map-zoom-controls, .japan-heading")]
+    .filter(node => node.getClientRects().length && getComputedStyle(node).visibility !== "hidden")
+    .map(node => node.getBoundingClientRect());
+  const core = anchorMarker.querySelector("i").getBoundingClientRect();
+  obstacles.push(core);
+  const xs = [baseX, core.left - bounds.width - 18, 16, innerWidth - bounds.width - 16];
+  const ys = [baseY, ...obstacles.flatMap(box => [box.bottom + 12, box.top - bounds.height - 12])];
+  const candidates = xs.flatMap(x => ys.map(y => {
+    x = Math.max(16, Math.min(x, innerWidth - bounds.width - 16));
+    y = Math.max(16, Math.min(y, innerHeight - bounds.height - 16));
+    const overlap = obstacles.reduce((total, box) => total
+      + Math.max(0, Math.min(x + bounds.width, box.right + 8) - Math.max(x, box.left - 8))
+      * Math.max(0, Math.min(y + bounds.height, box.bottom + 8) - Math.max(y, box.top - 8)), 0);
+    return { x, y, score: overlap * 1000 + Math.hypot(x - baseX, y - baseY) };
+  }));
+  const best = candidates.sort((a, b) => a.score - b.score)[0];
+  label.style.left = `${best.x - baseX}px`; label.style.top = `${best.y - baseY}px`;
 };
 
 const draw = (timestamp = performance.now(), force = false) => {
@@ -1071,7 +1112,7 @@ const renderReadout = () => {
     : state.source === "live"
       ? "LATEST API SNAPSHOT / 再接続中"
       : "SAVED SNAPSHOT / 保存データを再現中";
-  const observedAt = formatJptDateTime(measurement?.observedAt);
+  const observedAt = formatJstDateTime(measurement?.observedAt);
   readout.dataset.missing = String(missing);
   readout.dataset.requestState = state.requestState || "ready";
   const analysis = readout.querySelector("[data-live-deck-analysis]");
@@ -1446,7 +1487,7 @@ const mount = () => {
     button.dataset.prefectureCode = city.code;
     button.setAttribute("aria-label", `${city.code} ${city.name}の観測データを表示`);
     button.setAttribute("aria-current", String(city.id === selectedCityId));
-    button.innerHTML = `<i aria-hidden="true"></i><span><b>${city.code}</b>${city.prefecture}</span>`;
+    button.innerHTML = `<i aria-hidden="true"></i><span><strong>${city.prefecture}（${city.city}）</strong><b data-live-marker-value>値は未取得</b><small data-live-marker-detail>地点を選んで取得</small></span>`;
     button.addEventListener("pointerdown", (event) => event.stopPropagation());
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1465,7 +1506,7 @@ const mount = () => {
   map.append(anchorMarker);
   metricLegend = createMetricLegend({ className: "gaia-live-metric-legend", label: "選択した都道府県のモデル値と目盛り" });
   metricLegend.hidden = true;
-  map.append(metricLegend);
+  layer.append(metricLegend);
   weatherCredit = document.createElement("div");
   weatherCredit.className = "gaia-live-weather-credit";
   weatherCredit.hidden = true;
@@ -1752,6 +1793,11 @@ globalThis.GaiaLiveExhibits = Object.freeze({
   select,
   deactivate,
   redraw: () => draw(performance.now(), true),
+  reflowObservationLabel: () => {
+    if (activeIndex < 0 || !anchorMarker || anchorMarker.hidden) return;
+    const exhibit = EXHIBITS[activeIndex], location = observationLocation(exhibit, currentMeasurement(exhibit));
+    updateAnchorMarker(exhibit, location, projectSceneAnchor(location));
+  },
   selectObservationPoint: (cityId) => selectObservationCity(cityId, { source: "manual" }),
   pausePoiAutoplay: () => setPoiAutoplayEnabled(false),
   resumePoiAutoplay: () => setPoiAutoplayEnabled(true),

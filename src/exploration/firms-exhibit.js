@@ -62,7 +62,7 @@ const formatNumber = (value, decimals = 0) => Number(value).toLocaleString("ja-J
   minimumFractionDigits: decimals,
   maximumFractionDigits: decimals,
 });
-const formatUtc = (value) => {
+const formatJst = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "—";
   return new Intl.DateTimeFormat("ja-JP", {
@@ -72,7 +72,7 @@ const formatUtc = (value) => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "UTC",
+    timeZone: "Asia/Tokyo",
   }).format(date);
 };
 
@@ -366,7 +366,7 @@ const findPoiAt = (clientX, clientY, pointerType) => {
     record: {
       id: point.id || String(index), exhibitId: DEFINITION.id, lon: point.lon, lat: point.lat,
       kicker: `${DEFINITION.number} / ${DEFINITION.shortTitle}`, title, preview: values,
-      meta: `${title} / ${values} / ${formatUtc(point.acquiredAt)} UTC / ${snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "保存スナップショット"} / ${DEFINITION.sourceName}`,
+      meta: `${title} / ${values} / ${formatJst(point.acquiredAt)} JST / ${snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "保存スナップショット"} / ${DEFINITION.sourceName}`,
       url: SOURCE_PAGE,
     },
   };
@@ -485,7 +485,7 @@ const updateTimeline = (state) => {
   canvas.dataset.firmsPlaybackPhase = state.phase;
   readout.dataset.firmsPlaybackPhase = state.phase;
   readout.querySelector("[data-firms-visible]").textContent = formatNumber(visible);
-  readout.querySelector("[data-firms-time]").textContent = state.phase === "waiting" ? "観測待機" : `${formatUtc(point?.acquiredAt)} UTC`;
+  readout.querySelector("[data-firms-time]").textContent = state.phase === "waiting" ? "観測待機" : `${formatJst(point?.acquiredAt)} JST`;
   const range = readout.querySelector("[data-firms-progress]");
   if (range && playbackEnabled) range.value = String(Math.round(state.progress * 1000));
   const play = readout.querySelector("[data-firms-play]");
@@ -544,7 +544,7 @@ const statisticsDataset = () => snapshot ? {
   title: `火災・熱異常 ${formatNumber(snapshot.points.length)}地点`,
   rows: snapshot.points.map((point) => ({
     id: point.id,
-    label: `${formatUtc(point.acquiredAt)} UTC / ${point.lat.toFixed(2)}, ${point.lon.toFixed(2)}`,
+    label: `${formatJst(point.acquiredAt)} JST / ${point.lat.toFixed(2)}, ${point.lon.toFixed(2)}`,
     x: Date.parse(point.acquiredAt),
     y: point.frp,
     value: point.frp,
@@ -556,7 +556,7 @@ const statisticsDataset = () => snapshot ? {
     provenance: "SOURCE",
   })),
   unit: "MW",
-  xLabel: "観測時刻（UTC）",
+  xLabel: "観測時刻（JST）",
   yLabel: "火災放射パワー（FRP）",
   provenance: ["SOURCE"],
   periodStart: snapshot.summary.start,
@@ -582,11 +582,11 @@ const renderSnapshot = () => {
   readout.querySelector("[data-firms-max-frp]").textContent = formatNumber(snapshot.summary.maxFrp, 1);
   readout.querySelector("[data-firms-night-share]").textContent = `${formatNumber(snapshot.summary.nightShare * 100, 1)}%`;
   readout.querySelector("[data-firms-confidence-share]").textContent = `${formatNumber(snapshot.summary.highConfidenceShare * 100, 1)}%`;
-  readout.querySelector("[data-firms-coverage]").textContent = `${formatUtc(snapshot.summary.start)} — ${formatUtc(snapshot.summary.end)} UTC`;
+  readout.querySelector("[data-firms-coverage]").textContent = `${formatJst(snapshot.summary.start)} — ${formatJst(snapshot.summary.end)} JST`;
   readout.querySelector("[data-firms-status]").textContent = snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "SAVED SNAPSHOT";
   legend.querySelector("[data-firms-legend-source]").textContent = snapshot.source === "nasa-firms-modis" ? "NASA更新" : "保存データ";
   legend.querySelector("[data-firms-legend-count]").textContent = `${formatNumber(snapshot.summary.detected)} 検知`;
-  legend.querySelector("[data-firms-latest]").textContent = `${formatUtc(snapshot.summary.end)} UTC`;
+  legend.querySelector("[data-firms-latest]").textContent = `${formatJst(snapshot.summary.end)} JST`;
   legend.querySelector("[data-firms-age]").textContent = formatAge(snapshot.summary.end);
   readout.dataset.firmsLatestAt = snapshot.summary.end;
 };
@@ -701,7 +701,7 @@ const mount = () => {
     <p><span><b class="is-day"></b>昼 / 金橙</span><span><b class="is-night"></b>夜 / 深紅</span><em data-firms-legend-count>—</em></p>
     <div class="gaia-firms-data-time"><span>DATA LATEST</span><time data-firms-latest>読込中</time><small data-firms-age>—</small></div>
   `;
-  map.append(legend);
+  layer.append(legend);
 
   readout = document.createElement("section");
   readout.className = "gaia-firms-readout";
@@ -715,7 +715,7 @@ const mount = () => {
     <div class="gaia-firms-count"><p>OBSERVED / ACQUISITION-TIME RELAY</p><strong><b data-firms-visible>0</b><span> / <i data-firms-total>—</i> 表示点</span></strong><small data-firms-time>観測待機</small></div>
     <div class="gaia-firms-primary"><p>最大 火災放射パワー</p><strong data-firms-max-frp>—</strong><span>MW</span></div>
     <div class="gaia-firms-timeline">
-      <header><span data-firms-coverage>24 HOURS / UTC</span><strong data-firms-status>SAVED SNAPSHOT</strong></header>
+      <header><span data-firms-coverage>24 HOURS / JST</span><strong data-firms-status>SAVED SNAPSHOT</strong></header>
       <input data-firms-progress type="range" min="0" max="1000" step="1" value="0" aria-label="観測時刻を送る" />
       <button type="button" data-firms-play aria-pressed="true">一時停止</button>
     </div>

@@ -114,12 +114,13 @@ for (const arcIndex of referencedPrefectureArcs) {
 assert.ok(prefectureBounds.west < 123 && prefectureBounds.east > 145, "Japan prefecture longitude coverage is incomplete");
 assert.ok(prefectureBounds.south < 25 && prefectureBounds.north > 45, "Japan prefecture latitude coverage is incomplete");
 const renewableRows = signals.modes.find(({ id }) => id === "earth-organ")?.signals?.current || [];
-const missingRenewableCountries = renewableRows.map(({ iso3 }) => iso3).filter((iso3) => !countryCodes.has(iso3));
-assert.deepEqual(missingRenewableCountries, [], "renewable rows must all have Natural Earth country geometry");
+const missingRenewableCountries = renewableRows.filter(row => row.mapIso3 && !countryCodes.has(row.mapIso3));
+assert.deepEqual(missingRenewableCountries, [], "Mapped renewable rows must have their own Natural Earth geometry");
+assert.deepEqual(renewableRows.filter(row => !row.mapIso3).map(row => row.iso3), ["GIB"], "Only explicitly identified point-only territories may lack a polygon");
 
 console.log(
   `Natural Earth check passed: ${geojson.features.length} features, ${ringCount} rings, ` +
     `${pointCount} points, ${countryCodes.size} countries, ${countryBoundaryRingCount} country rings, ` +
     `${prefectureGeometries.length} prefectures, ${referencedPrefectureArcs.size} prefecture arcs, ` +
-    `${renewableRows.length} renewable fills, bounds ${JSON.stringify(bounds)}.`,
+    `${renewableRows.filter(row => row.mapIso3).length} renewable fills + Gibraltar point, bounds ${JSON.stringify(bounds)}.`,
 );

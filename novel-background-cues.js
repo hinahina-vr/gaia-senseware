@@ -4,10 +4,10 @@
   const expectedSceneCounts = Object.freeze({
     festival_concept: 72,
     map_mode01: 43,
-    gx_experience: 46,
-    esp32_pitch: 50,
-    circle_invitation: 79,
-    welcome_chat: 82,
+    gx_experience: 47,
+    esp32_pitch: 52,
+    circle_invitation: 80,
+    welcome_chat: 86,
   });
 
   const gallery = Object.freeze([
@@ -58,7 +58,7 @@
       id: "exhibition-finale",
       title: "展示会の、その先へ",
       chapter: "06｜はじめまして",
-      unlockStepId: "welcome_chat_092",
+      unlockStepId: "welcome_chat_094",
       assetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
       mobileAssetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-mobile-v1.png",
       alt: "夕日の海沿いを歩きながら、ミズハとアマネがこちらを振り返る",

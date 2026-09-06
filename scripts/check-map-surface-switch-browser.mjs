@@ -302,19 +302,13 @@ try {
           if (labelTypography.primaryFont > 0) {
             const compact = viewport.width < 600;
             const expansive = viewport.width >= 2400;
-            if (expected === "03") {
-              const shortLandscape = viewport.width < 900 && viewport.height < 420;
-              assert.equal(labelTypography.shape, "inline-readout");
-              assert.ok(labelTypography.width <= viewport.width - 24);
-              assert.equal(labelTypography.height, shortLandscape ? 36 : compact ? 42 : expansive ? 68 : 48);
-              assert.equal(labelTypography.primaryFont, shortLandscape ? 12 : compact ? 14 : expansive ? 26 : 17);
-              assert.equal(labelTypography.secondaryFont, shortLandscape ? 10 : compact ? 11 : expansive ? 17 : 12);
-            } else {
-              assert.ok(labelTypography.width >= Math.min(expansive ? 520 : 340, viewport.width - 24), `${viewport.name} MAP ${expected}: selection label remains too narrow: ${JSON.stringify(labelTypography)}`);
-              assert.ok(labelTypography.height >= (compact ? 68 : (expansive ? 106 : 72)), `${viewport.name} MAP ${expected}: selection label remains too short: ${JSON.stringify(labelTypography)}`);
-              assert.ok(labelTypography.primaryFont >= (compact ? 16 : (expansive ? 30 : 18)), `${viewport.name} MAP ${expected}: primary label remains too small: ${JSON.stringify(labelTypography)}`);
-              assert.ok(labelTypography.secondaryFont >= (compact ? 12 : (expansive ? 20 : 13)), `${viewport.name} MAP ${expected}: secondary label remains too small: ${JSON.stringify(labelTypography)}`);
-            }
+            const short = viewport.height < 500 || (compact && viewport.height < 650);
+            const landscape = viewport.width < 900 && viewport.height < 420;
+            assert.equal(labelTypography.shape, "observation-card");
+            assert.ok(labelTypography.width <= viewport.width - 32);
+            assert.ok(labelTypography.height > 70 && labelTypography.height < viewport.height - 32);
+            assert.equal(labelTypography.primaryFont, landscape ? 14 : short ? 16 : compact ? 19 : expansive ? 30 : 23);
+            assert.equal(labelTypography.secondaryFont, landscape ? 12 : short ? 13 : compact ? 14 : expansive ? 22 : 17);
             modeLabelTypography.push({ mode: expected, ...labelTypography });
           }
         }

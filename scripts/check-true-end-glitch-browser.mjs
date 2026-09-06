@@ -14,14 +14,14 @@ try {
     page.on("pageerror", error => report.errors.push(error.message));
     const signatures = [];
     for (let run = 0; run < 3; run++) {
-      await page.goto(`${base}/artifacts/true-end-glitch-preview.html?frame=100&run=${run}`);
+      await page.goto(`${base}/artifacts/true-end-glitch-preview.html?frame=50&run=${run}`);
       await page.waitForFunction(() => document.getAnimations().length > 0 && document.getAnimations().every(animation => animation.playState === "paused"));
       const scan = await page.evaluate(() => {
         const veil = document.querySelector(".novel-staff-roll-transition-veil");
         const targets = [[document.querySelector(".novel-staff-roll-stage"), null], [veil, "::before"], [veil, "::after"], [veil.querySelector(".novel-staff-roll-transition-noise"), null]];
         const frames = [];
         const animations = document.getAnimations();
-        for (let time = 0; time <= 430; time += 7) {
+        for (let time = 0; time <= 215; time += 3.5) {
           animations.forEach(animation => { animation.currentTime = time; });
           frames.push({ time, layers: targets.map(([node, pseudo]) => {
             const style = getComputedStyle(node, pseudo);
@@ -29,7 +29,7 @@ try {
             return { x: matrix.m41, y: matrix.m42, opacity: Number(style.opacity) };
           }) });
         }
-        animations.forEach(animation => { animation.currentTime = 124; });
+        animations.forEach(animation => { animation.currentTime = 62; });
         return { frames, signature: document.body.style.cssText, overflow: document.documentElement.scrollWidth - innerWidth };
       });
       signatures.push(scan.signature);

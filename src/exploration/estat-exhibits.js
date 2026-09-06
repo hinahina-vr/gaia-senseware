@@ -4,7 +4,7 @@ import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-ex
 import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
-import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
+import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
 
 const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);
 const PREFECTURE_TOPOLOGY_URL = new URL("../../data/japan-prefectures.topojson?v=gaia-estat-choropleth-1", import.meta.url);
@@ -1121,12 +1121,17 @@ const showPrefectureRegionTooltip = (index, event) => {
     const currentProjection = projection();
     [x, y] = currentProjection ? project(city, currentProjection) : [mapRect.width / 2, mapRect.height / 2];
   }
-  prefectureRegionTooltip.querySelector("small").textContent = city.code;
+  prefectureRegionTooltip.querySelector("small").textContent = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
   prefectureRegionTooltip.querySelector("strong").textContent = city.prefecture;
-  prefectureRegionTooltip.querySelector("b").textContent = `${formatNumber(value, false, exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim();
+  prefectureRegionTooltip.querySelector("b").textContent = `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim();
   prefectureRegionTooltip.style.left = `${Math.max(84, Math.min(mapRect.width - 84, x))}px`;
   prefectureRegionTooltip.style.top = `${Math.max(78, Math.min(mapRect.height - 136, y))}px`;
   prefectureRegionTooltip.hidden = false;
+  const labelBox = prefectureRegionTooltip.getBoundingClientRect();
+  const shiftX = Math.max(mapRect.left + 12 - labelBox.left, Math.min(0, mapRect.right - 12 - labelBox.right));
+  const shiftY = Math.max(mapRect.top + 12 - labelBox.top, Math.min(0, mapRect.bottom - 12 - labelBox.bottom));
+  prefectureRegionTooltip.style.left = `${parseFloat(prefectureRegionTooltip.style.left) + shiftX}px`;
+  prefectureRegionTooltip.style.top = `${parseFloat(prefectureRegionTooltip.style.top) + shiftY}px`;
 };
 
 const syncPrefectureRegionPaths = () => {
@@ -1197,7 +1202,9 @@ const updateMarkers = (currentProjection, interpolatedValues) => {
     button.style.setProperty("--estat-core-size", `${(5 + strength * 7).toFixed(2)}px`);
     button.style.setProperty("--estat-glow-size", `${(8 + strength * 18).toFixed(2)}px`);
     button.setAttribute("aria-current", String(index === selectedIndex));
-    button.querySelector("b").textContent = formatNumber(value, currentExhibit().key === "migration", currentExhibit().decimals || 0);
+    const exhibit = currentExhibit();
+    button.querySelector("b").textContent = `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${missing ? "" : exhibit.unit}`.trim();
+    button.querySelector("small").textContent = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
   });
 };
 
@@ -1648,7 +1655,7 @@ const mount = () => {
     button.type = "button";
     button.className = "gaia-estat-marker";
     button.dataset.estatPrefecture = city.code;
-    button.innerHTML = `<i aria-hidden="true"></i><span><small>${city.code}</small>${city.prefecture}<b>—</b></span>`;
+    button.innerHTML = `<i aria-hidden="true"></i><span><strong>${city.prefecture}</strong><b>—</b><small></small></span>`;
     button.addEventListener("pointerdown", (event) => event.stopPropagation());
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1680,7 +1687,7 @@ const mount = () => {
   heatLegend.querySelector("[data-metric-title]").setAttribute("data-estat-heat-title", "");
   heatLegend.querySelector("[data-metric-minimum]").setAttribute("data-estat-heat-min", "");
   heatLegend.querySelector("[data-metric-maximum]").setAttribute("data-estat-heat-max", "");
-  map.append(heatLegend);
+  layer.append(heatLegend);
 
   readout = document.createElement("section");
   readout.className = "gaia-estat-readout";

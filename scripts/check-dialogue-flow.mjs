@@ -45,5 +45,5 @@ assert.match(runtime, /lineBreak\.dataset\.dialogueWrap = ""/u);
 assert.match(read("novel-mode.css"), /\.novel-phrase-token\s*\{[^}]*white-space: nowrap/u);
 assert.match(read("novel-mode.css"), /\.novel-phrase-token\.is-breakable\s*\{[^}]*overflow-wrap: anywhere/u);
 assert.doesNotMatch(read("novel-mode.css"), /word-break: auto-phrase/u);
-assert.match(read("gaia-mode-loader.js"), /novel-mode\.css\?v=gaia-ending-whiteout-1/u);
+assert.match(read("gaia-mode-loader.js"), /novel-mode\.css\?v=gaia-glitch-double-speed-1/u);
 console.log("Dialogue flow passed: punctuation-first lines, no orphan ending, width bounds, source preservation and marker clearance.");

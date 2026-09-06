@@ -4,10 +4,10 @@
   const expectedSceneCounts = Object.freeze({
     festival_concept: 72,
     map_mode01: 43,
-    gx_experience: 46,
-    esp32_pitch: 50,
-    circle_invitation: 79,
-    welcome_chat: 82,
+    gx_experience: 47,
+    esp32_pitch: 52,
+    circle_invitation: 80,
+    welcome_chat: 86,
   });
 
   const sceneIds = Object.freeze(Object.keys(expectedSceneCounts));

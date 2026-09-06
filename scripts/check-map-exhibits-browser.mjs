@@ -508,30 +508,24 @@ try {
       }
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
-        return overlay?.dataset.selectionLabelShape === "inline-readout"
-          || (overlay?.dataset.selectionLabelShape === "speech-bubble"
-            && Number(overlay.dataset.selectionLabelTailLengthPx) >= 8);
+        return overlay?.dataset.selectionLabelShape === "observation-card"
+          && overlay.dataset.selectionLabelTypography === "mincho";
       });
       await page.waitForTimeout(500);
       scan.selectionBubble = await page.locator("#japan-overlay").evaluate((element) => ({
         shape: element.dataset.selectionLabelShape,
-        tailSide: element.dataset.selectionLabelTailSide,
-        tailLength: Number(element.dataset.selectionLabelTailLengthPx),
-        cornerRadius: Number(element.dataset.selectionLabelCornerRadiusPx),
+        typography: element.dataset.selectionLabelTypography,
+        lines: JSON.parse(element.dataset.selectionLabelLines),
+        shadowBlur: Number(element.dataset.selectionLabelShadowBlur),
         width: Number(element.dataset.selectionLabelWidthPx),
         height: Number(element.dataset.selectionLabelHeightPx),
       }));
-      if (viewport.width >= 600) {
-        assert.equal(scan.selectionBubble.shape, "inline-readout");
-        assert.ok(scan.selectionBubble.height <= 68, "rain readout should stay on one compact row");
-      } else {
-        assert.equal(scan.selectionBubble.shape, "speech-bubble");
-        assert.match(scan.selectionBubble.tailSide, /^(left|right)$/u);
-        assert.ok(scan.selectionBubble.tailLength >= 8, `bubble tail is missing: ${JSON.stringify(scan.selectionBubble)}`);
-        assert.ok(scan.selectionBubble.cornerRadius >= 8, `bubble corners are too square: ${JSON.stringify(scan.selectionBubble)}`);
-      }
+      assert.equal(scan.selectionBubble.shape, "observation-card");
+      assert.equal(scan.selectionBubble.typography, "mincho");
+      assert.equal(scan.selectionBubble.shadowBlur, 0);
+      assert.deepEqual([...new Set(scan.selectionBubble.lines.map(line => line.index))], [0, 1, 2]);
       assert.ok(scan.selectionBubble.width > 0 && scan.selectionBubble.height > 0);
-      const screenshot = path.join(outputDir, `${viewport.name}-03-selection-speech-bubble.png`);
+      const screenshot = path.join(outputDir, `${viewport.name}-03-selection-observation-card.png`);
       await page.locator("#japan-map").screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
       report.scans.push(scan);
@@ -1469,7 +1463,7 @@ try {
         return overlay?.dataset.titleSeparatorState === "complete"
           && overlay?.dataset.plotRevealState === "running"
           && fills > 0
-          && fills < 31;
+          && fills < 208;
       });
       const midReveal = await page.locator("#japan-overlay").evaluate((overlay) => ({
         state: overlay.dataset.plotRevealState,
@@ -1486,8 +1480,8 @@ try {
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
         return overlay?.dataset.plotRevealState === "complete"
-          && Number(overlay.dataset.renewableCountryFillCount) === 31
-          && Number(overlay.dataset.renewableVisibleCountryFillCount) === 31
+          && Number(overlay.dataset.renewableCountryFillCount) === 208
+          && Number(overlay.dataset.renewableVisibleCountryFillCount) === 208
           && overlay.dataset.renewableSelectedPoiVisible === "true"
           && overlay.dataset.renewableSelectionLabelVisible === "true";
       }, null, { timeout: 5_000 });
@@ -2286,7 +2280,7 @@ try {
     await page.waitForFunction(() => {
       const overlay = document.querySelector("#japan-overlay");
       return overlay?.dataset.countryGeometryState === "ready"
-        && Number(overlay.dataset.renewableCountryFillCount) === 31;
+        && Number(overlay.dataset.renewableCountryFillCount) === 208;
     });
     await slider.evaluate((element) => {
       element.value = "50";
@@ -2301,7 +2295,7 @@ try {
       connectionRemoved: element.dataset.energyConnectionRemoved,
       geometryState: element.dataset.countryGeometryState,
     }));
-    assert.equal(renewableState.fillCount, 31);
+    assert.equal(renewableState.fillCount, 208);
     assert.equal(renewableState.scale, "country-blue-0-100");
     assert.ok(renewableState.selectedCountry);
     assert.ok(Number.isFinite(renewableState.selectedPercent));

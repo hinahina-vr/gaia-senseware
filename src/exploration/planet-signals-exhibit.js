@@ -4,7 +4,7 @@ import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-acti
 import { buildPlanetStatistics } from "./planet-statistics.js?v=gaia-unified-actions-1";
 import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-japan-center-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
-import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
+import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
 
 const GLOBAL_SAMPLE_COUNT = 240;
 const formatCoordinates = (point, digits = 1, separator = " ") =>
@@ -782,7 +782,7 @@ const updatePlanetLegend = (definition, data = null) => {
   updateMetricLegend(metricLegend, {
     title: metric.title,
     scope: !data ? "読込中" : sample ? "演出用サンプル" : isQuake ? "直近24時間の最大" : `${values.length}格子平均`,
-    period: stamp.replace(/^\d{4}\//u, "").replace(" JST", ""),
+    period: stamp.replace(/^\d{4}\//u, ""),
     current: formatted(value), value, minimum, maximum,
     minimumLabel: definition.renderer === "cloud" ? "0%" : formatted(minimum),
     maximumLabel: definition.renderer === "cloud" ? "100%" : formatted(maximum),
@@ -1043,7 +1043,7 @@ const mount = () => {
       if (event.target instanceof Element && event.target.closest("details")) event.stopPropagation();
     });
   }
-  map.append(legend);
+  layer.append(legend);
   atmosphereCanvas.addEventListener("gaia:cloud-reference-state", () => {
     legend.querySelector("[data-cloud-image-credit] small").textContent = atmosphereCanvas.dataset.cloudTextureState === "unavailable"
       ? "参考画像を読み込めません · 地点の数値は確認できます" : "2002年公開 · 現在の雲分布ではありません";

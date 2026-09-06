@@ -29,7 +29,7 @@ try {
       return snapshot.modes.find(mode => mode.id === "earth-organ").signals.current;
     });
     const expected = source.slice().sort((a, b) => b.renewablePercent - a.renewablePercent);
-    assert.equal(expected.length, 31);
+    assert(expected.length >= 200);
     await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
     await page.waitForFunction(() => document.querySelector("#japan-overlay").dataset.plotRevealState === "complete");
     const sequence = [];
@@ -37,10 +37,11 @@ try {
       await page.locator("#japan-layer [data-signal-time]").first().evaluate((input, position) => {
         input.value = String(position);
         input.dispatchEvent(new Event("input", { bubbles: true }));
-      }, index === 0 ? 0 : index === expected.length - 1 ? 100 : (index + .5) / expected.length * 100);
-      await page.waitForFunction(percent => document.querySelector("#japan-overlay").dataset.renewableSelectedPercent === percent, expected[index].renewablePercent.toFixed(1));
+      }, index);
+      await page.waitForFunction(iso3 => document.querySelector("#japan-overlay").dataset.renewableSelectedIso3 === iso3, expected[index].iso3);
       const actual = await page.evaluate(() => ({
         country: document.querySelector("#japan-overlay").dataset.renewableSelectedCountry,
+        iso3: document.querySelector("#japan-overlay").dataset.renewableSelectedIso3,
         percent: document.querySelector("#japan-overlay").dataset.renewableSelectedPercent,
         text: document.querySelector("#japan-layer [data-signal-value]").textContent,
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -56,37 +57,44 @@ try {
       }
     }
     assert.deepEqual(sequence.map(row => row.percent), expected.map(row => row.renewablePercent.toFixed(1)));
-    assert.equal(sequence[0].country, "アイスランド");
+    assert.deepEqual(sequence.map(row => row.iso3), expected.map(row => row.iso3));
+    assert.equal(sequence[0].country, expected[0].countryJa);
     const preserved = await page.evaluate(async () => (await GaiaMapObservationAdapter.waitSignalsReady()).modes.find(mode => mode.id === "earth-organ").signals.current);
     assert.deepEqual(preserved, source, "Ranking must not mutate the source data or its order");
     report.checks.push({ width, manual: sequence });
-    console.log(`PASS ${width}: all 31 slider selections descend, endpoints and source values preserved`);
+    console.log(`PASS ${width}: all ${expected.length} slider selections descend, endpoints and source values preserved`);
 
     if (width === 1440) {
-      // Observe the real 48-second animation, including the last -> first wrap.
-      // No clock mocking or direct changes to the production playback duration.
-      await page.evaluate(() => GaiaMapObservationAdapter.setSignalTime(0));
-      await page.waitForFunction(percent => document.querySelector("#japan-overlay").dataset.renewableSelectedPercent === percent, expected[0].renewablePercent.toFixed(1));
+      // Check real per-country dwell and last -> first playback without waiting
+      // an entire 209-country tour. Manual coverage above checks every country.
+      const tailStart = expected.length - 2;
+      await page.evaluate(position => GaiaMapObservationAdapter.setSignalTime(position), (tailStart + .05) / expected.length * 100);
+      await page.waitForFunction(iso3 => document.querySelector("#japan-overlay").dataset.renewableSelectedIso3 === iso3, expected[tailStart].iso3);
       await page.evaluate(() => {
         const records = [];
         const sample = () => {
           const overlay = document.querySelector("#japan-overlay");
           const country = overlay.dataset.renewableSelectedCountry;
-          if (country && records.at(-1)?.country !== country) records.push({ country,
+          if (country && records.at(-1)?.country !== country) records.push({ country, iso3: overlay.dataset.renewableSelectedIso3,
             percent: overlay.dataset.renewableSelectedPercent, at: performance.now() });
         };
         globalThis.renewablePlaybackCheck = { records, timer: setInterval(sample, 50) };
         sample();
       });
-      await page.waitForFunction(() => renewablePlaybackCheck.records.length >= 32, null, { timeout: 59_000 });
+      await page.waitForFunction(() => renewablePlaybackCheck.records.length >= 5, null, { timeout: 29_000 });
       const playback = await page.evaluate(() => {
         clearInterval(renewablePlaybackCheck.timer);
-        return renewablePlaybackCheck.records.slice(0, 32);
+        return renewablePlaybackCheck.records.slice(0, 5);
       });
-      assert.deepEqual(playback.map(row => row.percent), [...expected, expected[0]].map(row => row.renewablePercent.toFixed(1)));
-      assert.equal(playback[31].country, "アイスランド");
+      const wrapped = [...expected.slice(-2), ...expected.slice(0, 3)];
+      assert.deepEqual(playback.map(row => row.iso3), wrapped.map(row => row.iso3));
+      assert.deepEqual(playback.map(row => row.percent), wrapped.map(row => row.renewablePercent.toFixed(1)));
+      for (let index = 2; index < playback.length; index++) {
+        const dwell = playback[index].at - playback[index - 1].at;
+        assert(dwell >= 2100 && dwell < 3100, `Country dwell unexpectedly changed: ${dwell}`);
+      }
       report.checks.at(-1).playback = playback;
-      console.log("PASS desktop: actual autoplay visits all 31 countries in descending order and loops to Iceland");
+      console.log("PASS desktop: actual autoplay preserves 2.4-second country dwell and wraps last -> first without skipping");
     }
     await context.close();
   }

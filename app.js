@@ -396,7 +396,6 @@
   // Canvas annotations share the same typefaces as the surrounding map UI.
   const mapRootStyle = getComputedStyle(document.documentElement);
   const mapHeadingFont = mapRootStyle.getPropertyValue("--font-ja").trim() || '"Yu Mincho", serif';
-  const mapDetailFont = mapRootStyle.getPropertyValue("--font-ui-ja").trim() || '"Yu Gothic UI", sans-serif';
   const mapZoomControls = document.querySelector("#gaia-map-zoom-controls");
   const mapZoomIn = document.querySelector("#gaia-map-zoom-in");
   const mapZoomOut = document.querySelector("#gaia-map-zoom-out");
@@ -468,6 +467,7 @@
   const CO2_TIMELINE_START_YEAR = 1958;
   const CO2_TIMELINE_END_YEAR = 2050;
   const CO2_TIMELINE_DURATION_MS = 60000;
+  const CO2_EXPLORATION_TIMELINE_SPEED = 3;
   const STORY_MAP_TIMELINE_SPEED = 3;
   const STORY_MAP_FINAL_FRAME_MS = 650;
   const CO2_TIMELINE_STEPS_PER_YEAR = 4;
@@ -478,6 +478,7 @@
   const MODE_SEQUENCE_DURATION_MS = 48000;
   const ECOLOGIES_SEQUENCE_DURATION_MS = MODE_SEQUENCE_DURATION_MS * 2;
   const ECOLOGIES_SELECTION_TRANSITION_MS = 920;
+  const RENEWABLE_COUNTRY_DISPLAY_MS = 2400;
   const MODE_SEQUENCE_STEPS = 96;
   const MAP_TILE_SIZE = 256;
   const JAPAN_ZOOM = 5;
@@ -527,7 +528,7 @@
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-renewable-descending-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-renewable-world-readout-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -2490,7 +2491,7 @@
     ctx.rect(originX, originY, width, height);
     ctx.clip();
     rows.forEach((row, index) => {
-      const path = getNaturalEarthCountryGeographicPath(row.iso3);
+      const path = getNaturalEarthCountryGeographicPath(row.mapIso3 || row.iso3);
       if (!path) return;
       const reveal = getMapPlotReveal(index, rows.length, now);
       if (reveal.progress <= 0) return;
@@ -3726,6 +3727,8 @@
     };
   };
 
+  let circulationSourceTime;
+  let circulationSourceDateLabel = "観測時刻不明";
   const getBlueCirculationState = (signalMode) => {
     const currents = signalMode?.signals?.currents || [];
     if (!currents.length) return null;
@@ -3733,16 +3736,21 @@
     const horizonHours = (signalTimePosition / 100) * CIRCULATION_TIMELINE_HOURS;
     const meanSpeedMs = speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length;
     const maximumSpeedMs = Math.max(...speeds);
-    const sourceDate = String(currents[0]?.time || "SNAPSHOT")
-      .slice(0, 10)
-      .replaceAll("/", ".")
-      .replaceAll("-", ".");
+    // This state is read every frame; format the source date only when it changes.
+    if (circulationSourceTime !== currents[0]?.time) {
+      circulationSourceTime = currents[0]?.time;
+      const sourceDate = new Date(circulationSourceTime);
+      circulationSourceDateLabel = circulationSourceTime && Number.isFinite(sourceDate.getTime())
+        ? new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" })
+          .format(sourceDate).replaceAll("/", ".") + " JST"
+        : "観測時刻不明";
+    }
     const day = horizonHours / 24;
     return {
       kind: "transport",
       phaseLabel: "ある1日の海流 × 移動距離の計算",
       yearLabel: `${day.toFixed(1)}日後`,
-      dateLabel: `${sourceDate} UTC`,
+      dateLabel: circulationSourceDateLabel,
       methodLabel: "海流の速さ × 経過時間（風は計算に未使用）",
       warning:
         "ある一日の海流が同じ速さと向きで続くと仮定した距離です。実際の14日後を予報するものではありません。",
@@ -4073,19 +4081,19 @@
       if (!row) return null;
       return {
         kind: "energy",
-        phaseLabel: `再生可能エネルギー発電割合 / ${String(rows.length)}か国中 ${String(index + 1)}`,
+        phaseLabel: `再生可能エネルギー発電割合 / ${String(rows.length)}の国・地域中 ${String(index + 1)}`,
         yearLabel: `${row.renewablePercent.toFixed(1)}%`,
-        valueLabel: `${row.countryJa} · 再生可能エネルギー発電割合 ${row.renewablePercent.toFixed(1)}%`,
+        valueLabel: `${row.countryJa} · 再生可能エネルギー発電割合 ${row.renewablePercent.toFixed(1)}% · ${row.year}年`,
         methodLabel: "国別塗り分け / 総発電量に占める割合",
         timeLabel: `国 / 再生可能エネルギー発電割合が高い → 低い ${String(index + 1).padStart(2, "0")}/${String(rows.length).padStart(2, "0")}`,
         selectedIndex: index,
         selected: row,
         rows,
         legend: [
-          "青い国土 / 現在値",
+          "国土の青 / 発電割合",
           "明るさ / 比率",
-          "黄円 / 日射条件",
-          "緑矢印 / 風条件",
+          "日射・風 / 31代表地点のみ",
+          "無着色 / 値の収録なし",
         ],
       };
     }
@@ -4470,331 +4478,120 @@
     const stroke = (alpha) => `rgba(${rgb}, ${alpha})`;
     const pointFor = (row) => japanWorldToScreen(row.lon, row.lat, left, top);
     const visible = (point, margin = 45) => point.x > -margin && point.x < rect.width + margin && point.y > -margin && point.y < rect.height + margin;
-    const drawRainSelectionLabel = (point, row, radius) => {
-      if (!isMapPlotRevealComplete(now)) return;
-      const compact = rect.width < 600;
-      const expansive = rect.width >= 2400;
-      const shortLandscape = rect.width < 900 && rect.height < 420;
-      const primaryFontPx = shortLandscape ? 12 : compact ? 14 : expansive ? 26 : 17;
-      const valueFontPx = shortLandscape ? 16 : compact ? 17 : expansive ? 29 : 20;
-      const unitFontPx = shortLandscape ? 10 : compact ? 11 : expansive ? 17 : 12;
-      const sourceFontPx = compact ? 9 : expansive ? 15 : 10;
-      const padding = shortLandscape ? 8 : compact ? 12 : expansive ? 24 : 16;
-      const gap = shortLandscape ? 4 : compact ? 10 : expansive ? 22 : 16;
-      const unitGap = compact ? 4 : 6;
-      const height = shortLandscape ? 36 : compact ? 42 : expansive ? 68 : 48;
-      const margin = 12;
-      const primary = getForestRainSiteName(row);
-      const value = row.precipitationMmDay?.toFixed(2) || "—";
-      const unit = "mm/日";
-      const source = "NASA POWER";
-      const primaryFont = `500 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
-      const valueFont = `500 ${valueFontPx}px Consolas, "Courier New", monospace`;
-      const unitFont = `400 ${unitFontPx}px "Noto Sans JP", sans-serif`;
-      const sourceFont = `500 ${sourceFontPx}px "Noto Sans JP", sans-serif`;
+    // Draw annotations last so the fixed instruments participate in placement.
+    const observationLabels = [];
+    const drawObservationLabel = ({ point, primary, secondary, detail, radius = 8, alpha = 1, renewable = false }) => {
+      const compact = rect.width < 600, expansive = rect.width >= 2400;
+      const short = rect.height < 500 || (compact && rect.height < 650);
+      const padding = short ? 12 : compact ? 16 : expansive ? 26 : 22;
+      const landscape = rect.width < 900 && rect.height < 420;
+      const maximumWidth = Math.min(landscape ? 210 : compact ? 390 : expansive ? 690 : 520, rect.width - 32);
+      const fonts = landscape ? [14, 12, 10] : short ? [16, 13, 11] : [compact ? 19 : expansive ? 30 : 23, compact ? 14 : expansive ? 22 : 17, compact ? 11 : expansive ? 16 : 12];
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.font = valueFont;
-      const valueWidth = ctx.measureText(value).width;
-      ctx.font = unitFont;
-      const unitWidth = ctx.measureText(unit).width;
-      ctx.font = sourceFont;
-      const sourceWidth = ctx.measureText(source).width;
-      const fixedWidth = padding * 2 + gap * 4 + valueWidth + unitGap + unitWidth + sourceWidth;
-      ctx.font = primaryFont;
-      const maximumWidth = shortLandscape ? Math.min(rect.width - margin * 2, Math.max(210, rect.width - 358)) : rect.width - margin * 2;
-      const availableNameWidth = Math.max(0, maximumWidth - fixedWidth);
-      let displayName = primary;
-      // Keep the measurement and provenance intact; only ellipsize a long site
-      // name on narrow screens. Never squeeze Japanese glyphs with maxWidth.
-      if (ctx.measureText(displayName).width > availableNameWidth) {
-        const characters = Array.from(primary);
-        while (characters.length && ctx.measureText(`${characters.join("")}…`).width > availableNameWidth) characters.pop();
-        displayName = `${characters.join("")}…`;
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      const blocks = [primary, secondary, detail].map((text, index) => ({
+        text: String(text || "—"), font: `400 ${fonts[index]}px ${mapHeadingFont}`, size: fonts[index],
+      }));
+      const naturalWidth = Math.max(...blocks.map(block => { ctx.font = block.font; return ctx.measureText(block.text).width; }));
+      const width = Math.min(maximumWidth, Math.max(compact ? 270 : 360, naturalWidth + padding * 2));
+      const bodyWidth = width - padding * 2;
+      const lines = [];
+      let offset = short ? 12 : compact ? 16 : 20;
+      for (const [index, block] of blocks.entries()) {
+        ctx.font = block.font;
+        let line = "";
+        // Keep ordinary numbers/units together; break exceptionally long tokens.
+        // No fillText maxWidth: Japanese glyphs must never be squeezed.
+        const tokens = block.text.match(/[A-Za-z0-9.,%/㎡²µ°+−-]+[。、，．！？）〉》」』】]*|.[。、，．！？）〉》」』】]*/gu) || [];
+        const addLine = () => {
+          if (!line.trim()) { line = ""; return; }
+          lines.push({ text: line.trim(), font: block.font, offset, width: ctx.measureText(line.trim()).width, index });
+          offset += block.size * (short ? 1.4 : 1.6); line = "";
+        };
+        for (const token of tokens) {
+          const parts = ctx.measureText(token).width > bodyWidth ? Array.from(token) : [token];
+          for (const part of parts) {
+            if (line && ctx.measureText(line + part).width > bodyWidth) addLine();
+            line += part;
+          }
+        }
+        addLine();
+        if (index < blocks.length - 1) offset += short ? 3 : compact ? 5 : 7;
       }
-      const nameWidth = ctx.measureText(displayName).width;
-      const width = nameWidth + fixedWidth;
-      const clearance = radius + 20;
-      const obstacles = [];
-      for (const element of document.querySelectorAll(
-        ".japan-heading, .signal-console-map, .map-command-dock, .map-mode-bank, #map-reading-guide, .signal-encoding-legend-dock, #gaia-map-zoom-controls, #co2-timeline-display, .japan-map-actions, .gaia-mode-entry-guide-replay, #gaia-audio-toggle",
-      )) {
-        const bounds = element.getBoundingClientRect();
-        if (bounds.width < 2 || bounds.height < 2) continue;
-        const style = getComputedStyle(element);
-        if (style.visibility === "hidden" || Number(style.opacity) === 0) continue;
-        obstacles.push({ left: bounds.left - rect.left, top: bounds.top - rect.top,
-          right: bounds.right - rect.left, bottom: bounds.bottom - rect.top });
+      const height = offset + (short ? 8 : compact ? 12 : 16);
+      const obstacles = [...document.querySelectorAll(
+        ".signal-encoding-legend-dock, .map-command-dock, .signal-console-map, .japan-heading, .map-mode-bank, #gaia-map-zoom-controls, #co2-timeline-display, .japan-map-actions, #map-reading-guide, .ecologies-exhibit, #japan-poi-panel, .gaia-mode-entry-guide-replay, #gaia-audio-toggle, #map-mobile-toolbar, .map-mobile-ecology-summary"
+      )].filter(node => node.getClientRects().length && getComputedStyle(node).visibility !== "hidden" && Number(getComputedStyle(node).opacity) !== 0)
+        .map(node => { const box = node.getBoundingClientRect(); return { x: box.left - rect.left, y: box.top - rect.top, width: box.width, height: box.height }; });
+      if (japanOverlay.dataset.auxiliaryPanelId) {
+        const data = japanOverlay.dataset;
+        obstacles.push({ x: Number(data.auxiliaryPanelScreenLeft) - rect.left, y: Number(data.auxiliaryPanelScreenTop) - rect.top,
+          width: Number(data.auxiliaryPanelScreenRight) - Number(data.auxiliaryPanelScreenLeft),
+          height: Number(data.auxiliaryPanelScreenBottom) - Number(data.auxiliaryPanelScreenTop) });
       }
-      if (japanOverlay.dataset.auxiliaryPanelId === "quantitative-precipitation") {
-        obstacles.push({ left: Number(japanOverlay.dataset.auxiliaryPanelScreenLeft) - rect.left,
-          top: Number(japanOverlay.dataset.auxiliaryPanelScreenTop) - rect.top,
-          right: Number(japanOverlay.dataset.auxiliaryPanelScreenRight) - rect.left,
-          bottom: Number(japanOverlay.dataset.auxiliaryPanelScreenBottom) - rect.top });
+      obstacles.push({ x: point.x - radius - 6, y: point.y - radius - 6, width: radius * 2 + 12, height: radius * 2 + 12 });
+      const xs = [point.x + radius + 20, point.x - radius - 20 - width, point.x - width / 2, 16, rect.width - width - 16,
+        ...obstacles.flatMap(box => [box.x + box.width + 12, box.x - width - 12])];
+      const ys = [point.y - height * .4, point.y + radius + 20, point.y - radius - height - 20, 16, rect.height - height - 16,
+        ...obstacles.flatMap(box => [box.y + box.height + 12, box.y - height - 12])];
+      const candidates = xs.flatMap(candidateX => ys.map(candidateY => {
+        const x = clamp(candidateX, 16, rect.width - width - 16), y = clamp(candidateY, 16, rect.height - height - 16);
+        const overlap = obstacles.reduce((total, box) => total
+          + Math.max(0, Math.min(x + width, box.x + box.width + 8) - Math.max(x, box.x - 8))
+          * Math.max(0, Math.min(y + height, box.y + box.height + 8) - Math.max(y, box.y - 8)), 0);
+        return { x, y, score: overlap * 1000 + Math.hypot(x + width / 2 - point.x, y + height / 2 - point.y) };
+      }));
+      const { x, y } = candidates.sort((a, b) => a.score - b.score)[0];
+      const edgeX = clamp(point.x, x, x + width), edgeY = clamp(point.y, y, y + height);
+      const distance = Math.hypot(edgeX - point.x, edgeY - point.y);
+      if (distance > radius + 8) {
+        const start = (radius + 8) / distance;
+        ctx.beginPath(); ctx.moveTo(point.x + (edgeX - point.x) * start, point.y + (edgeY - point.y) * start); ctx.lineTo(edgeX, edgeY);
+        ctx.strokeStyle = "rgba(170,204,195,.38)"; ctx.lineWidth = 1; ctx.stroke();
       }
-      const candidatesX = [point.x + clearance, point.x - clearance - width, point.x - width / 2, margin, rect.width - width - margin];
-      const candidatesY = [point.y - height / 2, point.y - clearance - height, point.y + clearance, margin, rect.height - height - margin];
-      for (const obstacle of obstacles) {
-        candidatesX.push(obstacle.left - width - 8, obstacle.right + 8);
-        candidatesY.push(obstacle.top - height - 8, obstacle.bottom + 8);
-      }
-      const positionsX = [...new Set(candidatesX.map(value => clamp(value, margin, rect.width - width - margin)))];
-      const positionsY = [...new Set(candidatesY.map(value => clamp(value, margin, rect.height - height - margin)))];
-      let best = { score: Infinity, x: margin, y: margin };
-      for (const x of positionsX) for (const y of positionsY) {
-        const distance = Math.hypot(clamp(point.x, x, x + width) - point.x, clamp(point.y, y, y + height) - point.y);
-        const overlap = obstacles.reduce((area, obstacle) => area
-          + Math.max(0, Math.min(x + width, obstacle.right + 6) - Math.max(x, obstacle.left - 6))
-          * Math.max(0, Math.min(y + height, obstacle.bottom + 6) - Math.max(y, obstacle.top - 6)), 0);
-        const score = overlap * 100000 + Math.max(0, clearance - distance) * 10000
-          + distance + Math.hypot(x + width / 2 - point.x, y + height / 2 - point.y) * .1;
-        if (score < best.score) best = { score, x, y };
-      }
-      const { x, y } = best;
-      const placement = x > point.x ? "right" : x + width < point.x ? "left" : y < point.y ? "above" : "below";
-      // A quiet hairline identifies the observation without a glowing bubble tail.
-      const connector = { x: clamp(point.x, x, x + width), y: clamp(point.y, y, y + height) };
-      const distance = Math.hypot(connector.x - point.x, connector.y - point.y);
-      if (distance > radius + 14) {
-        const start = (radius + 14) / distance;
-        ctx.beginPath();
-        ctx.moveTo(point.x + (connector.x - point.x) * start, point.y + (connector.y - point.y) * start);
-        ctx.lineTo(connector.x, connector.y);
-        ctx.strokeStyle = "rgba(179,213,223,.38)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.roundRect(x, y, width, height, 4);
-      ctx.fillStyle = "rgba(5,17,23,.92)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(198,224,229,.18)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      const baseline = y + height / 2;
-      const firstDivider = x + padding + nameWidth + gap;
-      const valueX = firstDivider + gap;
-      const secondDivider = valueX + valueWidth + unitGap + unitWidth + gap;
-      ctx.beginPath();
-      for (const divider of [firstDivider, secondDivider]) {
-        ctx.moveTo(divider, baseline - (expansive ? 11 : 8));
-        ctx.lineTo(divider, baseline + (expansive ? 11 : 8));
-      }
-      ctx.strokeStyle = "rgba(198,224,229,.2)";
-      ctx.stroke();
-      for (const [text, font, color, textX] of [
-        [displayName, primaryFont, "rgba(232,241,242,.96)", x + padding],
-        [value, valueFont, "rgba(168,225,248,.98)", valueX],
-        [unit, unitFont, "rgba(205,222,226,.8)", valueX + valueWidth + unitGap],
-        [source, sourceFont, "rgba(181,205,212,.72)", secondDivider + gap],
-      ]) {
-        ctx.font = font;
-        ctx.fillStyle = color;
-        ctx.fillText(text, textX, baseline);
+      ctx.beginPath(); ctx.roundRect(x, y, width, height, 5);
+      ctx.fillStyle = "rgba(5,19,26,.95)"; ctx.fill();
+      ctx.strokeStyle = "rgba(159,192,183,.26)"; ctx.lineWidth = 1; ctx.stroke();
+      for (const line of lines) {
+        ctx.font = line.font;
+        ctx.fillStyle = ["rgba(229,237,220,.98)", "rgba(206,223,211,.96)", "rgba(160,185,176,.94)"][line.index];
+        ctx.fillText(line.text, x + padding, y + line.offset);
       }
       ctx.restore();
+      const serializedLines = JSON.stringify(lines.map(({ text, width, font, index }) => ({ text, width, font, index })));
       Object.assign(japanOverlay.dataset, {
-        selectionLabelShape: "inline-readout", selectionLabelVisible: "true",
-        selectionLabelWidthPx: width.toFixed(1), selectionLabelHeightPx: String(height),
-        selectionLabelPrimaryFontPx: String(primaryFontPx), selectionLabelSecondaryFontPx: String(unitFontPx),
+        selectionLabelShape: "observation-card", selectionLabelVisible: "true", selectionLabelTypography: "mincho",
+        selectionLabelWidthPx: width.toFixed(1), selectionLabelHeightPx: height.toFixed(1),
         selectionLabelLeftPx: x.toFixed(1), selectionLabelTopPx: y.toFixed(1),
-        selectionLabelPlacement: placement, selectionLabelFullName: primary,
-        selectionLabelDisplayName: displayName,
+        selectionLabelPrimaryFontPx: String(fonts[0]), selectionLabelSecondaryFontPx: String(fonts[1]),
+        selectionLabelPrimary: primary, selectionLabelSecondary: secondary, selectionLabelDetail: detail,
+        selectionLabelLines: serializedLines, selectionLabelBodyWidth: String(bodyWidth), selectionLabelShadowBlur: "0",
+        selectionLabelFullName: primary, selectionLabelDisplayName: primary,
+      });
+      if (renewable) Object.assign(japanOverlay.dataset, {
+        renewableSelectionLabelPrimary: primary, renewableSelectionLabelSecondary: secondary, renewableSelectionLabelDetail: detail,
+        renewableSelectionLabelLines: serializedLines, renewableSelectionLabelBodyWidth: String(bodyWidth),
+        renewableSelectionLabelVisible: "true",
       });
     };
-    const drawSelectionLabel = (
-      point,
-      primary,
-      secondary,
-      color = "rgba(210,255,242,.96)",
-      motion = {},
-    ) => {
+    const drawSelectionLabel = (point, primary, secondary, color, motion = {}) => {
       if (motion.allowDuringPlotReveal !== true && !isMapPlotRevealComplete(now)) return null;
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.textAlign = "left";
-      const prominent = motion.prominent === true;
-      const quiet = motion.tone === "quiet";
-      const compactProminent = prominent && motion.compactProminent === true;
-      const compact = rect.width < 600;
-      const expansive = rect.width >= 2400;
-      const preferBelow = compact && motion.preferBelow === true;
-      const primaryFontPx = compactProminent
-        ? (compact ? 17 : (expansive ? 26 : 22))
-        : prominent
-        ? (compact ? 18 : (expansive ? 32 : 20))
-        : (compact ? 16 : (expansive ? 30 : 18));
-      const secondaryFontPx = compactProminent
-        ? (compact ? 12 : (expansive ? 18 : 15))
-        : prominent
-        ? (compact ? 14 : (expansive ? 22 : 15))
-        : (compact ? 12 : (expansive ? 20 : 13));
-      const detail = motion.detail || "";
-      const detailFontPx = compact ? 10 : expansive ? 16 : 12;
-      const primaryFont = quiet ? `400 ${primaryFontPx}px ${mapHeadingFont}` : `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
-      const secondaryFont = quiet ? `400 ${secondaryFontPx}px ${mapDetailFont}` : `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
-      const detailFont = quiet ? `400 ${detailFontPx}px ${mapDetailFont}` : `500 ${detailFontPx}px "Noto Sans JP", sans-serif`;
-      const horizontalPadding = compactProminent
-        ? (compact ? 14 : (expansive ? 24 : 19))
-        : expansive ? (prominent ? 28 : 26) : (prominent ? 20 : 18);
-      const cardHeight = (compactProminent
-        ? (compact ? 66 : (expansive ? 92 : 80))
-        : prominent
-        ? (compact ? 80 : (expansive ? 120 : 86))
-        : (compact ? 68 : (expansive ? 106 : 72))) + (detail ? (compact ? 22 : expansive ? 30 : 26) : 0);
-      ctx.font = primaryFont;
-      const primaryWidth = ctx.measureText(primary).width;
-      ctx.font = secondaryFont;
-      const secondaryWidth = ctx.measureText(secondary).width;
-      ctx.font = detailFont;
-      const detailWidth = detail ? ctx.measureText(detail).width : 0;
-      const maximumWidth = Math.min(
-        compactProminent ? (expansive ? 760 : 600) : prominent ? (expansive ? 900 : 620) : (expansive ? 760 : 520),
-        rect.width - (preferBelow ? 90 : prominent ? 32 : 24),
-      );
-      const naturalWidth = Math.max(primaryWidth, secondaryWidth, detailWidth) + horizontalPadding * 2;
-      const textWidth = compactProminent
-        ? Math.min(maximumWidth, Math.max(Math.min(compact ? 300 : (expansive ? 600 : 460), maximumWidth), naturalWidth))
-        : prominent
-        ? Math.min(maximumWidth, Math.max(Math.min(expansive ? 640 : 460, maximumWidth), naturalWidth))
-        : Math.min(maximumWidth, Math.max(Math.min(expansive ? 520 : 340, maximumWidth), naturalWidth));
-      const pointGap = prominent ? 24 : 16;
-      const x = clamp(
-        preferBelow ? (motion.anchor || point).x - textWidth / 2
-          : point.x + pointGap + textWidth > rect.width ? point.x - textWidth - pointGap : point.x + pointGap,
-        prominent ? 16 : 12,
-        rect.width - textWidth - (preferBelow ? 74 : prominent ? 16 : 12),
-      );
-      const y = clamp(preferBelow ? point.y + 32 : point.y - cardHeight / 2, prominent ? 16 : 12, rect.height - cardHeight - (prominent ? 16 : 12));
-      const alpha = clamp(Number(motion.alpha ?? 1), 0, 1);
-      const scale = clamp(Number(motion.scale ?? 1), 0.9, 1.05);
-      const offsetY = Number(motion.offsetY) || 0;
-      const anchor = motion.anchor || point;
-      const cardCenterX = x + textWidth / 2;
-      const cardCenterY = y + cardHeight / 2 + offsetY;
-      ctx.globalAlpha *= alpha;
-      ctx.translate(cardCenterX, cardCenterY);
-      ctx.scale(scale, scale);
-      const drawX = -textWidth / 2;
-      const drawY = -cardHeight / 2;
-      const drawRight = drawX + textWidth;
-      const drawBottom = drawY + cardHeight;
-      const anchorLocalX = (anchor.x - cardCenterX) / scale;
-      const anchorLocalY = (anchor.y - cardCenterY) / scale;
-      const tailOnTop = preferBelow && anchorLocalY < drawY;
-      const tailOnLeft = anchorLocalX <= 0;
-      const cornerRadius = quiet ? 4 : compactProminent ? 8 : prominent ? 11 : 10;
-      const tailHalfHeight = compactProminent ? 5.5 : prominent ? 8 : 7;
-      const tailBaseY = clamp(
-        anchorLocalY,
-        drawY + cornerRadius + tailHalfHeight + 2,
-        drawBottom - cornerRadius - tailHalfHeight - 2,
-      );
-      const tailTipX = tailOnLeft
-        ? Math.min(anchorLocalX, drawX - 8)
-        : Math.max(anchorLocalX, drawRight + 8);
-      const tailTipY = clamp(anchorLocalY, drawY + 5, drawBottom - 5);
-      const traceSpeechBubble = () => {
-        ctx.beginPath();
-        ctx.moveTo(drawX + cornerRadius, drawY);
-        if (tailOnTop) {
-          const tailX = clamp(anchorLocalX, drawX + cornerRadius + 10, drawRight - cornerRadius - 10);
-          ctx.lineTo(tailX - tailHalfHeight, drawY);
-          ctx.lineTo(anchorLocalX, anchorLocalY + 10);
-          ctx.lineTo(tailX + tailHalfHeight, drawY);
-        }
-        ctx.lineTo(drawRight - cornerRadius, drawY);
-        ctx.quadraticCurveTo(drawRight, drawY, drawRight, drawY + cornerRadius);
-        if (!tailOnTop && !tailOnLeft) {
-          ctx.lineTo(drawRight, tailBaseY - tailHalfHeight);
-          ctx.lineTo(tailTipX, tailTipY);
-          ctx.lineTo(drawRight, tailBaseY + tailHalfHeight);
-        }
-        ctx.lineTo(drawRight, drawBottom - cornerRadius);
-        ctx.quadraticCurveTo(drawRight, drawBottom, drawRight - cornerRadius, drawBottom);
-        ctx.lineTo(drawX + cornerRadius, drawBottom);
-        ctx.quadraticCurveTo(drawX, drawBottom, drawX, drawBottom - cornerRadius);
-        if (!tailOnTop && tailOnLeft) {
-          ctx.lineTo(drawX, tailBaseY + tailHalfHeight);
-          ctx.lineTo(tailTipX, tailTipY);
-          ctx.lineTo(drawX, tailBaseY - tailHalfHeight);
-        }
-        ctx.lineTo(drawX, drawY + cornerRadius);
-        ctx.quadraticCurveTo(drawX, drawY, drawX + cornerRadius, drawY);
-        ctx.closePath();
-      };
-      const bubbleFill = ctx.createLinearGradient(drawX, drawY, drawRight, drawBottom);
-      bubbleFill.addColorStop(0, prominent ? "rgba(2,13,18,.97)" : "rgba(2,16,22,.94)");
-      bubbleFill.addColorStop(0.72, prominent ? "rgba(3,18,24,.95)" : "rgba(3,19,25,.9)");
-      bubbleFill.addColorStop(1, `rgba(${rgb}, ${prominent ? 0.13 : 0.1})`);
-      traceSpeechBubble();
-      ctx.fillStyle = quiet ? "rgba(5,17,25,.96)" : bubbleFill;
-      ctx.shadowColor = quiet ? "transparent" : `rgba(${rgb}, ${prominent ? 0.22 : 0.16})`;
-      ctx.shadowBlur = quiet ? 0 : compact ? 10 : prominent ? 19 : 15;
-      ctx.shadowOffsetY = quiet ? 0 : 4;
-      ctx.fill();
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-      traceSpeechBubble();
-      ctx.strokeStyle = quiet ? "rgba(142,224,216,.3)" : color.replace(/,\s*(?:0?\.)?\d+\)$/u, ",.58)");
-      ctx.lineWidth = quiet ? 1 : prominent ? 1.5 : 1;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(drawX + cornerRadius + 5, drawY + 1.5);
-      ctx.lineTo(drawRight - cornerRadius - 5, drawY + 1.5);
-      ctx.strokeStyle = quiet ? "rgba(170,242,231,.12)" : `rgba(${rgb}, ${prominent ? 0.2 : 0.14})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = color;
-      ctx.font = primaryFont;
-      ctx.fillText(
-        primary,
-        drawX + horizontalPadding,
-        drawY + (compactProminent ? (compact ? 25 : (expansive ? 38 : 32)) : prominent ? (compact ? 32 : (expansive ? 46 : 35)) : (compact ? 28 : (expansive ? 42 : 30))),
-        textWidth - horizontalPadding * 2,
-      );
-      ctx.fillStyle = quiet ? "rgba(207,225,230,.9)" : "rgba(222,241,240,.76)";
-      ctx.font = secondaryFont;
-      ctx.fillText(
-        secondary,
-        drawX + horizontalPadding,
-        drawY + (compactProminent ? (compact ? 52 : (expansive ? 72 : 62)) : prominent ? (compact ? 64 : (expansive ? 94 : 69)) : (compact ? 55 : (expansive ? 83 : 59))),
-        textWidth - horizontalPadding * 2,
-      );
-      if (detail) {
-        ctx.fillStyle = quiet ? "rgba(177,203,211,.84)" : "rgba(194,218,222,.65)";
-        ctx.font = detailFont;
-        ctx.fillText(detail, drawX + horizontalPadding, drawBottom - (compact ? 12 : 16), textWidth - horizontalPadding * 2);
-      }
-      ctx.restore();
-      japanOverlay.dataset.selectionLabelWidthPx = textWidth.toFixed(1);
-      japanOverlay.dataset.selectionLabelHeightPx = String(cardHeight);
-      japanOverlay.dataset.selectionLabelLeftPx = x.toFixed(1);
-      japanOverlay.dataset.selectionLabelTopPx = (y + offsetY).toFixed(1);
-      japanOverlay.dataset.selectionLabelPrimaryFontPx = String(primaryFontPx);
-      japanOverlay.dataset.selectionLabelSecondaryFontPx = String(secondaryFontPx);
-      japanOverlay.dataset.selectionLabelShape = "speech-bubble";
-      japanOverlay.dataset.selectionLabelTailSide = tailOnTop ? "top" : tailOnLeft ? "left" : "right";
-      japanOverlay.dataset.selectionLabelTailLengthPx = (tailOnTop
-        ? Math.abs(anchorLocalY + 10 - drawY)
-        : Math.abs(tailTipX - (tailOnLeft ? drawX : drawRight))).toFixed(1);
-      japanOverlay.dataset.selectionLabelCornerRadiusPx = String(cornerRadius);
-      japanOverlay.dataset.selectionLabelVisible = "true";
-      return {
-        x,
-        y: y + offsetY,
-        width: textWidth,
-        height: cardHeight,
-        primaryFontPx,
-        secondaryFontPx,
-        tailSide: tailOnTop ? "top" : tailOnLeft ? "left" : "right",
-      };
+      observationLabels.push({ point: motion.anchor || point, primary, secondary, detail: motion.detail || "",
+        radius: motion.radius || 8, alpha: ctx.globalAlpha * clamp(Number(motion.alpha ?? 1), 0, 1), renewable: motion.renewable === true });
+      return null;
     };
+    const drawRainSelectionLabel = (point, row, radius) => drawSelectionLabel(point, getForestRainSiteName(row),
+      `降水量　${row.precipitationMmDay?.toFixed(2) || "—"} mm/日`, null,
+      { radius, detail: "NASA POWER · 気候平均値" });
+    const drawRenewableObservationLabel = (point, selected, radius = 8) => drawSelectionLabel(point,
+      selected.countryJa || selected.country, `再生可能エネルギー発電割合　${selected.renewablePercent.toFixed(1)}%`, null,
+      { radius, renewable: true, detail: `${selected.year}年の値　${selected.potential
+        ? `代表点の日射 ${selected.potential.solarKwhM2Day.toFixed(2)} kWh/㎡/日 · 風 ${selected.potential.windSpeedMs.toFixed(2)} m/s`
+        : "日射・風：代表点の値は未収録"}` });
     delete japanOverlay.dataset.selectionLabelWidthPx;
     delete japanOverlay.dataset.selectionLabelHeightPx;
     delete japanOverlay.dataset.selectionLabelPrimaryFontPx;
@@ -4808,6 +4605,9 @@
     delete japanOverlay.dataset.selectionLabelPlacement;
     delete japanOverlay.dataset.selectionLabelFullName;
     delete japanOverlay.dataset.selectionLabelDisplayName;
+    delete japanOverlay.dataset.selectionLabelTypography;
+    for (const key of ["selectionLabelPrimary", "selectionLabelSecondary", "selectionLabelDetail", "selectionLabelLines", "selectionLabelBodyWidth", "selectionLabelShadowBlur"]) delete japanOverlay.dataset[key];
+    japanOverlay.dataset.renewableSelectionLabelVisible = "false";
     japanOverlay.dataset.selectionLabelVisible = "false";
     delete japanOverlay.dataset.earthquakeSelectionLabelWidthPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelHeightPx;
@@ -4886,6 +4686,13 @@
         || colors.length < 2
       ) return null;
       const compact = rect.width < 680;
+      if (globalThis.GaiaMobileMap?.isActive()) {
+        const normalized = scale === "log"
+          ? Math.log1p(Math.max(0, value - minimum)) / Math.log1p(maximum - minimum)
+          : (value - minimum) / (maximum - minimum);
+        globalThis.GaiaMobileMap.setMetric({ id, title, current, minimumLabel, maximumLabel, colors, scale, progress: clamp(normalized, 0, 1) });
+        return null;
+      }
       const legendDock = mapSignalEncodingLegend?.closest(".signal-encoding-legend-dock");
       const legendRect = legendDock?.getClientRects().length ? legendDock.getBoundingClientRect() : null;
       const alignWithLegend = rect.width > 900 && legendRect?.width > 0;
@@ -4931,19 +4738,19 @@
       ctx.roundRect(panelX + .5, panelY + .5, panelWidth - 1, panelHeight - 1, 12);
       ctx.fill(); ctx.stroke();
       const scope = title.includes(" / ") ? title.split(" / ").slice(1).join(" / ") : "";
-      ctx.font = '500 10px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+      ctx.font = `400 10px ${mapHeadingFont}`;
       const scopeWidth = scope ? Math.min(ctx.measureText(scope).width, panelWidth * .46) : 0;
       ctx.fillStyle = "#a7bec8";
-      ctx.font = '500 11px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+      ctx.font = `400 11px ${mapHeadingFont}`;
       ctx.textAlign = "left";
       ctx.fillText(title.split(" / ")[0], panelX + 18, panelY + 22, panelWidth - 36 - (scope ? scopeWidth + 10 : 0));
       ctx.fillStyle = "#e3eef0";
-      ctx.font = '500 21px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+      ctx.font = `400 21px ${mapHeadingFont}`;
       ctx.fillText(current.replace(/^平均\s*/u, ""), panelX + 18, panelY + 49, panelWidth - 36);
       if (scope) {
         ctx.textAlign = "right";
         ctx.fillStyle = "#829eaa";
-        ctx.font = '500 10px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+        ctx.font = `400 10px ${mapHeadingFont}`;
         ctx.fillText(scope, panelX + panelWidth - 18, panelY + 22, scopeWidth);
       }
       const gradient = ctx.createLinearGradient(gradientX, 0, gradientX + gradientWidth, 0);
@@ -4957,7 +4764,7 @@
       ctx.fillStyle = markerColor;
       ctx.beginPath(); ctx.arc(markerX, gradientY - 4, 2.2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#93afbb";
-      ctx.font = '9px "Yu Gothic UI", "Noto Sans JP", sans-serif';
+      ctx.font = `400 9px ${mapHeadingFont}`;
       ctx.textAlign = "left";
       ctx.fillText(minimumLabel, gradientX, gradientY + 23);
       ctx.textAlign = "right";
@@ -5304,9 +5111,9 @@
           ctx.shadowColor = "rgba(0,10,24,.96)";
           ctx.shadowBlur = 7;
           ctx.fillStyle = "rgba(240,253,255,.98)";
-          ctx.font = `700 ${selected ? 11 : 10}px Consolas, "Courier New", monospace`;
+          ctx.font = `400 ${selected ? 11 : 10}px ${mapHeadingFont}`;
           ctx.fillText(precipitationMmDay.toFixed(1), point.x, point.y - 4);
-          ctx.font = '700 7px Consolas, "Courier New", monospace';
+          ctx.font = `400 7px ${mapHeadingFont}`;
           ctx.fillText(row.id === "brazil" ? "ブラジル" : getCountryNameJa(row), point.x, point.y + 8);
         } else {
           ctx.beginPath();
@@ -5407,8 +5214,9 @@
           drawSelectionLabel(
             point,
             `${getCountryNameJa(row)}の観察記録`,
-            `${row.species === "Apis mellifera" ? "セイヨウミツバチ" : row.species || "ミツバチ"} · ${row.eventDate?.slice(0, 10) || "日付不明"}`,
+            row.species === "Apis mellifera" ? "セイヨウミツバチ" : row.species || "ミツバチ",
             "rgba(255,223,112,.96)",
+            { detail: `${row.eventDate?.slice(0, 10) || "日付不明"} · GBIF · 生息数ではなく観察記録` },
           );
         }
       });
@@ -5426,13 +5234,13 @@
         ctx.strokeStyle = "rgba(255,211,112,.42)";
         ctx.strokeRect(x, y, width, 88);
         ctx.fillStyle = "rgba(255,220,126,.9)";
-        ctx.font = '700 8px Consolas, "Courier New", monospace';
+        ctx.font = `400 8px ${mapHeadingFont}`;
         ctx.fillText(code, x + 16, y + 20);
         ctx.fillStyle = "rgba(246,252,247,.96)";
-        ctx.font = '600 16px "Noto Sans JP", sans-serif';
+        ctx.font = `400 16px ${mapHeadingFont}`;
         ctx.fillText(title, x + 16, y + 46, width - 32);
         ctx.fillStyle = "rgba(218,235,232,.68)";
-        ctx.font = '10px "Noto Sans JP", sans-serif';
+        ctx.font = `400 10px ${mapHeadingFont}`;
         ctx.fillText(copy, x + 16, y + 69, width - 32);
         ctx.restore();
       };
@@ -5485,16 +5293,16 @@
         ctx.stroke();
         ctx.textAlign = "center";
         ctx.fillStyle = "rgba(255,231,146,.98)";
-        ctx.font = '700 10px Consolas, "Courier New", monospace';
+        ctx.font = `400 10px ${mapHeadingFont}`;
         ctx.fillText("Apis", centerX, centerY - 3);
         ctx.fillStyle = "rgba(235,246,226,.82)";
-        ctx.font = '8px Consolas, "Courier New", monospace';
+        ctx.font = `400 8px ${mapHeadingFont}`;
         ctx.fillText("mellifera", centerX, centerY + 11);
         ctx.fillStyle = "rgba(255,220,118,.92)";
-        ctx.font = '700 9px Consolas, "Courier New", monospace';
+        ctx.font = `400 9px ${mapHeadingFont}`;
         ctx.fillText("NON-GEOGRAPHIC / GloBI RELATION NETWORK", centerX, centerY - networkRadius - 28);
         ctx.fillStyle = "rgba(218,236,224,.66)";
-        ctx.font = '9px "Noto Sans JP", sans-serif';
+        ctx.font = `400 9px ${mapHeadingFont}`;
         ctx.fillText("枝の位置・長さは、場所・頻度・強さを表しません", centerX, centerY - networkRadius - 12);
         if (activeNode) {
           const labelWidth = Math.min(360, rect.width - 40);
@@ -5505,10 +5313,10 @@
           ctx.strokeStyle = "rgba(142,236,179,.42)";
           ctx.strokeRect(labelX, labelY, labelWidth, 48);
           ctx.fillStyle = "rgba(151,239,185,.9)";
-          ctx.font = '700 8px Consolas, "Courier New", monospace';
+          ctx.font = `400 8px ${mapHeadingFont}`;
           ctx.fillText(`送粉関係 / ${activeRelationIndex + 1} / ${relations.length}`, centerX, labelY + 17);
           ctx.fillStyle = "rgba(242,250,236,.96)";
-          ctx.font = '600 12px "Noto Sans JP", sans-serif';
+          ctx.font = `400 12px ${mapHeadingFont}`;
           ctx.fillText(activeNode.relation.targetTaxon, centerX, labelY + 35, labelWidth - 24);
         }
         ctx.restore();
@@ -5582,8 +5390,8 @@
           ctx.textBaseline = "middle";
           ctx.fillStyle = "rgba(244,255,250,.98)";
           ctx.font = selected
-            ? '700 15px Consolas, "Courier New", monospace'
-            : '700 8px Consolas, "Courier New", monospace';
+            ? `400 15px ${mapHeadingFont}`
+            : `400 8px ${mapHeadingFont}`;
           ctx.fillText(`${Math.round(row.recyclePercent)}%`, point.x, point.y + (selected ? -1 : 0));
         }
 
@@ -5592,11 +5400,11 @@
           drawSelectionLabel(
             { x: point.x + radius + 7, y: point.y },
             getCountryNameJa(row),
-            imputed
-              ? `補完値 ${row.recyclePercent.toFixed(1)}% / 近隣5か国 ${row.donorIso3?.join("・") || "参照"}`
-              : `国連公式値 ${row.recyclePercent.toFixed(1)}% / ${row.year || "報告年不明"}`,
+            `再資源化率　${row.recyclePercent.toFixed(1)}%${imputed ? "（補完値）" : ""}`,
             "rgba(138,255,202,.96)",
-            { anchor: point },
+            { anchor: point, radius, detail: imputed
+              ? `近隣5か国による補完 · ${row.donorIso3?.join("・") || "参照国は出典を確認"}`
+              : `${row.year ? `${row.year}年` : "報告年不明"} · 国連公式値` },
           );
         }
         ctx.restore();
@@ -5659,9 +5467,9 @@
           drawSelectionLabel(
             { x: point.x + 18, y: point.y },
             getCountryNameJa(selected),
-            `${selected.year}年 · 化石燃料由来CO₂ ${selected.emissionsMtCo2.toFixed(1)} Mt`,
+            `化石燃料由来CO₂　${selected.emissionsMtCo2.toFixed(1)} Mt`,
             "rgba(255,190,133,.98)",
-            { anchor: point },
+            { anchor: point, detail: `${selected.year}年の排出量 · 夜の光は2016年の画像` },
           );
         }
       }
@@ -5927,7 +5735,7 @@
           ctx.translate(-point.x, -point.y);
           const magnitudeFontPx = rect.width >= 2400 ? 18 : rect.width < 600 ? 12 : 14;
           const magnitudeY = point.y + sourceRadius + markerLineWidth / 2 + 3;
-          ctx.font = `700 ${magnitudeFontPx}px Consolas, "Courier New", monospace`;
+          ctx.font = `400 ${magnitudeFontPx}px ${mapHeadingFont}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.lineJoin = "round";
@@ -5958,7 +5766,7 @@
         });
       }
       ctx.fillStyle = "rgba(255,190,108,.74)";
-      ctx.font = '8px Consolas, "Courier New", monospace';
+      ctx.font = `400 8px ${mapHeadingFont}`;
       ctx.fillText("USGS年別 M7.5以上 / 推定可感半径 / 気象庁詳細は別レイヤー", 22, rect.height - 26);
     } else if (signalMode.id === "three-ecologies") {
       const state = getMapSequenceState(signalMode);
@@ -6025,7 +5833,7 @@
             ctx.fillStyle = color; ctx.fillRect(left, y, barWidth * clamp(value / 100, 0, 1), barHeight);
           });
           if (selectionWeight > .5 || isPeer) {
-            ctx.font = `500 ${rect.width >= 2400 ? 22 : rect.width < 680 ? 12 : 14}px "Noto Sans JP", sans-serif`;
+            ctx.font = `400 ${rect.width >= 2400 ? 22 : rect.width < 680 ? 12 : 14}px ${mapHeadingFont}`;
             ctx.textAlign = "center"; ctx.textBaseline = "bottom";
             ctx.strokeStyle = "rgba(3,15,23,.95)"; ctx.lineWidth = 4;
             const name = getCountryNameJa(row);
@@ -6055,6 +5863,9 @@
       japanOverlay.dataset.renewableVisibleCountryFillCount = String(heatmap.visibleCount);
       japanOverlay.dataset.renewableFillScale = "country-blue-0-100";
       japanOverlay.dataset.renewableSelectedCountry = selected?.countryJa || selected?.country || "";
+      japanOverlay.dataset.renewableSelectedIso3 = selected?.iso3 || "";
+      japanOverlay.dataset.renewableCountryCount = String(rows.length);
+      japanOverlay.dataset.renewableCountryDisplayMs = String(RENEWABLE_COUNTRY_DISPLAY_MS);
       japanOverlay.dataset.renewableSelectedPercent = Number.isFinite(selected?.renewablePercent)
         ? selected.renewablePercent.toFixed(1)
         : "";
@@ -6063,49 +5874,43 @@
       japanOverlay.dataset.renewableSelectedPoiVisible = "false";
       delete japanOverlay.dataset.renewableSelectionLabelPrimary;
       delete japanOverlay.dataset.renewableSelectionLabelSecondary;
+      delete japanOverlay.dataset.renewableSelectionLabelDetail;
+      delete japanOverlay.dataset.renewableSelectionLabelLines;
+      delete japanOverlay.dataset.renewableSelectionLabelBodyWidth;
+      let readout = null;
+      let energyPanel = null;
 
       if (selected) {
         const point = pointFor(selected);
         const potential = selected.potential;
-        if (visible(point) && potential && selectedReveal.progress > 0) {
-          const solar = clamp((potential.solarKwhM2Day || 0) / 7, 0, 1);
-          const radius = 18 + solar * 28;
+        if (visible(point) && selectedReveal.progress > 0) {
+          const hasPotential = Number.isFinite(potential?.solarKwhM2Day) && Number.isFinite(potential?.windSpeedMs);
+          const solar = hasPotential ? clamp(potential.solarKwhM2Day / 7, 0, 1) : 0;
+          const radius = hasPotential ? 18 + solar * 28 : 6;
           const pulse = 1 + Math.sin(now / 520) * 0.08;
           ctx.save();
           applyMapPlotReveal(ctx, point, selectedReveal);
           ctx.beginPath();
           ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,222,86,.12)";
+          ctx.fillStyle = hasPotential ? "rgba(255,222,86,.12)" : "rgba(220,238,222,.65)";
           ctx.fill();
-          ctx.strokeStyle = "rgba(255,236,126,.98)";
+          ctx.strokeStyle = hasPotential ? "rgba(255,236,126,.98)" : "rgba(230,242,227,.96)";
           ctx.lineWidth = 2.4;
           ctx.stroke();
-          drawVectorArrow(
+          if (hasPotential) drawVectorArrow(
             ctx,
             point.x,
             point.y,
-            potential.windSpeedMs || 0,
+            potential.windSpeedMs,
             0.12,
             "rgba(113,255,211,.96)",
             8,
           );
           ctx.restore();
           japanOverlay.dataset.renewableSelectedPoiVisible = "true";
-          const selectionPrimary = `${selected.countryJa || selected.country} / 再生可能エネルギー発電割合 ${selected.renewablePercent.toFixed(1)}%`;
-          const selectionSecondary = `日射 ${potential.solarKwhM2Day.toFixed(2)} kWh/㎡/日 · 風速 ${potential.windSpeedMs.toFixed(2)} m/s`;
-          japanOverlay.dataset.renewableSelectionLabelPrimary = selectionPrimary;
-          japanOverlay.dataset.renewableSelectionLabelSecondary = selectionSecondary;
-          drawSelectionLabel(
-            { x: point.x + radius + 14, y: point.y - 5 },
-            selectionPrimary,
-            selectionSecondary,
-            "rgba(224,255,249,.98)",
-            { anchor: point },
-          );
+          readout = { point, selected: { ...selected, potential: hasPotential ? potential : null }, radius };
         }
       }
-      japanOverlay.dataset.renewableSelectionLabelVisible = japanOverlay.dataset.selectionLabelVisible;
-
       if (state && now >= mapPlotRevealStartedAt) {
         const panel = drawQuantitativeLegendPanel({
           id: "renewable-electricity",
@@ -6116,6 +5921,7 @@
           colors: ["rgb(14,72,150)", "rgb(30,151,203)", "rgb(46,230,255)"],
         });
         if (panel) {
+          energyPanel = panel;
           japanOverlay.dataset.energyPanelScreenLeft = (rect.left + panel.panelX).toFixed(2);
           japanOverlay.dataset.energyPanelScreenTop = (rect.top + panel.panelY).toFixed(2);
           japanOverlay.dataset.energyPanelScreenRight = (rect.left + panel.panelX + panel.panelWidth).toFixed(2);
@@ -6123,6 +5929,8 @@
           japanOverlay.dataset.energyPanelLegendClearance = japanOverlay.dataset.auxiliaryPanelLegendClearance;
         }
       }
+      if (readout) drawRenewableObservationLabel(readout.point, readout.selected, readout.radius, energyPanel);
+      japanOverlay.dataset.renewableSelectionLabelVisible = japanOverlay.dataset.selectionLabelVisible;
     } else if (signalMode.id === "population-tide") {
       const state = getMapSequenceState(signalMode);
       const rows = state?.yearRows || [];
@@ -6190,45 +5998,15 @@
         ctx.fill();
         if (!selectedRow && rect.width >= 760 && row.population >= maximumPopulation * 0.12) {
           ctx.fillStyle = "rgba(255,246,209,.92)";
-          ctx.font = `700 ${rect.width >= 2400 ? 18 : 11}px Consolas, "Courier New", monospace`;
+          ctx.font = `400 ${rect.width >= 2400 ? 18 : 11}px ${mapHeadingFont}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(formatPopulationCompact(row.population), point.x, point.y - radius * 0.24);
         }
         if (selectedRow) {
-          if (rect.width < 680) {
-            // A compact readout occupies the free lane below the numeric legend,
-            // with room for the zoom controls; a full bubble obscures both here.
-            const labelX = 12, labelWidth = Math.min(286, rect.width - 104), labelHeight = 64;
-            const legendWidth = Math.min(216, rect.width - 28);
-            const labelY = getLegendSafePanelY(rect.width - legendWidth - 14, legendWidth, 228, 8) + 114;
-            ctx.fillStyle = "rgba(5,20,27,.94)";
-            ctx.strokeStyle = "rgba(255,214,140,.56)";
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 8); ctx.fill(); ctx.stroke();
-            ctx.textAlign = "left"; ctx.textBaseline = "middle";
-            ctx.fillStyle = "rgba(255,230,170,.98)";
-            ctx.font = '600 14px "Noto Sans JP", sans-serif';
-            ctx.fillText(`${getCountryNameJa(row)} / ${row.year}年`, labelX + 12, labelY + 19, labelWidth - 24);
-            ctx.fillStyle = "rgba(238,246,242,.98)";
-            ctx.font = '600 15px Consolas, "Courier New", monospace';
-            ctx.fillText(`${formatObservationNumber(row.population, 0)} 人`, labelX + 12, labelY + 43, labelWidth - 24);
-            Object.assign(japanOverlay.dataset, { selectionLabelLeftPx: String(labelX), selectionLabelTopPx: String(labelY),
-              selectionLabelWidthPx: String(labelWidth), selectionLabelHeightPx: String(labelHeight),
-              selectionLabelShape: "population-compact-readout", selectionLabelVisible: "true" });
-          } else {
-            const label = drawSelectionLabel(
-              { x: point.x + radius + 8, y: point.y },
-              `${getCountryNameJa(row)} / ${row.year}年`,
-              `${formatObservationNumber(row.population, 0)} 人 · 円の面積が人口に比例`,
-              "rgba(255,230,170,.98)",
-              { anchor: point },
-            );
-            if (label) {
-              japanOverlay.dataset.selectionLabelLeftPx = label.x.toFixed(1);
-              japanOverlay.dataset.selectionLabelTopPx = label.y.toFixed(1);
-            }
-          }
+          drawSelectionLabel(point, getCountryNameJa(row),
+            `人口　${formatObservationNumber(row.population, 0)} 人`, null,
+            { radius, detail: `${row.year}年 · 円の面積が人口に比例` });
         }
         ctx.restore();
       });
@@ -6246,6 +6024,8 @@
         colors: ["rgb(255,128,70)", "rgb(255,183,86)", "rgb(255,251,214)"],
       });
     }
+
+    observationLabels.forEach(drawObservationLabel);
 
     const revealRows = getModeDataPois()
       .slice(0, 48)
@@ -7000,7 +6780,7 @@
           "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公式値、破線は近隣5か国からの補完値。左右ボタンとスライダーで31の国・地域を切り替えます。"],
           "anthropocene-scar": ["1945—2023年 化石燃料由来CO₂ × 2016年固定夜間光", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
           "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、31か国の散布図、文化・記憶を順に切り替えて比較します。選択標本で基準年も異なるため、世界全体や因果関係の結論ではありません。"],
-          "earth-organ": ["再生可能エネルギー発電割合 / 31か国の塗り分け", "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。自動再生とスライダーは高い国から低い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
+          "earth-organ": ["再生可能エネルギー発電割合 / 世界の国・地域", "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。公表値のある国・地域を、高い国から低い国へ移動します。年は国ごとに異なります。日射・風は31代表地点のみの補足で、未収録値は補いません。"],
           "population-tide": ["1960—2025年 人口 / 世界の国・地域", "琥珀色の円は選択年の人口です。217の国・地域を対象に、円の面積が人口に比例する全年共通尺度で比較します。欠測年は非表示。点は代表位置で、都市の位置や人口密度ではありません。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
@@ -8374,6 +8154,11 @@
         input.max = String(Math.max(0, rowCount - 1));
         input.step = "1";
         input.value = String(sequenceState?.selectedIndex || 0);
+      } else if (signalMode?.id === "earth-organ") {
+        input.min = "0";
+        input.max = String(Math.max(0, sequenceState.rows.length - 1));
+        input.step = "1";
+        input.value = String(sequenceState.selectedIndex);
       } else {
         input.min = "0";
         input.max = "100";
@@ -8399,8 +8184,13 @@
         input.setAttribute("aria-label", "表示する国・地域を選ぶ");
         input.setAttribute("aria-valuetext", `${sequenceState.selectedIndex + 1}番目、${getCountryNameJa(sequenceState.selected)}、再資源化率 ${sequenceState.sourceRecycle.toFixed(1)}%、${sequenceState.selected.valueStatus === "IMPUTED" ? "補完値" : "国連公式値"}`);
       } else {
-        input.removeAttribute("aria-label");
-        input.removeAttribute("aria-valuetext");
+        if (signalMode?.id === "earth-organ") {
+          input.setAttribute("aria-label", "再生可能電力の国・地域を選ぶ");
+          input.setAttribute("aria-valuetext", `${sequenceState.selectedIndex + 1} / ${sequenceState.rows.length}、${sequenceState.selected.countryJa}、${sequenceState.selected.year}年、発電割合 ${sequenceState.selected.renewablePercent.toFixed(1)}%`);
+        } else {
+          input.removeAttribute("aria-label");
+          input.removeAttribute("aria-valuetext");
+        }
       }
       consoleElement.classList.toggle("is-static", !readout.temporal);
     });
@@ -8468,9 +8258,16 @@
           ? getGlobalEarthquakePlaybackSchedule(signalMode?.signals?.globalEvents || []).durationMs
           : id === "three-ecologies"
             ? ECOLOGIES_SEQUENCE_DURATION_MS
-            : MODE_SEQUENCE_DURATION_MS;
-    return storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly"
-      ? baseDuration / STORY_MAP_TIMELINE_SPEED
+            : id === "earth-organ"
+              ? Math.max(1, signalMode.signals.current?.length || 0) * RENEWABLE_COUNTRY_DISPLAY_MS
+              : MODE_SEQUENCE_DURATION_MS;
+    if (storyModeDetour?.kind === "map01") {
+      return storyModeDetour.phase !== "temperature-anomaly"
+        ? baseDuration / STORY_MAP_TIMELINE_SPEED
+        : baseDuration;
+    }
+    return id === "breathing-earth"
+      ? baseDuration / CO2_EXPLORATION_TIMELINE_SPEED
       : baseDuration;
   };
   const getTimelineElapsedForPosition = (signalMode, position, duration) => {
@@ -8637,7 +8434,9 @@
           ? CIRCULATION_TIMELINE_STEPS
           : signalMode.id === "rhythm-of-disaster"
             ? GLOBAL_EARTHQUAKE_YEAR_COUNT
-          : MODE_SEQUENCE_STEPS;
+            : signalMode.id === "earth-organ"
+              ? Math.max(1, signalMode.signals.current?.length || 0)
+              : MODE_SEQUENCE_STEPS;
     const elapsed = now - co2TimelineStartedAt;
     if (storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly" && elapsed >= duration) {
       completeStoryMapTimeline();
@@ -8658,7 +8457,9 @@
     // boundary, otherwise replaying 2008's completed overview for another year.
     signalTimePosition = earthquakeSchedule
       ? ((step + 0.5) / earthquakeSchedule.entries.length) * 100
-      : (step / totalSteps) * 100;
+      : signalMode.id === "earth-organ"
+        ? ((step + .5) / totalSteps) * 100
+        : (step / totalSteps) * 100;
     updateSignalInterface();
   };
 
@@ -9026,6 +8827,10 @@ for (const country of countryValues) {
         signalTimePosition = rowCount > 1
           ? (wasteSelectedIndex / (rowCount - 1)) * 100
           : 0;
+      } else if (activeSignalMode?.id === "earth-organ") {
+        const rowCount = activeSignalMode.signals.current?.length || 1;
+        const index = clamp(Math.round(Number(input.value)), 0, rowCount - 1);
+        signalTimePosition = ((index + .5) / rowCount) * 100;
       } else {
         signalTimePosition = Number(input.value);
       }
@@ -10683,24 +10488,24 @@ for (const country of countryValues) {
       && !japanLayer.classList.contains("is-demo-running"),
     steps: [
       {
-        target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="exhibits"]', ".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),
         title: "展示を選ぶ",
-        copy: "左右の切替か展示一覧から、全30展示を選べます。先頭の5展示は「惑星のいま」、続いてテーマ別に並びます。下の帯には、今見ているテーマと展示名が表示されます。",
+        copy: "展示一覧から、全30展示を選べます。「惑星のいま」をはじめ、気候・天気・暮らしなどテーマ別に並びます。今見ている展示名は画面上部で確認できます。",
       },
       {
-        target: "[data-signal-time]",
+        target: () => firstVisibleMapGuideTarget('.signal-console-map [data-signal-time]', '[data-estat-month]', '[data-firms-progress]'),
         title: "年代をたどる",
-        copy: "青い年代スライダーを動かすと、過去から未来試算まで、地図の色と観測値が連動して変わります。",
+        copy: "スライダーを動かすと、表示する時点と地図の観測値が連動して変わります。対象期間は展示ごとに異なります。",
       },
       {
-        target: "#map-reading-guide",
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="reading"]', "#map-reading-guide"),
         title: "問いを読む",
         copy: "この地図で何を見比べるのか、色や記号をどう読むのかを簡単に確認できます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget(".map-dock-action--source", "[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
+        target: () => firstVisibleMapGuideTarget('[data-mobile-sheet="tools"]', ".map-dock-action--source", "[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
         title: "データの出典を確認する",
-        copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。",
+        copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。スマホでは「操作」から出典や統計分析を開きます。",
       },
       {
         target: () => firstVisibleMapGuideTarget(".map-dock-action--statistics", "[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),

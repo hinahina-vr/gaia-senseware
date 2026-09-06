@@ -6,8 +6,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "subtitle": "GAIA SENSATION",
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
-  "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "0255319be34a5eca3537254683e209f4ea3af7589d2b697e6de5f4adb561d044",
+  "revisionId": "observation-log-20260906",
+  "approvedSourceSha256": "40f0e713e7794bcb4b2e92a3cd6022550c3085ef94b9629b0a30cfaed67fe2b0",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -101,13 +101,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面越しに眺めてきた大学のキャンパスに、今日は自分の足で来た。知らない誰かの輪に入るのは正直怖かったけれど、秋の海風のなか、思い切って最初の一歩を踏み出した。"
+          "text": "海沿いの展示場の入口で、一度立ち止まった。ガラスの向こうを学生たちが通り過ぎていく。誰かを見つけて手を上げる人もいる。私はスマートフォンの参加証を、もう一度開き直した。"
         },
         {
           "id": "festival_concept_new_001",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "受付棟を抜けて海側の広場へ出ると、強い日差しと潮風が真っ直ぐ頬に当たった。コーヒーと揚げものの匂いに混じって、野外ステージの重低音が靴底からビリビリ伝わってくる。",
+          "text": "授業のほとんどをオンラインで行う大学が、年に一度、ここに集まる。ゲーム、映像、研究発表、露店。画面で見ていた学園祭の案内が、今日は入口の大きな看板になっていた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_001"
         },
@@ -115,7 +115,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_002",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "授業のほとんどをオンラインで行う大学が、年に一度だけ、海沿いの展示場に学生を集める。ゲーム、映像、研究発表、参加型展示、露店。普段は四角いアイコンでしか見ない仲間たちが、今日は生身でここに集まっていた。",
+          "text": "私は電子工作が好きだ。自室なら、基板の前で何時間でも過ごせる。学内チャットでは、書きかけた返事を消すことのほうが多かった。参加登録も何度か閉じた。見るだけでもいい、と最後に自分へ言い聞かせた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_001"
         },
@@ -124,20 +124,20 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私は電子工作が好きだ。誰かと話しながら作業するより、自室の机で一人、基板とハンダごてを相手に黙々と手を動かすほうが落ち着く。今日だって出展者じゃない。チャットのタイムラインを眺めていただけの自分が、顔も知らない輪の中へ入っていくのは気が引けた。何度も参加登録を閉じかけ、「遠くから見るだけなら誰とも話さなくていい」と自分に言い訳して、ようやくここまで来た。"
+          "text": "受付で二次元コードをかざすと、短い電子音がした。渡された名札を胸につける。留め具に少し手間取っている間に、後ろの人の番になった。"
         },
         {
           "id": "festival_concept_006",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "受付でスマートフォンを取り出し、画面の二次元コードをリーダーにかざす。"
+          "text": "受付棟を抜けると、潮風が頬に当たった。コーヒーと揚げものの匂いが流れてくる。広場のステージから響く低音が、床を通して靴底に伝わっていた。"
         },
         {
           "id": "festival_concept_new_003",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "行き交う学生たちの胸元を見ると、チャットで見慣れたハンドルネームがいくつも揺れていた。けれど、話したことのある相手は一人もいない。チャットですら発言できず、いつもログを追うだけだった。オフラインのここでも同じだ。自分だけが名前のない観客のように、輪の外側を歩いていた。",
+          "text": "行き交う人たちの胸元に、見慣れたハンドルネームがある。チャットでは毎日のように見かける名前だ。けれど、話したことのある相手は一人もいない。チャットではいつもログを追うだけだった。今日も、匿名のゲストユーザーのような透明な感覚で、会場を歩いて回っていた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_006"
         },
@@ -146,13 +146,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "通路の上階から広場を見下ろすと、立ち並ぶテントと展示パネルが幾何学模様を描き、その隙間を大勢の人が埋めていた。想像していたよりもずっと広い。"
+          "text": "通路の上階から広場を見下ろした。テントと展示パネルの間を、人の流れが泳いでいく。その向こうには海があった。想像していたよりも会場はずっと広い。"
         },
         {
           "id": "festival_concept_new_004",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "吹き抜けの向こうに見える青い海まで、会場の一部のように溶け込んでいる。人の流れに流されながら、気後れせずに入れそうなブースを探した。",
+          "text": "手すりから手を離す。指に残った冷たさを握り込んで、一人でも立ち寄れそうなブースを探した。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_008"
         },
@@ -196,7 +196,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面に一歩近づくと、私の影が投影された地球の端に落ちた。水色ボブの学生がパッと顔を上げ、目が合う。気負いのない、少し力の抜けた会釈が返ってきた。"
+          "text": "一歩近づくと、自分の影が地球の端にかかった。ケーブルを確かめていた水色ボブの学生が顔を上げる。目が合って、思わず会釈してしまった。"
         },
         {
           "id": "festival_concept_016",
@@ -210,7 +210,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_005",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "声をかけ終えると、彼女の口元がふっと緩んだ。営業用の作り笑いではなく、「見るだけでも全然いいよ」というような、肩の力が抜けた空気だった。隣の長い髪の学生も、穏やかにこちらを見ている。",
+          "text": "私に向けられた声だと気づくまで、少し間があった。彼女は持っていたコネクタを机に置き、スクリーンの前を半歩空けた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_016"
         },
@@ -218,7 +218,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_006",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "声をかけられるとは思っていなかった。見たらすぐ立ち去るつもりだったのに、足が止まってしまう。少し慌てて頭を下げると、彼女は急かすこともなく、こちらの言葉を待ってくれた。",
+          "text": "入口の向こうを、次の来場者たちが通り過ぎる。急いで何か答えなければと思うほど、最初の言葉が出てこなかった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_016"
         },
@@ -226,15 +226,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_019",
           "sceneId": "festival_concept",
           "type": "dialogue",
-          "speaker": "visitor",
-          "speakerLabel": "プレイヤー",
-          "text": "「あ、はい。お願いします」"
+          "speaker": "amane",
+          "speakerLabel": "女の子",
+          "text": "「ここからだと、全体が見えますよ」"
         },
         {
           "id": "festival_concept_new_007",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "短く返すと、青い髪の学生の目元が少し和らいだ。私がスクリーンの前に立つタイミングを見計らって、地球の見方を手短に案内してくれる。落ち着いたトーンを聞いているうちに、胸のあたりのこわばりが少しずつ解けていった。",
+          "text": "示された場所に立つと、地球の青が視界いっぱいに広がった。彼女は隣に立ったまま、こちらが顔を上げるのを待っていた。肩にかけた鞄を、ようやく持ち直せた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_019"
         },
@@ -330,13 +330,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「ふふ、お目が高い！ 実はね、親戚のオジキが屋外イルミネーションのプロなんです。真昼の屋外でも色が飛ばない20,000ルーメン級の業務用プロジェクターを引っ張ってきてくれて、躯体の組み立ても手伝ってもらいました」"
+          "text": "「ふふ、お目が高い！ 実はね、親戚の伯父が屋外イルミネーションのプロなんです。真昼の屋外でも色が飛ばない20,000ルーメン級の業務用プロジェクターを引っ張ってきてくれて、躯体の組み立ても手伝ってもらいました」"
         },
         {
           "id": "festival_concept_new_013",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめは支柱に沿わせた太い電源ケーブルを指でなぞり、奥に鎮座する大型機材を誇らしげに指差した。借り物だとあっけらかんと明かすところにも、現場をやり切った自信が滲んでいる。",
+          "text": "あめが奥の大型機材を指差す。冷却ファンの唸りが、会話の下で絶えず続いている。その手前を、太いケーブルが支柱に沿って走っていた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_032"
         },
@@ -352,7 +352,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_014",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめが目を輝かせてぶんぶんと首を縦に振る。さっきまでの眠たげな雰囲気はどこへやら、技術の話になった途端にスイッチが入ったらしい。その横で、みずが嬉しそうに目を細めていた。",
+          "text": "言い終える前に、あめが何度も頷いた。支柱の固定金具へ近づき、こちらにも見えるように横へずれる。さっきまでより、説明する手がよく動く。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_034"
         },
@@ -368,7 +368,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_015",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "現場で泥臭く試行錯誤した時間が、みずの声の端々からこぼれ落ちてくる。",
+          "text": "みずはワイヤーの留め具を見上げた。あめも同じところを見る。私の知らない設営の夜が、二人の間に一瞬だけ戻ってきたようだった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_036"
         },
@@ -392,7 +392,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_016",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "思わずあめを見直すと、彼女は少しだけ胸を張った。どこか眠そうな目つきのまま、隠しきれない自負が覗く。",
+          "text": "床の養生テープまで目で追う。自分なら見落としそうな場所にも、手が入っていた。あめは私の視線を追ってから、少しだけ胸を張った。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_039"
         },
@@ -400,7 +400,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_017",
           "sceneId": "festival_concept",
           "type": "dialogue",
-          "text": "「まあ、扱えるのは600V以下の一般電気工作物だけどね。このブースの負荷計算とブレーカー容量の割り振りは完璧だよ」",
+          "text": "「負荷計算して、ブレーカーごとの割り振りを決めて。図面どおりに収まると、気持ちいいんですよ」",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "cueFromStepId": "festival_concept_039"
@@ -409,7 +409,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_018",
           "sceneId": "festival_concept",
           "type": "dialogue",
-          "text": "「それだけではなくて、第三種電気主任技術者の筆記も通っていますの」",
+          "text": "「第三種電気主任技術者の試験にも、合格していますのよ」",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "cueFromStepId": "festival_concept_039"
@@ -427,7 +427,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_020",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "低圧の取り回しから高圧理論まで押さえているのか。華奢な外見とのギャップに、純粋な敬意が湧いた。",
+          "text": "みずがさらに何か言いかけると、あめは小さく首を振った。褒められるのは落ち着かないらしい。その様子がおかしくて、張っていた声が少し緩んだ。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_039"
         },
@@ -491,13 +491,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「よくある『ゴミを減らしましょう』みたいな、説教くさいエコ展示にするつもりは全然なくて」"
+          "text": "「『これが正解です』って聞いて帰るだけの展示にはしたくなくて。せっかく来てもらうなら、自分で触って確かめてほしいんです」"
         },
         {
           "id": "festival_concept_new_023",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめは「エコ」という単語のところで、鼻の頭に少しだけしわを寄せた。手垢のついたお題目に回収されるのを嫌っているのが伝わってくる。",
+          "text": "あめは画面より先に、コンソールをこちらへ向けた。指を置ける場所が、ちょうど私の前に空く。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_052"
         },
@@ -505,7 +505,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_024",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "正直、私もそういった啓発展示を想像していた。どうやらそんな薄っぺらいものではないらしい。",
+          "text": "説明を聞くつもりで立っていたのに、手を動かしたくなってきた。何かを変えてしまいそうで、まだ少しためらう。その間も、地球の雲は静かに流れていた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_052"
         },
@@ -531,7 +531,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「みずの解説は、いつも数十億年前のビッグバンから始まるんだよね」"
+          "text": "「みずの解説は、放っておくと138億年前のビッグバンまで遡るんだよね」"
         },
         {
           "id": "festival_concept_058",
@@ -592,7 +592,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_029",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "画面を見つめるみずの瞳に、青い光が反射していた。自分たちの手で作り出した世界への誇りと、目の前の相手にそれが伝わるかを見守る緊張が同居している。",
+          "text": "みずの瞳にも、同じ地球が小さく映っていた。彼女がこちらを見たので、私は慌ててスクリーンへ目を戻す。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_064"
         },
@@ -608,7 +608,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_031",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "「地球の感覚と、人間の感覚を重ね合わせる」。\nまだ作りかけだと二人は照れくさそうに笑っていたけれど、私にはそれがとんでもない可能性の塊に見えた。綺麗にまとめられた既製品の展示より、いま目の前で動いているアイデアの生々しさのほうが、ずっと強く胸に刺さる。\n画面の文字を追うのをやめて、光と音の揺らぎに目を委ねてみる。遠い海の波や大気のうねりが、そのまま自分の呼吸に重なっていくようだった。",
+          "text": "画面の文字を追うのをやめた。青い光がゆっくり明るくなり、低い音が足元から満ちてくる。息を吐くと、その音も少し遠ざかったように聞こえた。大気の渦がほどけ、別の場所で雲が生まれる。さっきまで目で追っていた数字が、もうどこに表示されていたか思い出せなかった。背後で誰かが笑っている。学園祭の声だと気づいて、いま自分がどこに立っているのか、ようやく思い出した。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_066"
         },
@@ -736,7 +736,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "map_mode01_new_001",
           "sceneId": "map_mode01",
           "type": "narration",
-          "text": "1958年の過去から、私たちが生きる現在を通り過ぎ、2050年の予測モデルへ。数値の上昇に引きずられるように、地球全体の輝きと色調が徐々に赤みを帯びていく。",
+          "text": "スライダーが、私たちの生きている年代に近づく。観測記録の終わりを示す線を越えると、表示が『将来予測』に変わった。その先の色には、予測に使った条件が添えられている。",
           "speaker": "narrator",
           "cueFromStepId": "map_mode01_005"
         },
@@ -745,14 +745,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "観測実測値から将来予測シミュレーションの境界線を越えたところで、スライダーが止まる。地図のオーバーレイがフェードし、視点は再びメイン画面へと戻った。"
+          "text": "2050年で、動きが止まった。色の変わらなくなった地図に、指だけを置いたままでいる。やがて地図が薄れ、元の青い地球が戻ってきた。"
         },
         {
           "id": "map_mode01_008",
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "タイムスタンプをつけて値を記録し続ければ、同じ場所でもこれだけの差が浮かび上がる。私の部屋のセンサーも、時間を追えばこういう意味を持つんだろうか。"
+          "text": "指を離す。画面は元どおりなのに、さっき通り過ぎた年代が頭の中で止まらなかった。自室のセンサーの値は、いつから残していただろう。"
         },
         {
           "id": "map_mode01_009",
@@ -766,7 +766,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "map_mode01_new_002",
           "sceneId": "map_mode01",
           "type": "narration",
-          "text": "みずの指先が、画面上のピークとボトムをなぞる。台本を読み上げるのではなく、目の前のデータを一緒に読み解いている手つきだった。",
+          "text": "みずが画面に残るグラフをなぞった。山から谷へ。次の谷では、指が少し上に止まる。",
           "speaker": "narrator",
           "cueFromStepId": "map_mode01_009"
         },
@@ -782,7 +782,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "map_mode01_new_003",
           "sceneId": "map_mode01",
           "type": "narration",
-          "text": "口に出してみると、抽象的だった折れ線グラフが急に切迫した手触りを帯びてくる。",
+          "text": "みずが頷くまで、そのまま次の谷を見ていた。戻ったように見えた場所が、少しずつ違っている。",
           "speaker": "narrator",
           "cueFromStepId": "map_mode01_011"
         },
@@ -790,7 +790,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "map_mode01_new_004",
           "sceneId": "map_mode01",
           "type": "narration",
-          "text": "ここからは見えないマウナロアや南極の大気が、目の前のスクリーンに確かな痕跡として焼き付いていた。",
+          "text": "暗幕の隙間から風が入った。今ここで吸っている空気も、あの線の先につながっている。そう思うと、頬に触れた風の温度が妙にはっきりした。",
           "speaker": "narrator",
           "cueFromStepId": "map_mode01_011"
         },
@@ -1065,21 +1065,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "プロジェクターのファンが低く唸りを上げ、画面の地球が暗転した。"
+          "text": "あめがコンソールに触れると、地球の光が消えた。さっきまで見えていた机の角も、自分の靴も、一瞬分からなくなる。"
         },
         {
           "id": "gx_experience_002",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "大陸の輪郭も、都市の灯火も消え去る。代わりに現れたのは、光の届かない太古の海の底だった。"
+          "text": "プロジェクターのファンが低く唸っている。その奥から、長く伸びる音が聞こえ始めた。画面に青黒い水が満ち、立っている床まで深く沈んでいくように感じた。"
         },
         {
           "id": "gx_experience_003",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめはコンソール端のシェーダーコンパイル状況をチラリと確認し、みずは暗黒の海が現れるのを待つ私の横顔を見つめている。演出の効き目を測るような目つきだった。"
+          "text": "鞄の紐を握り直した。横を見ると、あめの顔だけがモニターに白く照らされている。"
         },
         {
           "id": "gx_experience_004",
@@ -1110,7 +1110,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人のあいだで手短なオペレーション確認が交わされると、あめは再び展示用のトーンへ切り替えてこちらを向いた。"
+          "text": "短い声が止むと、海の音だけが残った。目が暗さに慣れてくる。あめはコンソールから顔を上げ、こちらへ向き直った。"
         },
         {
           "id": "gx_experience_008",
@@ -1134,7 +1134,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「一般には産業社会の脱炭素シフトを指しますわね。けれどわたくしたちの大学のプロジェクトでは、生命と地球環境が互いを作り変えてきた四十数億年の歴史まで広げて捉え直したいと思いましたの。それが、このGAIA Transformationというアプローチですわ」"
+          "text": "「一般には産業社会の脱炭素シフトを指しますわね。けれどわたくしたちの大学のプロジェクトでは、生命と地球環境が互いを作り変えてきた46億年の歴史まで広げて捉え直したいと思いましたの。それが、このGAIA Transformationというアプローチですわ」"
         },
         {
           "id": "gx_experience_011",
@@ -1164,7 +1164,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「では、始めますわね。現在から、地球が生まれた四十六億年前まで一気に潜りますの」"
+          "text": "「では、始めますわね。現在から、地球が生まれた46億年前まで一気に潜りますの」"
         },
         {
           "id": "gx_experience_015",
@@ -1172,7 +1172,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「四十六億年……一気にそこまで行くんですか」"
+          "text": "「46億年……一気にそこまで行くんですか」"
         },
         {
           "id": "gx_experience_016",
@@ -1197,21 +1197,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ジェスチャー入力でタイムラインを激しくスワイプすると、年代表示が猛烈なスピードで逆回転を始めた。緑の森林が砂漠へ還り、大陸が一つに固まり、やがて地表の輪郭そのものが溶けていく。"
+          "text": "手を動かすと、年代が逆回転を始めた。都市の灯りが消え、緑が途切れ、大陸が動く。海岸線を一つ追いかけていたのに、すぐどれだったか分からなくなった。"
         },
         {
           "id": "gx_experience_020",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "四十六億年前。画面に広がったのは、重苦しい褐色の空と、酸素をまったく含まない荒れ狂う海だった。見慣れた景色がすべて剥ぎ取られても、スクリーン中央のステータスには確かに『EARTH』と表示されている。"
+          "text": "46億年前。水の海はまだ見えない。赤く溶けた地表の上を、暗い雲が横切っていた。頬には熱い色の光が当たる。それでも中央の表示は『EARTH』だった。"
         },
         {
           "id": "gx_experience_021",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "今度はスライダーがゆっくりと順方向へ動き出す。猛烈な熱が冷め、海の色が深い群青へと落ち着いていく。そして約二十七億年前でピタリと止まった。静寂の海のなかで、微かな青い光が瞬き始めている。"
+          "text": "スライダーが順方向へ動き出した。衝突と冷却を繰り返す星に、雨が降る。岩石に残された証拠から推定した景色だと、画面の隅に説明が添えられていた。やがて地表を水が覆い、赤い光が遠のいていく。約27億年前で年代が止まると、水面の近くに、小さな青い点が瞬いた。"
         },
         {
           "id": "gx_experience_022",
@@ -1226,7 +1226,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "指先をスクリーンに触れさせる。漆黒に近かった水面に、触れた場所から淡い波紋が広がった。"
+          "text": "水面へ指を伸ばした。触れたところから波紋が広がる。実際には濡れないと分かっていても、指先を引くのが少し遅れた。"
         },
         {
           "id": "gx_experience_024",
@@ -1308,7 +1308,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "光は際限なく増え続けるわけではなかった。海中に漂う暗い影に吸い込まれ、明滅しながら何度も消えていく。"
+          "text": "点いた光のいくつかが、暗い影に吸い込まれた。別の場所でまた点き、消える。思わず指で追ったが、その指の下でも一つ、光が途切れた。"
         },
         {
           "id": "gx_experience_036",
@@ -1323,20 +1323,20 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "時間を進めると、海が澄んだ青へとグラデーションを描き、やがて大気の上層に薄いオゾン層のベールが形成されていく。"
+          "text": "時間を進める。何度も消えていた光が、少しずつ残り始める。海の色が変わり、遠い上空に薄い光の層がかかった。"
         },
         {
           "id": "gx_experience_038",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "わずか数十秒のインタラクションのなかに、億年単位の物質循環が凝縮されている。単体のバクテリアは顕微鏡でしか見えない点にすぎない。けれどその気の遠くなるような集積が、惑星の組成そのものをひっくり返してしまった。"
+          "text": "いつの間にか、息を止めていた。ゆっくり吸い込むと、潮と機材の暖まった匂いがする。この一息まで、あの途方もない時間の先にある。"
         },
         {
           "id": "gx_experience_new_001",
           "sceneId": "gx_experience",
           "type": "narration",
-          "text": "あめの淡々とした解説と、みずの熱を帯びた眼差し。二人のガイドのおかげで、壮大なスケールが無理なく身体に入ってくる。",
+          "text": "みずはまだ水面を見ていた。光が消えずに残った場所を指で示し、こちらを振り向く。私も同じ点を見て、頷いた。",
           "speaker": "narrator",
           "cueFromStepId": "gx_experience_038"
         },
@@ -1355,6 +1355,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "「生命が海と大気を変え、その新しくなった環境がまた次の生命を呼び寄せる。この果てしない相互作用こそが、地球と生命の共進化ですわ」"
+        },
+        {
+          "id": "gx_experience_new_003",
+          "sceneId": "gx_experience",
+          "type": "narration",
+          "text": "指先を下ろしても、残った光は水面に揺れていた。声の続きを聞きながら、その小さな明滅から目が離せなかった。",
+          "speaker": "narrator",
+          "cueFromStepId": "gx_experience_041"
         },
         {
           "id": "gx_experience_042",
@@ -1468,14 +1476,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "感想を言おうとして、さっき目にした操作パネルの空きスロット――『外部センサー入力』の文字が頭をよぎる。こんな完成度の高い展示に、自分の手慰みのような工作の話を持ち出してもいいものだろうか。けれど、ここで話さなければ、自分の部屋の机の上で完結していた測定は何の広がりも持たないままだ。"
+          "text": "感想を言おうとして、画面端の『外部センサー入力』が目に入った。自室で点滅している基板を思い出す。あれなら、机の引き出しに予備のセンサーもある。"
         },
         {
           "id": "esp32_pitch_006",
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "門外漢の思いつきだと笑われるかもしれない。それでも、このふたりなら面白がってくれるんじゃないかという直感が背中を押した。"
+          "text": "鞄の紐を握る指に力が入った。あめは返事を待っている。話すなら今だと思った途端、うまい言い方が何も浮かばなくなった。"
         },
         {
           "id": "esp32_pitch_007",
@@ -1483,21 +1491,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「あの……さっきの空きスロット、個人が作ったマイコンのセンサー値でも繋げられますか？」"
+          "text": "「あの……さっきの空きスロット。僕の作ったセンサーで、試してみてもいいですか」"
         },
         {
           "id": "esp32_pitch_008",
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめとみずが一瞬だけ目を丸くした。的外れなことを言ったかと喉が乾きかけたが、ふたりが真剣な顔で私の次の言葉を待っていることに気づく。"
+          "text": "二人の目がこちらへ向く。会場の音が急に大きく聞こえた。続きを急ごうとして、言葉が少しつかえる。あめが机の配線へ目をやった。みずはタブレットを持ち直し、メモの空いているところを開いていた。"
         },
         {
           "id": "esp32_pitch_009",
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめの目が机の上の配線へ走り、みずがタブレットのメモアプリを開く。値踏みされているのではない。彼女たちは早くも「実装の課題」として考え始めていた。"
+          "text": "何を言うつもりだったか、ようやく思い出した。"
         },
         {
           "id": "esp32_pitch_010",
@@ -1590,21 +1598,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "esp32_pitch_016e",
           "sceneId": "esp32_pitch",
           "type": "narration",
-          "text": "鋭い指摘にぐっと言葉が詰まる。けれど、否定された悔しさ配分は微塵もなかった。彼女の懸念は、さっきこのブースで散々見せてもらった「観測条件の厳密さ」そのものだったからだ。",
+          "text": "頷いたつもりだったのに、首がほとんど動かなかった。話しすぎたかもしれない。さっきまで自分の言葉が並んでいた仕様メモを、すぐには見返せなかった。",
           "speaker": "narrator"
         },
         {
           "id": "esp32_pitch_016f",
           "sceneId": "esp32_pitch",
           "type": "narration",
-          "text": "机の上のセンサー。条件さえ明記すれば、ただのブレは「意味のある差分」に変わるはずだ。",
+          "text": "あめは続きを待っている。タブレットも、まだ閉じられていない。机の上のケーブルを見ているうちに、自室のセンサーを窓際へ移した日のことが浮かんだ。あの日も、値が急に変わった。",
           "speaker": "narrator"
         },
         {
           "id": "esp32_pitch_016g",
           "sceneId": "esp32_pitch",
           "type": "dialogue",
-          "text": "「……なら、公的なデータと個人のデータはレイヤーを完全に分けましょう。ピンを打つときに、測定時刻、機器の型番、設置環境――たとえば『地上高1.5m・直射日光なし』みたいなメタデータを必須で付与するんです」",
+          "text": "「……なら、どこに置いたかも残しましょう。公的な観測と個人のデータは、表示するレイヤーを分けて」",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー"
         },
@@ -1612,17 +1620,33 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "esp32_pitch_016h",
           "sceneId": "esp32_pitch",
           "type": "dialogue",
-          "text": "「値がズレていたら、誤差だと切り捨てずにメタデータを追う。天候の差なのか、設置場所のマイクロクライメイト（微気候）なのかを突き止められるようにする。比較できないから捨てるんじゃなくて、比較できる形で残すんです」",
+          "text": "「測定時刻、機器の型番、設置環境。『地上高1.5m・直射日光なし』みたいに。値が違ったら、その記録を見て、場所の差なのかセンサーの誤差なのか調べられるようにするんです」",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー"
         },
         {
           "id": "esp32_pitch_016i",
           "sceneId": "esp32_pitch",
+          "type": "narration",
+          "text": "言いながら、空いていたメモの欄を指差した。あめの視線がそこへ移る。",
+          "speaker": "narrator"
+        },
+        {
+          "id": "esp32_pitch_new_010",
+          "sceneId": "esp32_pitch",
           "type": "dialogue",
-          "text": "「……それ！ そのメタデータの持たせ方なら、比較の土台ができる。いいね」",
+          "text": "「……うん。その形なら、違いが出たときに確かめに戻れる。まず試してみたい」",
           "speaker": "amane",
-          "speakerLabel": "あめ"
+          "speakerLabel": "あめ",
+          "cueFromStepId": "esp32_pitch_016i"
+        },
+        {
+          "id": "esp32_pitch_new_011",
+          "sceneId": "esp32_pitch",
+          "type": "narration",
+          "text": "息を吐くと、ようやく背中の力が抜けた。指差した場所に、みずが項目を書き足していった。",
+          "speaker": "narrator",
+          "cueFromStepId": "esp32_pitch_016i"
         },
         {
           "id": "esp32_pitch_017",
@@ -1808,7 +1832,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「衛星の視点だけでは捉えきれない、人間が暮らす地上の一点。その欠けていたピースを、青猫さんが持ってきてくださったのですから」"
+          "text": "「衛星の視点だけでは捉えきれない、人間が暮らす地上の一点。その欠けていたピースを、あなたが持ってきてくださったのですから」"
         },
         {
           "id": "esp32_pitch_new_009",
@@ -1922,7 +1946,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_004",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "言ってしまった。断られるのが怖くて口を噤むくらいなら、カッコ悪くても踏み込んだほうがいい。",
+          "text": "言ってしまってから、自分の声がまだ耳に残っていた。二人を見る。どちらも、すぐには何も言わなかった。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_008"
         },
@@ -1932,21 +1956,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「あ、いえ……家でリポジトリや出典のドキュメントも見直したいので、Webからアクセスできる環境があれば教えてほしいなと」"
+          "text": "「ハードウェアのところなら、手伝えると思うんです。家でもリポジトリを見て、続きの……」"
         },
         {
           "id": "circle_invitation_012",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "急に我に返り、慌てて実務的なトーンを取り繕って言い訳を重ねる。二人は顔を見合わせた。"
+          "text": "言い足すほど、さっき口にしたかったことから離れていく気がした。最後の言葉は小さくなった。"
         },
         {
           "id": "circle_invitation_013",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずがタブレットのカバーに指を添え、あめがその手元を見つめる。ほんの数秒の沈黙。断る理由を探しているのではなく、相手の覚悟を確かめ合っているような間だった。"
+          "text": "みずがタブレットのカバーに指を添える。あめは彼女と目を合わせ、短く息を吸った。"
         },
         {
           "id": "circle_invitation_015",
@@ -1954,13 +1978,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「公開してるステージング環境ならあるよ。でも、一番面白い開発ブランチはまだローカルでしか動かしてないんだ」"
+          "text": "「公開してる環境もあるんだけどさ。一番面白いところは、まだみんなで作ってる途中なんだ」"
         },
         {
           "id": "circle_invitation_new_005",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "あめは視線を泳がせながら、タブレットの縁を爪先でコツコツと叩いた。",
+          "text": "あめがタブレットの縁を指先で叩いた。規則正しかった音が、一度だけ途切れる。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_015"
         },
@@ -1976,7 +2000,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_006",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "みずが机の引き出しに手を伸ばしかけ、ふと止める。こちらの出方を試すような、静かな視線だった。",
+          "text": "みずが机の引き出しへ手を伸ばしかけて、こちらを見る。自分も何か言わなければと思った。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_017"
         },
@@ -1985,7 +2009,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "オンライン大学のチャットツール。これまで事務連絡を読むためだけの無機質なタイムラインだった場所が、急に熱を帯びたアトリエのように思えてくる。"
+          "text": "学内チャットの専用チャンネル。いつも読むだけだった一覧の中に、この二人が続きを話す場所がある。"
         },
         {
           "id": "circle_invitation_020",
@@ -1993,21 +2017,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「そのチャット……僕も入れてもらえませんか？」"
+          "text": "「僕も、その続きに入っていいんですか」"
         },
         {
           "id": "circle_invitation_021",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "通路を資材運搬の台車がガラガラと通り過ぎていく。あめはすぐには答えなかった。"
+          "text": "台車がすぐ後ろを通り、車輪の音が返事をかき消した。あめが口を動かしたのが見えた。聞き返そうと、少し身を寄せる。"
         },
         {
           "id": "circle_invitation_022",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "彼女の眠たげだった瞳がスッと細まり、悪戯っぽく口元が持ち上がる。私の焦りも本気も、全部見透かしたような顔だった。"
+          "text": "あめは笑いかけて、照れたように目をそらした。今度は、ちゃんと聞こえる距離で言う。"
         },
         {
           "id": "circle_invitation_023",
@@ -2015,7 +2039,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「ただの展示見学のつもりなら、そんな必死な顔で頼み込まないですよね」",
+          "text": "「……うん。こっちも、誘っていいのかなって迷ってた」",
           "expression": "smile"
         },
         {
@@ -2023,13 +2047,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずが目を丸くしてあめを見やり、すぐに納得したように微笑んだ。"
+          "text": "みずが小さく頷いた。引き出しにかけた手は、まだそこにあった。"
         },
         {
           "id": "circle_invitation_new_007",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "もう引き返せない。外から出来上がった作品を眺めるだけの観客席には、二度と戻りたくなかった。泥臭くハンダを吸い取り、エラーログを吐きながら作る側に回りたい。",
+          "text": "気の利いた返事を考えていたはずなのに、一つも出てこなかった。さっきと同じことを、今度は最後まで伝えたかった。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_024"
         },
@@ -2039,7 +2063,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「僕にできることなら、何でもやりますから」"
+          "text": "「一緒に、作らせてください」"
         },
         {
           "id": "circle_invitation_027",
@@ -2113,7 +2137,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_010",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "カードの縁を指先でなぞるみずの手元。冗談や気まぐれではなく、ふたりが対等な開発メンバーとして私を招き入れようとしているのが分かった。",
+          "text": "カードの縁を押さえるみずの指が、少しだけ動いた。差し出されたままの距離を、今度はこちらから詰める。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_035"
         },
@@ -2122,7 +2146,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "遠くで鳴る閉会のチャイムと、プロジェクターの排気音。短い沈黙のなかで、迷いは完全に消えていた。"
+          "text": "遠くでチャイムが鳴っている。プロジェクターのファンは、さっきと同じ音で回り続けていた。"
         },
         {
           "id": "circle_invitation_039",
@@ -2136,22 +2160,23 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_011",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "あめの肩からストンと力が抜けた。ふう、と小さく息を吐き、みずと顔を見合わせる。",
+          "text": "あめの肩がふっと下がった。みずと目が合い、二人とも少し困ったように笑った。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_039"
         },
         {
           "id": "circle_invitation_040",
           "sceneId": "circle_invitation",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ふたり同時に吹き出すように笑った。断られるかもしれないと不安だったのは、彼女たちも同じだったのだ。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「よかった。じゃあ、本当に誘っちゃうからね」",
+          "speakerLabel": "あめ"
         },
         {
           "id": "circle_invitation_new_012",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "みずがカードを私の手元へ差し入れる。",
+          "text": "みずがカードを差し入れる。受け取るとき、指先がほんの少し触れた。紙は思っていたより薄く、強く持つと曲がってしまいそうだった。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_040"
         },
@@ -2167,7 +2192,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_013",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "居場所って、最初から用意されているものじゃないんだと思う。\n不格好でも手を動かして、一緒に失敗して、少しずつ直していく。その作業の途中に、いつの間にかできているものなのだろう。",
+          "text": "カードの青い惑星を見た。これを持って帰れば、明日も続きの場所へ行ける。鞄へしまう前に、もう一度、二人の顔を見上げた。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_043"
         },
@@ -2175,7 +2200,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_014",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "差し出された紙片を、両手でしっかりと受け取った。",
+          "text": "みずはまだ手を引かずに、こちらを見ていた。私が頷くと、ようやく手を胸元へ戻した。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_043"
         },
@@ -2191,7 +2216,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_015",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "あめが満足そうに口端を吊り上げ、みずは嬉しそうにパチパチと小さく手を叩いた。",
+          "text": "みずが小さく手を叩き、あめが笑った。返事をする声が、今度はちゃんと前に出た。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_046"
         },
@@ -2406,7 +2431,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "『青猫 がチャンネルに参加しました』\nみずがその文字列を見つめ、ハッと息を呑む。"
+          "text": "『青猫 がチャンネルに参加しました』。見慣れた文字列が、画面の上に現れた。みずが、それを声に出しかける。"
         },
         {
           "id": "circle_invitation_075",
@@ -2415,6 +2440,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "「青猫さん……とお呼びすればよろしいのかしら。とても綺麗なお名前ですわね」"
+        },
+        {
+          "id": "circle_invitation_new_031",
+          "sceneId": "circle_invitation",
+          "type": "narration",
+          "text": "顔を上げるのが、少し遅れた。自分で付けた名前なのに、その声で呼ばれる響きは知らなかった。",
+          "speaker": "narrator",
+          "cueFromStepId": "circle_invitation_075"
         },
         {
           "id": "circle_invitation_new_026",
@@ -2438,7 +2471,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_028",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "あめは少し悔しそうにこちらをチラリと見た。",
+          "text": "あめがこちらを見た。目が合うと、今度は私のほうが先にそらしてしまう。スマートフォンの縁を、指で何度もなぞった。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_075"
         },
@@ -2454,9 +2487,10 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "circle_invitation_new_030",
           "sceneId": "circle_invitation",
-          "type": "narration",
-          "text": "そっぽを向いたあめの耳の先が、ほんのり赤くなっているのをみずは見逃さず、クスクスと笑っていた。",
-          "speaker": "narrator",
+          "type": "dialogue",
+          "text": "「……ありがとうございます」",
+          "speaker": "visitor",
+          "speakerLabel": "プレイヤー",
           "cueFromStepId": "circle_invitation_075"
         },
         {
@@ -2464,7 +2498,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ネットの海で記号として使ってきた自分のハンドルが、二人の声を通して血の通った名前になった。呼ばれた瞬間、世界との距離がぐっと縮まった気がした。"
+          "text": "みずが笑い、あめの耳が少し赤くなる。手元の画面には、さっきと同じ名前が表示されていた。もう一度呼ばれたら、次はすぐに顔を上げられる気がした。"
         }
       ],
       "nextSceneId": "welcome_chat"
@@ -2682,7 +2716,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_new_007",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "添付された構成図には、先ほど私が口頭で伝えたブロック図が、すでに綺麗なシーケンス図として清書されていた。",
+          "text": "添付図を拡大した。自分が口で説明したセンサーから、受信画面まで線が引かれている。矢印の先を指で追ううち、次のメッセージが下に現れた。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_023"
         },
@@ -2712,6 +2746,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "同じ街のなかでも、日なたのアスファルトと街路樹の日陰では熱の溜まり方が全然違う。その微細なテクスチャをすくい上げられる。"
+        },
+        {
+          "id": "welcome_chat_new_023",
+          "sceneId": "welcome_chat",
+          "type": "narration",
+          "text": "『日なたのアスファルト』。その一行を読みながら、さっき歩いた通路の熱を思い出す。sakuは、この会場にはいない。それなのに、同じ場所を一緒に見ている気がした。",
+          "speaker": "narrator",
+          "cueFromStepId": "welcome_chat_026"
         },
         {
           "id": "welcome_chat_027",
@@ -2753,7 +2795,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_new_008",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "さっきまで自分の頭の中にしかなかった工作の断片が、鮮やかな設計図へと組み替えられていく。未完成を恥じる必要なんてない。条件さえ明記すれば、どんな工作も対等な観測点になれるのだ。",
+          "text": "返信欄を開き、手元のセンサーの型番を書いた。設置条件なら、まだ測り直せる。書きかけの文字を消さずに、続きの一行を足した。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_030"
         },
@@ -2987,7 +3029,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_new_018",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "あめがキルスイッチを叩く。",
+          "text": "あめが終了操作をした。雲の流れが止まり、青い地球がゆっくり暗くなる。私は最後まで残った海岸線を見ていた。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_064"
         },
@@ -2996,7 +3038,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "巨大なファンの停止音とともに、投影されていた地球がゆっくりと闇に溶けていった。"
+          "text": "光が消えると、スクリーンは大きな白い面に戻った。ファンの音もやがて遠のき、隣のブースでテープを引く音が、急にはっきり聞こえた。"
         },
         {
           "id": "welcome_chat_067",
@@ -3010,7 +3052,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずがフライヤーをケースに収め、あめが太い電源ケーブルを8の字に巻き取っていく。私は足元にあった重い工具箱を両手で持ち上げた。"
+          "text": "みずがこちらを見ていた。何か感想を言おうとしたけれど、うまくまとまらない。目が合ったまま、小さく笑った。\nみずはフライヤーをケースに収め、あめはケーブルを巻き始める。足元の工具箱を見つけて、私はしゃがんだ。取っ手の金属が、指の付け根に冷たかった。"
         },
         {
           "id": "welcome_chat_070",
@@ -3041,13 +3083,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "もうお客様扱いされていない。その対等な雑さが、たまらなく心地よかった。"
+          "text": "持ち上げると、予想より重かった。あめが持ち替えやすいように通路の箱をよける。みずは先に暗幕を持ち上げ、こちらが通るのを待っていた。"
         },
         {
           "id": "welcome_chat_new_019",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "三人でブースの幕をくぐり、夕暮れの広場へ出た。",
+          "text": "工具箱をぶつけないように、二人の間を抜けた。幕の外の空気が、暖まった頬に触れる。来たときより、風が少し冷たかった。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_073"
         },
@@ -3127,36 +3169,63 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "そのシンプルな言葉が、逗子の浜辺と、遠い大陸と、私の自室の作業机をまっすぐに貫いていた。"
+          "text": "画面の文字を読み終えても、しばらく顔を上げられなかった。遠い国にいる人が、次の報告を待っている。胸ポケットでは、さっき受け取ったカードの角が服に触れていた。"
         },
         {
           "id": "welcome_chat_new_022",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "知ることで、次の選択が変わる。一人きりで帰るはずだった私が、次はパーツを抱えてこの海へやってくる。その小さな選択が、世界の風景を塗り替えていく。",
+          "text": "工具箱を足元に置き、返信欄を開いた。長い挨拶は書かなかった。今なら、そのまま言えることがあった。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_084"
         },
         {
-          "id": "welcome_chat_092",
+          "id": "welcome_chat_new_024",
           "sceneId": "welcome_chat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "スマートフォンをポケットにしまう。顔を上げると、夕日を背負った二人が立ち止まり、こちらを振り返って待っていた。"
+          "type": "chat",
+          "text": "まず一台つなぎます。",
+          "speaker": "visitor",
+          "speakerLabel": "青猫",
+          "time": "10:43",
+          "cueFromStepId": "welcome_chat_084"
         },
         {
           "id": "welcome_chat_094",
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "次にスクリーンを立ち上げるとき、そこには私たちが送った最初の1点が灯っているはずだ。私は胸を張って、二人の足取りに追いついた。"
+          "text": "送信すると、小さな文字がタイムラインに並んだ。次に開いたときも、ここに残っている。スマートフォンをしまい、工具箱をもう一度持ち上げた。"
+        },
+        {
+          "id": "welcome_chat_new_025",
+          "sceneId": "welcome_chat",
+          "type": "narration",
+          "text": "顔を上げると、夕日を背にした二人が立ち止まっていた。みずがこちらを見つけ、あめの袖に触れる。少し遅れて、あめも振り返った。",
+          "speaker": "narrator",
+          "cueFromStepId": "welcome_chat_094"
+        },
+        {
+          "id": "welcome_chat_new_026",
+          "sceneId": "welcome_chat",
+          "type": "narration",
+          "text": "海から来る風の中を、二人のところまで歩いた。近づくと、途中で止まっていた会話がまた始まる。",
+          "speaker": "narrator",
+          "cueFromStepId": "welcome_chat_094"
+        },
+        {
+          "id": "welcome_chat_new_027",
+          "sceneId": "welcome_chat",
+          "type": "narration",
+          "text": "波の音を聞きながら、その続きを話した。",
+          "speaker": "narrator",
+          "cueFromStepId": "welcome_chat_094"
         },
         {
           "id": "welcome_chat_095",
           "sceneId": "welcome_chat",
-          "type": "narration",
+          "type": "transition",
           "speaker": "narrator",
-          "text": "観測は、もう始まっている。私たちの放課後は、ここから続いていく。",
+          "text": "STAFF & CREDITS",
           "cueFromStepId": "welcome_chat_094"
         }
       ],

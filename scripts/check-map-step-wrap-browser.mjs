@@ -33,10 +33,10 @@ try {
       await slider.evaluate(input => { input.value = input.min; input.dispatchEvent(new Event("input", { bubbles: true })); });
       await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "01");
       const count = Number(await slider.getAttribute("data-map-step-count"));
-      assert.equal(count, 31);
+      assert.equal(count, mode === 7 ? sources.modes.find(mode => mode.id === "earth-organ").signals.current.length : 31);
       await previous.click();
-      await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "31");
-      assert.equal(await slider.getAttribute("data-map-step-index"), "30");
+      await page.waitForFunction(count => document.querySelector("[data-map-dock-year]").textContent === String(count), count);
+      assert.equal(await slider.getAttribute("data-map-step-index"), String(count - 1));
       await next.focus(); await page.keyboard.press("Enter");
       await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "01");
       assert.equal(await slider.getAttribute("data-map-step-index"), "0");
@@ -45,8 +45,8 @@ try {
       await previous.click();
       await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "01");
       assert.equal(await page.locator("[data-map-dock-year-unit]").textContent(), "STEP");
-      assert.deepEqual(await page.locator(".map-dock-timeline-scale span").allTextContents(), ["01", "06", "11", "16", "21", "26", "31"]);
-      report.checks.push({ width, mode, count, endpoints: "01 <-> 31", adjacent: "01 <-> 02" });
+      assert.deepEqual(await page.locator(".map-dock-timeline-scale span").allTextContents(), Array.from({ length: 7 }, (_, index) => String(Math.round(1 + (count - 1) * index / 6)).padStart(Math.max(2, String(count).length), "0")));
+      report.checks.push({ width, mode, count, endpoints: `01 <-> ${count}`, adjacent: "01 <-> 02" });
     }
     const expected = sources.modes.find(mode => mode.id === "earth-organ").signals.current.slice().sort((a, b) => b.renewablePercent - a.renewablePercent);
     const cycles = await page.evaluate(async () => {
@@ -62,8 +62,8 @@ try {
       return records;
     });
     assert.deepEqual(cycles.map(row => row.index), [
-      ...Array.from({ length: 31 }, (_, index) => 30 - index),
-      ...Array.from({ length: 31 }, (_, index) => (index + 1) % 31),
+      ...Array.from({ length: expected.length }, (_, index) => expected.length - 1 - index),
+      ...Array.from({ length: expected.length }, (_, index) => (index + 1) % expected.length),
     ]);
     for (const row of cycles) {
       assert.equal(row.display, String(row.index + 1).padStart(2, "0"));
@@ -71,11 +71,11 @@ try {
     }
     report.checks.push({ width, cycles });
     await previous.click();
-    await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "31");
-    await page.locator(".map-dock-year").screenshot({ path: path.join(output, `${width}-01-left-to-31.png`) });
+    await page.waitForFunction(count => document.querySelector("[data-map-dock-year]").textContent === String(count), expected.length);
+    await page.locator(".map-dock-year").screenshot({ path: path.join(output, `${width}-01-left-to-last.png`) });
     await next.click();
     await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "01");
-    await page.locator(".map-dock-year").screenshot({ path: path.join(output, `${width}-31-right-to-01.png`) });
+    await page.locator(".map-dock-year").screenshot({ path: path.join(output, `${width}-last-right-to-01.png`) });
     // Leaving a STEP exhibit must not reinterpret chronological years as ranks.
     await page.evaluate(() => GaiaMapObservationAdapter.selectMode(0));
     await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
@@ -84,7 +84,7 @@ try {
     await previous.click();
     assert.equal(await slider.inputValue(), "0");
     await page.waitForFunction(() => document.querySelector("[data-map-dock-year]").textContent === "1958");
-    console.log(`PASS ${width}: three STEP exhibits wrap both ways; 62 energy steps preserve order, values and numbers; year scale unchanged`);
+    console.log(`PASS ${width}: three STEP exhibits wrap both ways; ${expected.length * 2} energy steps preserve order, values and numbers; year scale unchanged`);
     await context.close();
   }
   assert.deepEqual(report.errors, []); report.status = "passed";

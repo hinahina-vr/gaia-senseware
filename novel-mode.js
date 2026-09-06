@@ -117,10 +117,10 @@
   const STAFF_ROLL_THANK_YOU_DELAY_MS = 920;
   const STAFF_ROLL_THANK_YOU_HOLD_MS = 4_200;
   const STAFF_ROLL_FINALIZE_MS = 640;
-  const STAFF_ROLL_EXIT_COVER_MS = 430;
-  const STAFF_ROLL_EXIT_HOLD_MS = 500;
-  const STAFF_ROLL_EXIT_REVEAL_MS = 1800;
-  const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 240;
+  const STAFF_ROLL_EXIT_COVER_MS = 215;
+  const STAFF_ROLL_EXIT_HOLD_MS = 250;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 900;
+  const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 120;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
     BASIL: {
@@ -1210,6 +1210,7 @@
     }
     if (/^gx_experience_0(?:4[5-9]|5[0-4])$/u.test(migratedStepId)) return "gx_experience_055";
     if (migratedStepId === "festival_concept_new_030") return "festival_concept_new_031";
+    if (migratedStepId === "welcome_chat_092") return "welcome_chat_094";
     if (migratedStepId === "current_exhibition_017") return "opening_empty_seat_001";
     if (stepMap.has(migratedStepId)) return migratedStepId;
     const mappings = [
@@ -3493,7 +3494,7 @@
       aside.append(entry);
     });
 
-    const messageSequence = (message) => Number(message.id?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
+    const messageSequence = (message) => Number((message.cueFromStepId || message.id)?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
     const messageBelongsToSensorChannel = (message) => messageSequence(message) >= 23;
     let reactionSequenceStarted = false;
     const renderChannelMessages = (messages, typingMessage = null) => {
@@ -3581,7 +3582,7 @@
     thread.addEventListener("scroll", () => {
       slackScrollGuardUntil = performance.now() + 220;
     }, { passive: true });
-    const currentSequence = Number(step.id?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
+    const currentSequence = messageSequence(step);
     selectChannel(sensorChannelVisible && currentSequence >= 23
       ? CAMPUS_CHAT_SENSOR_CHANNEL
       : CAMPUS_CHAT_STORY_CHANNEL);

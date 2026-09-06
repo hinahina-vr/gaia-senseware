@@ -22,8 +22,8 @@ const fixture = {
 };
 let page;
 try {
-  for (const width of [3840, 1440, 768, 390, 320]) {
-    const context = await browser.newContext({ viewport: { width, height: width === 3840 ? 2088 : width === 1440 ? 900 : 844 }, hasTouch: width < 901, reducedMotion: width === 320 ? "reduce" : "no-preference" });
+  for (const [width, height] of [[3840, 2088], [2176, 1072], [1440, 900], [768, 844], [390, 844], [320, 844], [812, 390]]) {
+    const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901, reducedMotion: width === 320 ? "reduce" : "no-preference" });
     await context.addInitScript(({ endpoint, testKey }) => {
       sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
@@ -72,6 +72,32 @@ try {
     const answer = dialog.locator("[data-ai-answer]");
     const submit = form.locator('[type="submit"]');
     await dialog.waitFor({ state: "visible" });
+    assert.equal(await page.evaluate(() => document.activeElement.id), "gaia-statistics-ai-title", "Opening jumped to an input / could open the mobile keyboard");
+    assert.equal(await dialog.evaluate(node => node.scrollTop), 0);
+    assert.equal(await page.evaluate(() => document.fullscreenElement), null);
+    const presentation = await dialog.evaluate(node => {
+      const style = getComputedStyle(node);
+      const backdrop = getComputedStyle(node, "::backdrop");
+      return { animation: style.animationName, duration: style.animationDuration, backdropAnimation: backdrop.animationName, backdrop: backdrop.backgroundColor, blur: backdrop.backdropFilter };
+    });
+    assert.equal(presentation.animation, width === 320 ? "none" : "gaia-ai-dialog-enter");
+    assert.equal(presentation.backdropAnimation, width === 320 ? "none" : "gaia-ai-backdrop-enter");
+    if (width !== 320) assert.equal(presentation.duration, "0.22s");
+    assert.equal(presentation.backdrop, "rgba(2, 11, 16, 0.24)");
+    assert.equal(presentation.blur, "blur(1px)");
+    // Let the short entrance finish before checking the stable bounds.
+    await dialog.evaluate(node => Promise.all(node.getAnimations().map(animation => animation.finished)));
+    const openingBox = await dialog.boundingBox();
+    const margin = height <= 600 ? 24 : width <= 720 ? 48 : 64;
+    assert(openingBox.y >= margin - 1 && openingBox.y + openingBox.height <= height - margin + 1, "Dialog lost the surrounding observation context");
+    assert(openingBox.width <= (width === 3840 ? 1180 : 1020) + 1);
+    assert.equal(await page.locator("#gaia-statistics-lab").isVisible(), true);
+    await dialog.evaluate(node => { node.scrollTop = 0; });
+    await page.screenshot({ path: path.join(output, `${width}-opening.jpg`), type: "jpeg", quality: 90 });
+    await page.keyboard.press("Tab");
+    assert.equal(await dialog.locator("[data-ai-close]").evaluate(node => node === document.activeElement), true, "Close is not the first keyboard control");
+    await page.keyboard.press("Shift+Tab");
+    assert.equal(await dialog.evaluate(node => node.contains(document.activeElement)), true, "Keyboard focus escaped the dialog");
     assert.equal(requests.length, 0, "Opening a dialog sent data without submit");
     assert.equal(await field("apiKey").inputValue(), testKey, "Existing sensor key not restored");
     assert.equal(await field("endpoint").inputValue(), endpoint);
@@ -142,6 +168,7 @@ try {
     assert.equal(await dialog.isVisible(), false);
     assert.equal(await page.locator("#gaia-statistics-lab").isVisible(), true, "Escape also closed the observation workspace");
     assert.equal(await trigger.evaluate(node => node === document.activeElement), true);
+    assert.equal(await page.evaluate(() => globalThis.GaiaStatisticsLab.getState().recordQuery), "Alpha", "Closing lost the observation filter");
 
     await trigger.click();
     await field("endpoint").fill(`${base}/api/should-never-receive-key`);
@@ -179,7 +206,7 @@ try {
     assert((await dialog.evaluate(node => node.scrollWidth - node.clientWidth)) <= 1, "Long result caused horizontal overflow");
     if (width > 900) {
       const resultBox = await dialog.locator(".gaia-statistics-ai-result").boundingBox();
-      assert(resultBox.height <= (width === 3840 ? 2088 : 900) - 280 + 1, "Long result did not stay inside its reading panel");
+      assert(resultBox.height <= Math.min(540, height - 320) + 1, "Long result did not stay inside its reading panel");
       assert.equal(await answer.evaluate(node => node.scrollHeight > node.clientHeight), true, "Long result cannot scroll");
       await answer.focus();
       await page.keyboard.press("End");
@@ -187,19 +214,24 @@ try {
       await answer.evaluate(node => { node.scrollTop = 0; });
     }
     const closeBox = await dialog.locator("[data-ai-close]").boundingBox();
-    assert(closeBox.y >= 0 && closeBox.y + closeBox.height <= (width === 3840 ? 2088 : width === 1440 ? 900 : 844), "Close control disappeared during long result");
+    assert(closeBox.y >= 0 && closeBox.y + closeBox.height <= height, "Close control disappeared during long result");
     await page.screenshot({ path: path.join(output, `${width}-result.jpg`), type: "jpeg", quality: 90 });
     await form.locator("[data-ai-clear]").click();
     assert.equal(await field("apiKey").inputValue(), "");
     assert.deepEqual(await page.evaluate(() => [localStorage.getItem("gaia-senseware-ai-key-v1"), sessionStorage.getItem("gaia-senseware-ai-session-key-v1")]), [null, null]);
     await page.keyboard.press("Escape");
+    await trigger.click();
+    assert.equal(await field("apiKey").inputValue(), "");
+    assert.equal(await page.evaluate(() => document.activeElement.id), "gaia-statistics-ai-title", "An empty key automatically focused the input");
+    await dialog.locator("[data-ai-close]").click();
+    assert.equal(await trigger.evaluate(node => node === document.activeElement), true);
     await page.locator("#gaia-statistics-menu-toggle").click();
     await page.locator("#gaia-statistics-record-filter").fill("No match whatsoever");
     await page.waitForFunction(() => globalThis.GaiaStatisticsLab.getState().recordQuery === "No match whatsoever");
     await settle();
     await page.locator("#gaia-statistics-menu-close").click();
     assert.equal(await trigger.isDisabled(), true);
-    report.checks.push({ width, requests: requests.length, geometry, restoredConfiguration: true, questionPresets: 6, keyboardSelection: true, truthfulPrivacy: true, longResultLayout: true, filteredPayload: "2 SOURCE rows", explicitSendOnly: true, sameOriginBlocked: true, errorsAndCancellation: "passed", textOnlyOutput: true });
+    report.checks.push({ width, height, requests: requests.length, geometry, openingBox, presentation, nonInputInitialFocus: true, contextPreserved: true, restoredConfiguration: true, questionPresets: 6, keyboardSelection: true, truthfulPrivacy: true, longResultLayout: true, filteredPayload: "2 SOURCE rows", explicitSendOnly: true, sameOriginBlocked: true, errorsAndCancellation: "passed", textOnlyOutput: true });
     console.log(`PASS ${width}px: 6 editable question presets, privacy, responsive/long-result layout, shared BYOK settings, selected data only, explicit send, secure transport, retry, cancel, stale response and key removal`);
     await context.close();
   }

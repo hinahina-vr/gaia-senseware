@@ -32,7 +32,7 @@ import {
   varianceConfidenceInterval,
 } from "./statistics-lab-core.js";
 import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-statistical-categories-1";
-import { createStatisticsAi } from "./statistics-ai.js?v=gaia-observation-dialogue-1";
+import { createStatisticsAi } from "./statistics-ai.js?v=gaia-ai-dialog-context-1";
 import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-data-insights-1";
 
 const q = (selector) => document.querySelector(selector);
@@ -202,7 +202,7 @@ if (!lab || !openButton) {
     "anthropocene-scar": "summary",
     "rhythm-of-disaster": "discrete",
     "three-ecologies": "scatter",
-    "earth-organ": "multiple",
+    "earth-organ": "summary",
     "estat-prefecture": "summary",
   };
   const SAVED_VIEWS_STORAGE_KEY = "gaia-statistics-saved-views:v1";
@@ -334,7 +334,7 @@ if (!lab || !openButton) {
       { id: "earthquakes", modeId: "rhythm-of-disaster", title: "M7以上地震の年別件数（2001–2025）", rows: yearly, gaps, unit: "件/年", xLabel: "年", yLabel: "発生件数", provenance: ["SOURCE", "DERIVED"] },
       { id: "forest-urban", modeId: "three-ecologies", title: "31か国の森林率と都市化率", rows: forestUrban, unit: "%", valueLabel: "森林率", xLabel: "森林率", yLabel: "都市化率", provenance: ["SOURCE"] },
       { id: "culture", modeId: "three-ecologies", title: "文化遺産カテゴリと地域", rows: culture, unit: "件", provenance: ["SOURCE"] },
-      { id: "renewables", modeId: "earth-organ", title: "再生可能比率と自然条件", rows: renewables, unit: "%", xLabel: "太陽光ポテンシャル", yLabel: "再生可能比率", provenance: ["SOURCE"] },
+      { id: "renewables", modeId: "earth-organ", title: `${renewables.length}の国・地域の再生可能電力（各国の最新収録年）`, rows: renewables, unit: "%", valueLabel: "再生可能エネルギー発電割合", xLabel: "代表地点の日射（収録31地点）", yLabel: "再生可能エネルギー発電割合", provenance: ["SOURCE"] },
       buildAnnualDataset(snapshot, "population-tide"),
     ];
   };
@@ -876,8 +876,9 @@ if (!lab || !openButton) {
     const x = rows.map((row) => [row.solarKwhM2Day, row.windSpeedMs, row.precipitationMmDay]);
     const model = ordinaryLeastSquares(x, y);
     if (!model) return notApplicable("説明変数の特異行列により重回帰を推定できません。", ["01 相関", "12 多重共線性"]);
-    const correlationSolar = pearson(rows.map((row) => row.solarKwhM2Day), y);
-    const correlationWind = pearson(rows.map((row) => row.windSpeedMs), y);
+    model.n = rows.length;
+    const correlationSolar = { r: pearson(rows.map((row) => row.solarKwhM2Day), y) };
+    const correlationWind = { r: pearson(rows.map((row) => row.windSpeedMs), y) };
     const predictors = [
       rows.map((row) => row.solarKwhM2Day),
       rows.map((row) => row.windSpeedMs),

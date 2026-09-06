@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { inflateRawSync, inflateSync } from "node:zlib";
 import { enrichSnapshotWithStatistics } from "./statistics.mjs";
 import { fetchPopulationData, populationDataset } from "./population-data.mjs";
+import { fetchRenewableData, renewableDataset } from "./renewable-data.mjs";
 import { applyEcologiesReadingMetadata } from "./update-ecologies-reading-data.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -638,8 +639,14 @@ const parseGcpFossilCo2 = (text) => {
 };
 
 // Bulk CSV is faster and more stable than long multi-country Indicators API URLs.
-const [renewableRows, urbanRows, forestRows, populationData, gcpFossilText] = await Promise.all([
-  fetchWorldBankLatest("EG.ELC.RNEW.ZS", "renewablePercent"),
+const [renewableData, urbanRows, forestRows, populationData, gcpFossilText] = await Promise.all([
+  readFile(resolve(projectDirectory, "data/natural-earth-50m-countries.geojson"), "utf8")
+    .then(JSON.parse).then(geography => fetchRenewableData(geography, climateSites)).catch(error => {
+      const previous = previousSnapshot?.modes?.find(mode => mode.id === "earth-organ");
+      if (!previous?.signals?.renewableCoverage || previous.signals.renewableCoverage.countryCount < 200) throw error;
+      console.warn(`Renewable refresh failed; retaining the previous global snapshot: ${error.message}`);
+      return { rows: previous.signals.current, coverage: previous.signals.renewableCoverage, dataset: previous.datasets.find(dataset => dataset.id === "worldbank-renewable") };
+    }),
   fetchWorldBankLatest("SP.URB.TOTL.IN.ZS", "urbanPercent"),
   fetchWorldBankLatest("AG.LND.FRST.ZS", "forestPercent"),
   readFile(resolve(projectDirectory, "data/natural-earth-50m-countries.geojson"), "utf8")
@@ -657,6 +664,7 @@ const globalEmissionsRows = fetchedGcpFossilRows.length
   : previousSignalRows("anthropocene-scar", "emissions")
     .filter((row) => Number.isFinite(Number(row.emissionsMtCo2)));
 const populationRows = populationData.rows;
+const renewableRows = renewableData.rows;
 if (!globalEmissionsRows.length) throw new Error("GCP fossil CO₂ history is unavailable and no compatible snapshot exists");
 if (!populationRows.length) throw new Error("World Bank population history is unavailable and no compatible snapshot exists");
 
@@ -905,10 +913,10 @@ const modes = [
     { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
     "再生可能電力は、どの国でどれくらい使われているでしょう。",
     [
-      source({ id: "worldbank-renewable", organisation: "World Bank", title: "Renewable electricity output (% of total)", url: "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS", period: "latest available by country", unit: "%", resolution: `${renewableRows.length} country values`, transformation: "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。自動再生とスライダーは発電割合の高い国から低い国へ移動します。", caveat: "COUNTRY VALUE。国によって最新年が異なります。", rows: renewableRows }),
+      renewableData.dataset || renewableDataset(renewableData, retrievedAt),
       source({ id: "nasa-power-renewable", organisation: "NASA POWER", title: "Solar and wind climatology / global stratified sample", url: URLS.power, period: "climatology", unit: "kWh/m²/day, m/s", resolution: `選択${powerRows.length}地点`, transformation: "選択国の代表地点について、日射を黄色い円、風を緑の矢印で補足表示します。", caveat: "31地点の自然条件だけを見た値です。現在の再生可能電力比率を説明する因果モデルや導入可能量ではありません。", rows: powerRows }),
     ],
-    { potential: powerRows, current: renewableRows },
+    { potential: powerRows, current: renewableRows, renewableCoverage: renewableData.coverage },
   ),
   mode(
     "population-tide",

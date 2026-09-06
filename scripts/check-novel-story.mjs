@@ -4,15 +4,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readApprovedStoryScript } from "./approved-story-script.mjs";
+import "./check-story-log-comments.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
-const expectedApprovedHash = "0255319be34a5eca3537254683e209f4ea3af7589d2b697e6de5f4adb561d044";
+const expectedApprovedHash = "40f0e713e7794bcb4b2e92a3cd6022550c3085ef94b9629b0a30cfaed67fe2b0";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedSceneCounts = [72, 43, 46, 50, 79, 82];
+const expectedSceneCounts = [72, 43, 47, 52, 80, 86];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 
 const canonBytes = fs.readFileSync(canonPath);
@@ -30,7 +31,7 @@ assert.equal(story.storyVersion, 13);
 assert.equal(story.sourceSha256, expectedFreezeHash);
 assert.equal(story.approvedSourceSha256, expectedApprovedHash);
 assert.equal(approved.sha256, expectedApprovedHash);
-assert.equal(story.revisionId, "approved-script-20260824");
+assert.equal(story.revisionId, "observation-log-20260906");
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
 assert.deepEqual(story.requiredSceneIds, expectedSceneIds);
 assert.deepEqual(story.temporal.sceneOrder, expectedSceneIds);
@@ -38,14 +39,14 @@ assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedSceneC
 
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
-assert.equal(steps.length, 372, "承認済み本文372件が必要です");
+assert.equal(steps.length, 380, "改訂済み380ステップが必要です");
 assert.equal(stepMap.size, steps.length, "step IDが重複しています");
 assert.equal(steps.at(-1).id, "welcome_chat_095", "スタッフロール接続が末尾にありません");
 assert.equal(stepMap.get("gx_experience_024").text, "みずが操作をサポートしようと、すぐ隣まで身を寄せてくる。潮風に混じって彼女の髪の香りが微かに届き、突然の距離の近さに思わず息を呑んだ。");
 assert.equal(stepMap.get("welcome_chat_013").text, "投稿した瞬間にリアクションの絵文字がポンポンと跳ねる。文字の向こうに確かに人がいるという実感が湧いてくる。");
-assert.equal(steps.filter((step) => step.text === "観測は、もう始まっている。私たちの放課後は、ここから続いていく。").length, 1, "本編末尾の地の文が重複しています");
+assert.equal(steps.filter((step) => step.text === "波の音を聞きながら、その続きを話した。").length, 1, "本編末尾の地の文が重複しています");
 
-const kindToType = Object.freeze({ 地の文: "narration", 会話: "dialogue", 学内チャット: "chat", チャット画面: "chatSurface", 操作: "interaction" });
+const kindToType = Object.freeze({ 地の文: "narration", 会話: "dialogue", 学内チャット: "chat", チャット画面: "chatSurface", 操作: "interaction", 転換: "transition" });
 for (const approvedScene of approved.mainScenes) {
   const runtimeScene = story.scenes.find((scene) => scene.id === approvedScene.id);
   assert(runtimeScene, `${approvedScene.id}: runtime sceneがありません`);
@@ -76,8 +77,8 @@ assert.deepEqual(
   "ESP32反論と再提案の学習曲線が崩れています",
 );
 
-assert.equal(stepMap.get("gx_experience_001").text, "プロジェクターのファンが低く唸りを上げ、画面の地球が暗転した。");
-assert.match(stepMap.get("gx_experience_021").text, /約二十七億年前/u);
+assert.equal(stepMap.get("gx_experience_001").text, "あめがコンソールに触れると、地球の光が消えた。さっきまで見えていた机の角も、自分の靴も、一瞬分からなくなる。");
+assert.match(stepMap.get("gx_experience_021").text, /約27億年前/u);
 assert.doesNotMatch(stepMap.get("esp32_pitch_016").text, /時刻|設置条件/u);
 assert.match(stepMap.get("circle_invitation_002").text, /連絡先も知らないまま/u);
 assert.equal(stepMap.get("welcome_chat_077").text, "最初のプロトタイプは、きっとノイズだらけでエラーを吐くだろう。けれど、それを一緒にデバッグする仲間が、いま隣を歩いている。");

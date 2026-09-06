@@ -60,7 +60,7 @@ try {
       assert(await page.locator(".gaia-live-deck-question").isVisible());
       assert(await page.locator("[data-live-exhibit-feed-state]").isVisible());
       assert(await page.locator("[data-live-exhibit-feed-time]").isVisible());
-      assert.match(await page.locator("[data-live-exhibit-feed-time]").textContent(), /2026\/09\/06 09:00:00 JPT/);
+      assert.match(await page.locator("[data-live-exhibit-feed-time]").textContent(), /2026\/09\/06 09:00:00 JST/);
       assert.equal(await page.locator(".gaia-live-deck-question [data-live-exhibit-feed-state]").count(), 0);
       const geometry = await page.evaluate(() => {
         const root = document.querySelector(".gaia-live-exhibit-readout");

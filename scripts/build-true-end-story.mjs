@@ -18,12 +18,18 @@ const speakerForLabel = Object.freeze({
 });
 
 const approved = readApprovedStoryScript();
+const runtimeIds = new Set();
 const scenes = approved.trueEndScenes.map((scene) => ({
   id: scene.id,
   number: scene.number,
   title: scene.title,
   backdrop: scene.backdrop,
   steps: scene.entries.map((entry) => {
+    const runtimeId = entry.metadata?.runtimeStepId;
+    if (typeof runtimeId !== "string" || !runtimeId.startsWith(`beyond_${scene.number}_`) || runtimeIds.has(runtimeId)) {
+      throw new Error(`${entry.id}: シーンに対応する一意のruntimeStepIdを指定してください`);
+    }
+    runtimeIds.add(runtimeId);
     const speaker = speakerForLabel[entry.speakerLabel];
     if (speaker === undefined) throw new Error(`${entry.id}: 未対応のAPEIRONCENE話者です（${entry.speakerLabel}）`);
     const pages = entry.metadata?.pages;
@@ -36,17 +42,18 @@ const scenes = approved.trueEndScenes.map((scene) => ({
       throw new Error(`${entry.id}: pagesは本文を欠落なく分けた2ページ以上の文字列配列にしてください`);
     }
     return {
+      id: runtimeId,
       ...(speaker ? { speaker } : {}),
       ...(entry.speakerLabel === "???" ? { speakerLabel: entry.speakerLabel } : {}),
       text: entry.text,
       ...(entry.readout ? { readout: entry.readout } : {}),
-      ...(entry.metadata || {}),
+      ...Object.fromEntries(Object.entries(entry.metadata || {}).filter(([key]) => key !== "runtimeStepId")),
     };
   }),
 }));
 
 const story = {
-  storyVersion: "true-end-approved-script-v5",
+  storyVersion: "true-end-beyond-log-20260906-115607",
   approvedSourceSha256: approved.sha256,
   title: "APEIRONCENE",
   subtitle: "惑星の放課後 / GAIA SENSATION — APEIRONCENE",
@@ -73,7 +80,7 @@ const story = {
 };
 
 const serialized = JSON.stringify(story, null, 2);
-const output = `// Generated from story/APPROVED_SCRIPT_2026-08-24.md by scripts/build-true-end-story.mjs. Do not edit by hand.\n(() => {\n  "use strict";\n\n  const freezeScene = (scene) => Object.freeze({\n    ...scene,\n    steps: Object.freeze(scene.steps.map((step, index) => Object.freeze({\n      ...step,\n      id: \`beyond_\${scene.number}_\${String(index + 1).padStart(3, "0")}\`,\n      sceneId: scene.id,\n      sceneTitle: scene.title,\n      type: "beyond",\n      recordType: "BEYOND",\n      ...(step.speaker === "system" ? { speakerLabel: "AIVA" } : {}),\n    }))),\n  });\n\n  const source = ${serialized};\n  globalThis.GAIA_TRUE_END_STORY = Object.freeze({\n    ...source,\n    language: Object.freeze(source.language),\n    scenes: Object.freeze(source.scenes.map(freezeScene)),\n    finale: Object.freeze({\n      ...source.finale,\n      readout: Object.freeze(source.finale.readout),\n    }),\n  });\n})();\n`;
+const output = `// Generated from story/APPROVED_SCRIPT_2026-08-24.md by scripts/build-true-end-story.mjs. Do not edit by hand.\n(() => {\n  "use strict";\n\n  const freezeScene = (scene) => Object.freeze({\n    ...scene,\n    steps: Object.freeze(scene.steps.map((step, index) => Object.freeze({\n      ...step,\n      id: step.id || \`beyond_\${scene.number}_\${String(index + 1).padStart(3, "0")}\`,\n      sceneId: scene.id,\n      sceneTitle: scene.title,\n      type: "beyond",\n      recordType: "BEYOND",\n      ...(step.speaker === "system" ? { speakerLabel: "AIVA" } : {}),\n    }))),\n  });\n\n  const source = ${serialized};\n  globalThis.GAIA_TRUE_END_STORY = Object.freeze({\n    ...source,\n    language: Object.freeze(source.language),\n    scenes: Object.freeze(source.scenes.map(freezeScene)),\n    finale: Object.freeze({\n      ...source.finale,\n      readout: Object.freeze(source.finale.readout),\n    }),\n  });\n})();\n`;
 
 if (checkOnly) {
   if (!fs.existsSync(outputPath) || fs.readFileSync(outputPath, "utf8").replace(/\r\n?/gu, "\n") !== output) {

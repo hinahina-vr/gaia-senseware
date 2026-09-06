@@ -44,7 +44,7 @@ export function createStatisticsAi({ lab, button, getContext }) {
   dialog.className = "gaia-statistics-ai-dialog";
   dialog.setAttribute("aria-labelledby", "gaia-statistics-ai-title");
   dialog.innerHTML = `
-    <header class="gaia-statistics-ai-head"><div><p>GAIA <span aria-hidden="true">/</span> OBSERVATION DIALOGUE</p><h2 id="gaia-statistics-ai-title"><span>観測から、</span><span>問いをひらく。</span></h2><p class="gaia-statistics-ai-intro">AIと読み解く、いま見ているデータ。</p></div><button type="button" data-ai-close aria-label="AI分析を閉じる">×</button></header>
+    <header class="gaia-statistics-ai-head"><div><p>GAIA <span aria-hidden="true">/</span> OBSERVATION DIALOGUE</p><h2 id="gaia-statistics-ai-title" tabindex="-1" autofocus><span>観測から、</span><span>問いをひらく。</span></h2><p class="gaia-statistics-ai-intro">AIと読み解く、いま見ているデータ。</p></div><button type="button" data-ai-close aria-label="AI分析を閉じる">×</button></header>
     <div class="gaia-statistics-ai-target"><span>分析する観測</span><p data-ai-target></p></div>
     <div class="gaia-statistics-ai-layout">
       <form id="gaia-statistics-ai-form">
@@ -138,7 +138,9 @@ export function createStatisticsAi({ lab, button, getContext }) {
     show("idle", "送信すると、ここに分析結果が表示されます。", true);
     dialog.showModal();
     dialog.scrollTop = 0;
-    (fields.apiKey.value ? fields.question : fields.apiKey).focus({ preventScroll: true });
+    // Start with context, not an input: avoid a scroll jump or mobile keyboard
+    // before the visitor has chosen to type. Native dialog keeps focus contained.
+    dialog.querySelector("#gaia-statistics-ai-title").focus({ preventScroll: true });
   };
   fields.provider.addEventListener("change", () => {
     const preset = fields.provider.value === "custom" ? custom : aiProviderPresets[fields.provider.value];

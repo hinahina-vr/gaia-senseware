@@ -2503,7 +2503,17 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 /* Keep the CO₂ value and both provenance counts readable in the fixed dock. */
 #japan-layer .signal-console-heading:has(.has-long-metric-label) { gap: 0; }
 #japan-layer .signal-console-heading:has(.has-long-metric-label) > [data-signal-act] { display: none; }
+#japan-layer .signal-console-heading > strong.has-long-metric-label {
+  font: 400 14px/1.45 var(--font-ja);
+  white-space: pre-line;
+}
 @media (min-width: 901px) {
+  body.map-grid-desktop .map-command-dock .signal-console-map:has(.has-long-metric-label) {
+    grid-template-columns: minmax(132px, 1.3fr) minmax(0, 2.7fr) !important;
+  }
+  body.map-grid-desktop #japan-layer .signal-console-heading > strong.has-long-metric-label {
+    font: 400 clamp(10px, .58vw, 14px)/1.2 var(--font-ja);
+  }
   body.map-grid-desktop #japan-layer .signal-console-heading:has(.has-long-metric-label) {
     align-self: start;
     box-sizing: border-box;

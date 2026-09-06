@@ -671,21 +671,21 @@ try {
     assert.equal(backgroundOnly.sectionTransitionPhase, "idle", `${viewport.name}: hidden APEIRONCENE scene card delayed the background reveal`);
     assert.equal(backgroundOnly.message, "", `${viewport.name}: first message started behind the black veil`);
     assert.equal(backgroundOnly.dialogueVisibility, "hidden", `${viewport.name}: message window was visible after the background finished revealing`);
-    // The 240ms background-only beat is verified above. Encoding a full-device
+    // The 120ms background-only beat is verified above. Encoding a full-device
     // PNG during that beat can stall the renderer and delay the timer under test.
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
     const transitionCompletedAt = Date.now();
-    assert(transitionHoldObservedAt - transitionStartedAt >= 300, `${viewport.name}: APEIRONCENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
-    assert(switchObservedAt - transitionHoldObservedAt >= 400, `${viewport.name}: full-black APEIRONCENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
-    assert(switchObservedAt - transitionStartedAt >= 725, `${viewport.name}: APEIRONCENE entry was shorter than its half-speed-duration target`);
-    assert(backgroundFullyVisibleAt - revealObservedAt >= 1_725, `${viewport.name}: APEIRONCENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
-    assert(transitionCompletedAt - backgroundFullyVisibleAt >= 175, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
+    assert(transitionHoldObservedAt - transitionStartedAt >= 150, `${viewport.name}: APEIRONCENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
+    assert(switchObservedAt - transitionHoldObservedAt >= 180, `${viewport.name}: full-black APEIRONCENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
+    assert(switchObservedAt - transitionStartedAt >= 365, `${viewport.name}: APEIRONCENE entry was shorter than its double-speed target`);
+    assert(backgroundFullyVisibleAt - revealObservedAt >= 825, `${viewport.name}: APEIRONCENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
+    assert(transitionCompletedAt - backgroundFullyVisibleAt >= 65, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
     const transitionTrace = await page.evaluate(() => globalThis.__endingTransitionTrace);
     const phaseTime = (phase) => transitionTrace.phases.find((entry) => entry.phase === phase)?.time;
     assert(Number.isFinite(transitionTrace.switchStartedAt), "Scene-switch timer entry was not observed");
     const choreographyMs = (transitionTrace.switchStartedAt - phaseTime("covering")) + (phaseTime("complete") - phaseTime("revealing"));
     (report.transitionTraces ||= []).push({ viewport: viewport.name, ...transitionTrace, choreographyMs });
-    assert(choreographyMs >= 2900 && choreographyMs < 3400, `${viewport.name}: transition is not approximately twice as fast (${choreographyMs}ms excluding asset readiness)`);
+    assert(choreographyMs >= 1430 && choreographyMs < 1850, `${viewport.name}: transition is not approximately twice as fast (${choreographyMs}ms excluding asset readiness)`);
     for (const phase of ["covering", "revealing"]) {
       const noisyFrames = transitionTrace.noise.filter((frame) => frame.phase === phase && frame.opacity > 0.1);
       assert(noisyFrames.length >= 2, `${viewport.name}: missing noise burst during ${phase}`);

@@ -105,7 +105,7 @@ try {
         await page.waitForFunction(() => {
           const overlay = document.querySelector("#japan-overlay");
           return overlay?.dataset.countryGeometryState === "ready"
-            && Number(overlay.dataset.renewableCountryFillCount) === 31;
+            && Number(overlay.dataset.renewableCountryFillCount) === 208;
         });
       }
 
@@ -333,7 +333,7 @@ try {
         assert(Number(scan.ecologiesCorrelation) > 0.2 && Number(scan.ecologiesCorrelation) < 0.3, `${viewport.name}/07: correlation is missing`);
         assert.equal(scan.auxiliaryPanelId, "three-ecologies-scatter", `${viewport.name}/07: scatter panel collision target is missing`);
       } else if (index === 7) {
-        assert.equal(scan.renewableCountryFillCount, "31", `${viewport.name}/08: country fills are missing`);
+        assert.equal(scan.renewableCountryFillCount, "208", `${viewport.name}/08: country fills are missing`);
         assert.equal(scan.renewableFillScale, "country-blue-0-100", `${viewport.name}/08: color scale is stale`);
         assert.equal(scan.energyConnectionRemoved, "true", `${viewport.name}/08: old connection interaction remains`);
         assert.equal(scan.auxiliaryPanelId, "earth-organ-scale", `${viewport.name}/08: energy panel collision target is missing`);

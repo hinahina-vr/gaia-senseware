@@ -78,6 +78,7 @@ const numberedKindMap = new Map([
   ["chat", "学内チャット"],
   ["chatSurface", "チャット画面"],
   ["interaction", "操作"],
+  ["transition", "転換"],
   ["BEYOND", "APEIRONCENE"],
 ]);
 
@@ -111,7 +112,12 @@ const paginateWithoutDroppingText = (text, pageCount) => {
 
 const parseNumberedEntries = (body, scene) => {
   const headings = [...body.matchAll(/^### (\d{3})\s*$/gmu)];
-  if (headings.length !== scene.entries.length) {
+  const explicitIds = [...body.matchAll(/^\* ID:\s*([\w-]+)\s*$/gmu)].map((match) => match[1]);
+  const hasExplicitIds = explicitIds.length > 0;
+  if (hasExplicitIds && (explicitIds.length !== headings.length || new Set(explicitIds).size !== explicitIds.length)) {
+    throw new Error(`${scene.id}: 安定IDは全項目に重複なく指定してください`);
+  }
+  if (!hasExplicitIds && headings.length !== scene.entries.length) {
     throw new Error(`${scene.id}: 番号付き台本の件数が一致しません（${headings.length} / ${scene.entries.length}）`);
   }
   return headings.map((heading, index) => {
@@ -128,36 +134,48 @@ const parseNumberedEntries = (body, scene) => {
       .map((line) => line.replace(/^> ?/u, ""))
       .join("\n");
     if (!speaker || !sourceKind || !text) throw new Error(`${scene.id}:${heading[1]} の話者・種別・本文が不足しています`);
-    const reference = scene.entries[index];
+    const explicitId = block.match(/^\* ID:\s*([\w-]+)\s*$/mu)?.[1];
+    const reference = hasExplicitIds
+      ? scene.entries.find((entry) => entry.id === explicitId) || {}
+      : scene.entries[index];
     const kind = numberedKindMap.get(sourceKind);
-    if (!kind || kind !== reference.kind) {
+    if (!kind || (!hasExplicitIds && kind !== reference.kind)) {
       throw new Error(`${scene.id}:${heading[1]} の種別が現行構造と一致しません（${sourceKind} / ${reference.kind}）`);
     }
-    const speakerLabel = kind === "操作" || kind === "チャット画面" || (kind === "APEIRONCENE" && speaker === "地の文")
+    const speakerLabel = ["操作", "チャット画面", "転換"].includes(kind) || (kind === "APEIRONCENE" && speaker === "地の文")
       ? "—"
       : numberedSpeakerMap.get(speaker) || speaker;
-    if (kind !== "地の文" && speakerLabel !== reference.speakerLabel) {
+    if (!hasExplicitIds && kind !== "地の文" && speakerLabel !== reference.speakerLabel) {
       throw new Error(`${scene.id}:${heading[1]} の話者が現行構造と一致しません（${speakerLabel} / ${reference.speakerLabel}）`);
     }
-    const existingPageCount = Array.isArray(reference.metadata?.pages) ? reference.metadata.pages.length : 1;
+    const authoredMetadata = block.match(/^\* 演出メタ:\s*(.+)$/mu)?.[1];
+    const sourceMetadata = authoredMetadata ? JSON.parse(authoredMetadata) : reference.metadata;
+    const existingPageCount = reference.text === text && Array.isArray(sourceMetadata?.pages) ? sourceMetadata.pages.length : 1;
     const automaticPageCount = kind === "APEIRONCENE"
       ? Math.max(1, Math.ceil(Array.from(text.replace(/\s/gu, "")).length / 52))
       : 1;
     const pageCount = Math.max(existingPageCount, automaticPageCount);
-    const metadata = reference.metadata || pageCount > 1
+    const metadata = sourceMetadata || pageCount > 1
       ? {
-        ...(reference.metadata || {}),
+        ...(sourceMetadata || {}),
         ...(pageCount > 1 ? { pages: paginateWithoutDroppingText(text, pageCount) } : {}),
       }
       : null;
+    if (metadata && pageCount <= 1) delete metadata.pages;
+    const time = block.match(/^\* 時刻:\s*(.+)$/mu)?.[1] || reference.time;
+    const readoutJson = block.match(/^\* データ表示:\s*(.+)$/mu)?.[1];
+    const readout = readoutJson ? JSON.parse(readoutJson) : reference.readout;
+    if (kind === "操作" && (!reference.id || text !== reference.text)) {
+      throw new Error(`${scene.id}:${explicitId}: 既存の操作は変更できません`);
+    }
     return {
       kind,
       speakerLabel: kind === "地の文" ? "地の文" : speakerLabel,
       text: kind === "操作" ? reference.text : text,
-      ...(reference.time ? { time: reference.time } : {}),
-      ...(reference.readout ? { readout: reference.readout } : {}),
+      ...(time ? { time } : {}),
+      ...(readout?.length ? { readout } : {}),
       ...(metadata ? { metadata } : {}),
-      _lockedId: reference.id,
+      _lockedId: explicitId || reference.id,
     };
   });
 };
@@ -370,6 +388,13 @@ const entryScore = (current, incoming) => {
 };
 
 const alignIds = (currentEntries, incomingEntries, sceneId, { inheritCues = false } = {}) => {
+  if (incomingEntries.every((entry) => entry._lockedId)) {
+    const entries = incomingEntries.map(({ _lockedId, ...entry }) => ({ ...entry, id: _lockedId }));
+    if (new Set(entries.map((entry) => entry.id)).size !== entries.length) throw new Error(`${sceneId}: IDが重複しました`);
+    const currentIds = new Set(currentEntries.map((entry) => entry.id));
+    const added = entries.filter((entry) => !currentIds.has(entry.id)).length;
+    return { entries, reused: entries.length - added, added };
+  }
   const rows = currentEntries.length + 1;
   const columns = incomingEntries.length + 1;
   const gap = -5;

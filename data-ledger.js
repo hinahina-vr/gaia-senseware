@@ -12,13 +12,13 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? String(value)
-      : new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short" }).format(date);
+      : `${new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(date)} JST`;
   };
 
-  const displayJptDateTime = (value) => {
+  const displayJstDateTime = (value) => {
     if (!value) return "—";
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return `${String(value)} JPT`;
+    if (Number.isNaN(date.getTime())) return "—";
     return `${new Intl.DateTimeFormat("ja-JP", {
       timeZone: "Asia/Tokyo",
       year: "numeric",
@@ -28,7 +28,7 @@
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23",
-    }).format(date)} JPT`;
+    }).format(date)} JST`;
   };
 
   const element = (tagName, className, text) => {
@@ -150,7 +150,7 @@
         organisation: provider,
         transformation: exhibit.caption,
         retrievedAt: event?.retrievedAt,
-        period: event?.observedAt ? `データ時刻 ${displayJptDateTime(event.observedAt)}` : "データ時刻なし",
+        period: event?.observedAt ? `データ時刻 ${displayJstDateTime(event.observedAt)}` : "データ時刻なし",
         unit: measurement?.unit || "—",
         resolution: `${location?.label || exhibit.location?.label || "公開データ対象範囲"}${bbox}`,
         caveat: loading ? event ? "同じ地点の前回取得値を表示して更新しています。時刻は前回取得値のものです。" : "選択した地点のデータを取得中です。別の地点の値で補ってはいません。"
@@ -178,7 +178,7 @@
       elements.question.textContent = "";
       elements.act.textContent = `LIVE SENSEWARE / ${loading || retained || !event ? status : state?.connected ? modelData ? "LATEST MODEL · 5 MIN RECHECK" : "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : modelData ? "SAVED MODEL SNAPSHOT" : "SAVED SNAPSHOT"}`;
       elements.state.textContent = event ? `1種類の${dataKind}データを使用 / ${status}` : loading ? "この地点のデータと出典情報を取得中です" : "この地点のデータは未取得です";
-      elements.updated.textContent = `取得日時：${displayJptDateTime(event?.retrievedAt)}`;
+      elements.updated.textContent = `取得日時：${displayJstDateTime(event?.retrievedAt)}`;
       elements.historyState.hidden = true;
       elements.historyUpdated.hidden = true;
       elements.liveState.hidden = true;

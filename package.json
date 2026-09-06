@@ -5,6 +5,13 @@
   "type": "module",
   "description": "惑星の放課後 — GAIA SENSATION — pure HTML/CSS/JavaScript installation",
   "scripts": {
+    "check:mobile-map-shell": "node --check map-mobile-shell.js && node --check scripts/check-mobile-map-shell-browser.mjs",
+    "check:mobile-map-shell:browser": "node scripts/check-mobile-map-shell-browser.mjs",
+    "check:observation-typography": "node --check scripts/check-observation-typography-browser.mjs && node --check scripts/check-observation-panels-browser.mjs && node --check scripts/check-rain-inline-readout-browser.mjs && node --check map-legend-drag.js && node --check src/exploration/metric-legend.js",
+    "check:story-log-comments": "node scripts/check-story-log-comments.mjs && node --check scripts/check-story-log-comments-browser.mjs",
+    "check:beyond-log-comments": "node scripts/check-beyond-log-comments.mjs && node --check scripts/check-beyond-log-comments-browser.mjs",
+    "data:renewable": "node scripts/build-renewable-data.mjs",
+    "check:renewable": "node --check scripts/build-renewable-data.mjs && node scripts/check-renewable-data.mjs && node --check scripts/check-renewable-label-browser.mjs && node --check scripts/check-renewable-order-browser.mjs",
     "check:statistics-data-insights": "node scripts/check-statistics-data-insights.mjs && node --check scripts/check-statistics-data-insights-browser.mjs",
     "check:country-emissions": "node scripts/check-country-emissions-history.mjs && node --check scripts/check-country-emissions-history-browser.mjs",
     "data:build": "node scripts/build-gaia-data.mjs",

@@ -7,10 +7,10 @@
     if (!surface || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const between = (min, max) => min + Math.random() * (max - min);
     const layers = [
-      ["stage", 32, "px", 310, 360],
-      ["bands", 12, "%", 340, 420],
-      ["dropout", 19, "%", 280, 400],
-      ["noise", 56, "px", 310, 420],
+      ["stage", 32, "px", 155, 180],
+      ["bands", 12, "%", 170, 210],
+      ["dropout", 19, "%", 140, 200],
+      ["noise", 56, "px", 155, 210],
     ];
     for (const [name, amplitude, unit, minDuration, maxDuration] of layers) {
       surface.style.setProperty(`--glitch-${name}-duration`, `${Math.round(between(minDuration, maxDuration))}ms`);

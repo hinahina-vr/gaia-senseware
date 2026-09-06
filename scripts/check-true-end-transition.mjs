@@ -5,12 +5,12 @@ import vm from "node:vm";
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const runtime = read("novel-mode.js");
 const css = read("novel-mode.css");
-const timings = { EXIT_COVER: 430, EXIT_HOLD: 500, EXIT_REVEAL: 1800, ENTRY_BACKGROUND_HOLD: 240 };
+const timings = { EXIT_COVER: 215, EXIT_HOLD: 250, EXIT_REVEAL: 900, ENTRY_BACKGROUND_HOLD: 120 };
 for (const [name, duration] of Object.entries(timings)) assert(runtime.includes(`const STAFF_ROLL_${name}_MS = ${duration};`));
-assert.equal(Object.values(timings).reduce((sum, duration) => sum + duration, 0), 5940 / 2);
-assert.match(css, /novel-staff-roll-exit-cover 430ms/u);
-assert.match(css, /novel-staff-roll-exit-reveal 1800ms/u);
-assert.match(css, /novel-staff-roll-depart 360ms/u);
+assert.equal(Object.values(timings).reduce((sum, duration) => sum + duration, 0), 2970 / 2);
+assert.match(css, /novel-staff-roll-exit-cover 215ms/u);
+assert.match(css, /novel-staff-roll-exit-reveal 900ms/u);
+assert.match(css, /novel-staff-roll-depart 180ms/u);
 assert.match(css, /background-size: 128px 128px/u);
 assert.match(css, /ending-static-noise\.svg/u);
 assert.match(read("assets/effects/ending-static-noise.svg"), /feTurbulence.*numOctaves="1"/u);
@@ -31,7 +31,7 @@ for (let run = 0; run < 30; run++) {
   const properties = {};
   window.GaiaEndingGlitch.randomize({ style: { setProperty: (key, value) => { properties[key] = value; } } });
   samples.push(properties);
-  for (const [layer, amplitude, durationMin, durationMax] of [["stage", 32, 310, 360], ["bands", 12, 340, 420], ["dropout", 19, 280, 400], ["noise", 56, 310, 420]]) {
+  for (const [layer, amplitude, durationMin, durationMax] of [["stage", 32, 155, 180], ["bands", 12, 170, 210], ["dropout", 19, 140, 200], ["noise", 56, 155, 210]]) {
     const duration = parseFloat(properties[`--glitch-${layer}-duration`]);
     assert(duration >= durationMin && duration <= durationMax);
     for (let index = 1; index <= 8; index++) assert(Math.abs(parseFloat(properties[`--glitch-${layer}-x${index}`])) <= amplitude);
@@ -44,4 +44,4 @@ window.GaiaEndingGlitch.randomize({ style: { setProperty: () => assert.fail("Red
 assert.match(runtime, /if \(!motionReduced\(\)\) window\.GaiaEndingGlitch\?\.randomize\(layer\)/u);
 assert.match(runtime, /window\.GaiaEndingGlitch\?\.randomize\(veil\)/u);
 assert.match(read("gaia-mode-loader.js"), /ending-glitch\.js[^\n]*\n\s*"\.\/novel-mode\.js/u);
-console.log("True-end transition passed: randomized horizontal-only bursts, bounded intensity/timing, 2.97-second choreography and reduced-motion/ready guards.");
+console.log("True-end transition passed: randomized horizontal-only bursts at 2x speed, bounded intensity/timing, 1.485-second choreography and reduced-motion/ready guards.");

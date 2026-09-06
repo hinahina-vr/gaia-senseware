@@ -34,7 +34,7 @@ const check = (name, fn) => {
 
 check("both map01 phases and gx interaction data exist", () => {
   assert.equal(story.scenes.length, 6);
-  assert.equal(steps.length, 372);
+  assert.equal(steps.length, 380);
   assert.deepEqual(interactions, [
     { id: "map_mode01_004", kind: "map01", optional: false, modeId: "breathing-earth", phase: "", requiredViews: ["timeline_complete"] },
     { id: "map_mode01_023", kind: "map01", optional: false, modeId: "breathing-earth", phase: "temperature-anomaly", requiredViews: ["long_term"] },

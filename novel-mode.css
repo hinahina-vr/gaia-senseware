@@ -9926,8 +9926,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll.is-departing .novel-staff-roll-stage {
-  animation: novel-staff-roll-depart 360ms steps(1, end) both;
-  animation-duration: var(--glitch-stage-duration, 360ms);
+  animation: novel-staff-roll-depart 180ms steps(1, end) both;
+  animation-duration: var(--glitch-stage-duration, 180ms);
 }
 
 .novel-staff-roll.is-departing .novel-staff-roll-closing {
@@ -9983,19 +9983,19 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-covering {
-  animation: novel-staff-roll-exit-cover 430ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: novel-staff-roll-exit-cover 215ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::before {
-  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 410ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 205ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::after {
-  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 390ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 195ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering .novel-staff-roll-transition-noise {
-  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 420ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 210ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-holding {
@@ -10011,20 +10011,20 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-revealing::before {
-  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 410ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 205ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing::after {
-  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 390ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 195ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing .novel-staff-roll-transition-noise {
-  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 420ms) steps(1, end) both;
+  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 210ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing {
   opacity: 1;
-  animation: novel-staff-roll-exit-reveal 1800ms cubic-bezier(0.42, 0, 0.2, 1) both;
+  animation: novel-staff-roll-exit-reveal 900ms cubic-bezier(0.42, 0, 0.2, 1) both;
 }
 
 body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transition-phase="complete"])) .gaia-audio-dock {

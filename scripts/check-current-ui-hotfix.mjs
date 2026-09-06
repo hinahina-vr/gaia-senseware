@@ -129,7 +129,7 @@ check("generated story is current and structurally stable", () => {
   assert.match(builder, new RegExp(sourceHash, "u"));
   const story = generatedStory;
   assert.equal(story.scenes.length, 6);
-  assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 372);
+  assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 380);
   assert.deepEqual(story.characters, {
     amane: { formalName: "雨音", reading: "アマネ", campusName: "あめ" },
     mizuha: { formalName: "瑞葉", reading: "ミズハ", campusName: "みず" },

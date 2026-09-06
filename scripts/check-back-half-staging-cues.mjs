@@ -8,14 +8,14 @@ const story = globalThis.GAIA_NOVEL_STORY;
 const backgrounds = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const staging = globalThis.GAIA_NOVEL_BACK_HALF_CUES;
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedCounts = [72, 43, 46, 50, 79, 82];
+const expectedCounts = [72, 43, 47, 52, 80, 86];
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 
 assert.equal(story.storyVersion, 13);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts);
-assert.equal(allSteps.length, 372);
+assert.equal(allSteps.length, 380);
 assert.deepEqual(staging.sceneIds, expectedSceneIds);
 assert.deepEqual(staging.expectedSceneCounts, Object.fromEntries(expectedSceneIds.map((id, index) => [id, expectedCounts[index]])));
 
@@ -56,7 +56,7 @@ assert.equal(cue("welcome_chat_078").character.avatar, "none");
 assert.equal(cue("welcome_chat_095").castMode, "chat-text-only-no-cast");
 assert.equal(cue("welcome_chat_073").temporal.time, "AM 10:07–10:45");
 assert.equal(cue("welcome_chat_075").temporal.time, "PM 5:10–5:45");
-assert.equal(cue("welcome_chat_092").temporal.location, "海沿いの帰り道／夕暮れの遊歩道");
+assert.equal(cue("welcome_chat_094").temporal.location, "海沿いの帰り道／夕暮れの遊歩道");
 
 const sakuyaSteps = allSteps.filter((step) => step.speaker === "sakuya");
 assert(sakuyaSteps.length > 0, "sakuのchatがありません");

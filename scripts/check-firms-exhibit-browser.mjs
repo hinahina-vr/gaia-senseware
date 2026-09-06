@@ -94,7 +94,7 @@ try {
   assert.equal(await desktop.locator(".gaia-firms-legend").isVisible(), true);
   assert.equal(await desktop.locator(".gaia-firms-readout").isVisible(), true);
   assert.equal(await desktop.locator("[data-firms-return], .gaia-firms-return").count(), 0, "Redundant return tile must be removed, not merely hidden");
-  assert.match(await desktop.locator("[data-firms-latest]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
+  assert.match(await desktop.locator("[data-firms-latest]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} JST$/u);
   assert.match(await desktop.locator("[data-firms-age]").textContent(), /^観測から/u);
   assert.equal(await desktop.locator(".gaia-live-city-marker:visible").count(), 0);
   assert.equal(await desktop.locator(".gaia-estat-marker:visible").count(), 0);

@@ -503,7 +503,7 @@ try {
     assert.equal(await directPage.locator(".gaia-live-deck-wave, [data-live-wave-bar]").count(), 0, `${number}: retired decorative waveform returned`);
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
-    assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /(?:JPT|観測時刻なし)$/u, `${number}: data time or missing-time state is ambiguous`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /(?:JST|観測時刻なし)$/u, `${number}: data time or missing-time state is ambiguous`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|5分ごと|保存済み(?:観測|モデル)|キャッシュ/u, `${number}: live or saved-data behavior is not explained`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").count(), 0, `${number}: retired touch hint returned`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 3, `${number}: observation-to-light path must have three stages`);
@@ -546,7 +546,7 @@ try {
       await openData.click();
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
       assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^10 風脈/u, "10: live source panel shows a standard exhibit ledger");
-      assert.match(await directPage.locator("#data-ledger-updated").textContent(), /(?:JPT|取得日時：—)$/u, "10: source retrieval time or missing-time state is ambiguous");
+      assert.match(await directPage.locator("#data-ledger-updated").textContent(), /(?:JST|取得日時：—)$/u, "10: source retrieval time or missing-time state is ambiguous");
       assert.match(await directPage.locator("#data-ledger-sources").textContent(), /Open-Meteo/u, "10: source provider is absent from the ledger");
       assert.match(
         await directPage.locator("#data-ledger-sources a").first().getAttribute("href"),

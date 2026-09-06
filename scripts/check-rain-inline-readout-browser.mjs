@@ -4,7 +4,7 @@ import path from "node:path";
 import { chromium } from "playwright-core";
 
 const base = process.argv[2] || "http://127.0.0.1:4397";
-const output = path.resolve(process.argv[3] || "artifacts/rain-inline-readout");
+const output = path.resolve(process.argv[3] || "artifacts/rain-observation-readout");
 fs.mkdirSync(output, { recursive: true });
 const rows = JSON.parse(fs.readFileSync("data/gaia-signals.json", "utf8"))
   .modes.find(mode => mode.id === "forest-cloud-engine").signals.precipitation;
@@ -16,7 +16,7 @@ try {
     { width: 390, height: 844 }, { width: 320, height: 740 },
     { width: 280, height: 653 }, { width: 568, height: 320 },
     { width: 390, height: 844, reduced: true },
-  ]) {
+  ].filter(viewport => !process.argv[4] || process.argv[4].split(",").map(Number).includes(viewport.width))) {
     const label = `${viewport.width}${viewport.reduced ? "-reduced" : ""}`;
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
@@ -26,27 +26,7 @@ try {
     await context.addInitScript(() => {
       sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
-      const recent = [];
-      const fill = CanvasRenderingContext2D.prototype.fillText;
-      CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
-        if (this.canvas.id === "japan-overlay") {
-          const bounds = this.canvas.getBoundingClientRect();
-          const transform = this.getTransform();
-          const metrics = this.measureText(text);
-          const sx = bounds.width / this.canvas.width;
-          const sy = bounds.height / this.canvas.height;
-          recent.push({ text, x: (transform.a * x + transform.e) * sx,
-            y: (transform.d * y + transform.f) * sy,
-            right: (transform.a * (x + metrics.width) + transform.e) * sx,
-            top: (transform.d * (y - metrics.actualBoundingBoxAscent) + transform.f) * sy,
-            bottom: (transform.d * (y + metrics.actualBoundingBoxDescent) + transform.f) * sy,
-            font: this.font, color: this.fillStyle, shadow: this.shadowBlur,
-            alpha: this.globalAlpha, maxWidth: maxWidth ?? null });
-          if (recent.length > 4) recent.shift();
-          if (text === "NASA POWER") window.__rainReadout = { time: performance.now(), text: [...recent] };
-        }
-        return maxWidth === undefined ? fill.call(this, text, x, y) : fill.call(this, text, x, y, maxWidth);
-      };
+
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ path: "data/ovation-aurora-snapshot.json", contentType: "application/json" }));
     const page = await context.newPage();
@@ -57,11 +37,12 @@ try {
     await page.evaluate(async () => {
       await GaiaMapObservationAdapter.waitSignalsReady();
       GaiaModeEntryGuide?.close?.("map", { restoreFocus: false });
-      [...document.querySelectorAll(".map-mode-bank .map-mode-button")].find(button => button.textContent.trim() === "03").click();
+      [...document.querySelectorAll(".map-mode-bank .map-mode-button")].find(button => button.textContent.trim() === "08").click();
     });
     await page.waitForFunction(() => document.querySelector("#japan-overlay").dataset.forestRevealState === "complete");
     await page.evaluate(() => document.fonts.ready);
     for (const [index, row] of rows.entries()) {
+      if (process.argv[5] && !process.argv[5].split(",").includes(row.id)) continue;
       const started = await page.evaluate(({ index, row, count }) => {
         GaiaMapObservationAdapter.focusEarthLocation({ lon: row.lon, lat: row.lat, zoom: 2,
           targetX: index % 3 === 0 ? .2 : index % 3 === 1 ? .8 : .5,
@@ -71,10 +52,10 @@ try {
         input.dispatchEvent(new Event("input", { bubbles: true }));
         return performance.now();
       }, { index, row, count: rows.length });
-      await page.waitForFunction(({ value, started }) => window.__rainReadout?.time > started
-        && window.__rainReadout.text[1].text === value
-        && document.querySelector("#japan-overlay").dataset.viewAnimation === "idle",
-      { value: row.precipitationMmDay.toFixed(2), started });
+      await page.waitForFunction(value => {
+        const data = document.querySelector("#japan-overlay").dataset;
+        return data.selectionLabelSecondary === `降水量　${value} mm/日` && data.viewAnimation === "idle";
+      }, row.precipitationMmDay.toFixed(2));
       const scan = await page.evaluate(() => {
         const overlay = document.querySelector("#japan-overlay");
         const data = overlay.dataset;
@@ -91,30 +72,27 @@ try {
           return bounds.width > 2 && bounds.height > 2 && style.visibility !== "hidden" && Number(style.opacity) > 0
             && left < bounds.right && right > bounds.left && top < bounds.bottom && bottom > bounds.top;
         }).map(element => element.id || element.className);
-        return { ...window.__rainReadout, shape: data.selectionLabelShape,
+        return { lines: JSON.parse(data.selectionLabelLines), bodyWidth: Number(data.selectionLabelBodyWidth), shadow: data.selectionLabelShadowBlur, shape: data.selectionLabelShape,
           name: data.selectionLabelFullName, displayName: data.selectionLabelDisplayName,
           left: Number(data.selectionLabelLeftPx), top: Number(data.selectionLabelTopPx),
           width: Number(data.selectionLabelWidthPx), height: Number(data.selectionLabelHeightPx),
           placement: data.selectionLabelPlacement, rain: data.forestRainBrazil, overlaps };
       });
-      assert.equal(scan.shape, "inline-readout");
-      assert.equal(scan.text.length, 4);
-      assert.deepEqual(scan.text.map(item => item.text), [scan.displayName, row.precipitationMmDay.toFixed(2), "mm/日", "NASA POWER"]);
+      assert.equal(scan.shape, "observation-card");
+      assert.deepEqual([...new Set(scan.lines.map(line => line.index))], [0, 1, 2]);
+      assert.equal(scan.lines.filter(line => line.index === 1).map(line => line.text).join(""), `降水量　${row.precipitationMmDay.toFixed(2)} mm/日`);
+      assert(scan.lines.filter(line => line.index === 2).map(line => line.text).join("").includes("NASA POWER"));
       assert.equal(scan.rain, "5.33 mm/日");
-      assert.equal(scan.height, viewport.height < 420 && viewport.width < 900 ? 36 : viewport.width < 600 ? 42 : viewport.width >= 2400 ? 68 : 48);
       assert(scan.left >= 11.9 && scan.left + scan.width <= viewport.width - 11.9, `${label}/${row.id}: card exceeds viewport`);
       assert(scan.top >= 11.9 && scan.top + scan.height <= viewport.height - 11.9);
-      for (const [i, item] of scan.text.entries()) {
-        assert(Math.abs(item.y - scan.text[0].y) < .1, "All four parts must share one baseline");
-        assert(item.x >= scan.left + 2 && item.right <= scan.left + scan.width - 2, "Text exceeds card");
-        assert(item.top >= scan.top && item.bottom <= scan.top + scan.height, "Glyphs clipped vertically");
-        if (i) assert(item.x > scan.text[i - 1].right + 1, "Text overlaps adjacent part");
-        assert.equal(item.maxWidth, null, "Do not compress glyphs");
-        assert.equal(item.shadow, 0, "Readout must not have neon text glow");
-        assert(item.alpha > .95);
+      for (const item of scan.lines) {
+        assert.match(item.font, /^400 .*?(Mincho|Serif|serif)/u);
+        assert(item.width <= scan.bodyWidth + 1, "Do not compress glyphs");
       }
-      if (viewport.width >= 600) assert.equal(scan.displayName, scan.name, "Desktop site names must be complete");
+      assert.equal(scan.shadow, "0", "Readout must not have neon text glow");
+      assert.equal(scan.displayName, scan.name, "Site names must be complete");
       report.checks.push({ viewport: label, id: row.id, ...scan });
+      if (scan.overlaps.length) await page.screenshot({ path: path.join(output, "failure.png") });
       assert.deepEqual(scan.overlaps, [], `${label}/${row.id}: readout is hidden by controls`);
       if (["cuba", "brazil", "japan"].includes(row.id)) {
         await page.screenshot({ path: path.join(output, `${label}-${row.id}.jpg`), type: "jpeg", quality: 90 });
@@ -123,12 +101,11 @@ try {
             width: Math.min(viewport.width - Math.max(0, scan.left - 10), scan.width + 20), height: scan.height + 20 } });
       }
     }
-    // Returning to another exhibit must clear the rain-only layout diagnostics.
-    await page.evaluate(() => GaiaMapObservationAdapter.selectMode(4));
-    await page.waitForFunction(() => document.querySelector("#japan-mode-number").textContent.trim() === "05"
-      && !document.querySelector("#japan-overlay").dataset.selectionLabelFullName);
-    assert.notEqual(await page.locator("#japan-overlay").getAttribute("data-selection-label-shape"), "inline-readout");
-    console.log(`PASS ${label}: all 31 sites, horizontal glyph bounds, no glow, complete value/unit/source, mode cleanup`);
+    // A non-card exhibit must clear the previous observation's diagnostics.
+    await page.evaluate(() => GaiaMapObservationAdapter.selectMode(1));
+    await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning")
+      && document.querySelector("#japan-overlay").dataset.selectionLabelVisible === "false");
+    console.log(`PASS ${label}: ${process.argv[5] || "all 31 sites"}, three Mincho blocks, no glow, full names/values/source`);
     await context.close();
   }
   assert.deepEqual(report.errors, []);

@@ -230,6 +230,7 @@ const typeForKind = Object.freeze({
   学内チャット: "chat",
   チャット画面: "chatSurface",
   操作: "interaction",
+  転換: "transition",
 });
 const approvedMissingBaseIds = [];
 for (const scene of scenes) {
@@ -291,7 +292,7 @@ const story = {
   subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
-  revisionId: "approved-script-20260824",
+  revisionId: "observation-log-20260906",
   approvedSourceSha256: approvedScript.sha256,
   characterSourceSha256: sha256(characterSourceBytes),
   characters,

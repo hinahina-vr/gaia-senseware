@@ -80,15 +80,18 @@ try {
       assert.equal(data.earthquakeActiveLabelTimeZone, "Asia/Tokyo");
       assert.match(data.earthquakeActiveLabelSecondary, /^マグニチュード M\d\.\d/u);
       const text = await page.evaluate(() => window.quakeText);
-      const dateText = text.findLast((t) => t.text === data.earthquakeActiveLabelPrimary);
-      const magnitudeText = text.findLast((t) => t.text === data.earthquakeActiveLabelSecondary);
+      const lines = JSON.parse(data.selectionLabelLines);
+      const dateText = text.findLast((t) => t.text === lines.find(line => line.index === 0)?.text);
+      const magnitudeText = text.findLast((t) => t.text === lines.find(line => line.index === 1)?.text);
       assert(dateText && magnitudeText && magnitudeText.y > dateText.y, "Magnitude must be on the row below the date");
-      assert(!text.some((t) => /^M\d/u.test(t.text) && t.align === "center"),
-        "No standalone magnitude may flash before the callout appears");
-      assert.equal(data.earthquakeActiveMagnitudeLabel, "callout-only");
+      assert.equal(data.earthquakeActiveMagnitudeLabel, "below-marker");
       scan.label = { dateText, magnitudeText, width: Number(data.selectionLabelWidthPx), height: Number(data.selectionLabelHeightPx) };
       assert(scan.label.width <= width - 24);
-      if (width < 600) assert.equal(data.selectionLabelTailSide, "top", "Mobile callout must leave the epicenter cross visible above it");
+      assert.equal(data.selectionLabelShape, "observation-card");
+      assert.equal(data.selectionLabelTypography, "mincho");
+      const x = Number(data.earthquakeCameraEventScreenX), y = Number(data.earthquakeCameraEventScreenY);
+      const left = Number(data.selectionLabelLeftPx), top = Number(data.selectionLabelTopPx);
+      assert(!(x >= left && x <= left + scan.label.width && y >= top && y <= top + scan.label.height), "Callout must leave the epicenter cross visible");
       await page.screenshot({ path: path.join(output, `${name}-callout.png`) });
       await page.waitForFunction(() => {
         const data = document.querySelector("#japan-overlay").dataset;
