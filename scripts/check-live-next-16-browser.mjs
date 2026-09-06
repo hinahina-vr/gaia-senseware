@@ -97,7 +97,7 @@ try {
     const expectCity = async id => {
       await page.waitForFunction(id => document.querySelector("#gaia-live-exhibit-canvas").dataset.observationCity === id
         && document.querySelector("#japan-layer").dataset.livePoiTransition === "settled", id);
-      assert.equal(await page.locator(".gaia-live-city-picker select").inputValue(), id);
+      assert.equal(await page.locator(".gaia-live-prefecture-picker select").inputValue(), id);
     };
     const chooseCity = async id => {
       await page.evaluate(id => { GaiaLiveExhibits.selectObservationPoint(id); GaiaLiveExhibits.pausePoiAutoplay(); }, id);
@@ -105,10 +105,10 @@ try {
     };
     await chooseCity("naha");
     assert.match(await page.locator('.gaia-live-exhibit-readout [data-live-poi-step="1"]').getAttribute("aria-label"), /01 北海道/u);
-    await page.locator('.gaia-live-city-picker [data-live-poi-step="1"]').click();
+    await page.locator('.gaia-live-prefecture-picker [data-live-poi-step="1"]').click();
     await expectCity("sapporo");
     assert.match(await page.locator('.gaia-live-exhibit-readout [data-live-poi-step="-1"]').getAttribute("aria-label"), /47 沖縄県/u);
-    await page.locator('.gaia-live-city-picker [data-live-poi-step="-1"]').click();
+    await page.locator('.gaia-live-prefecture-picker [data-live-poi-step="-1"]').click();
     await expectCity("naha");
     await page.evaluate(() => GaiaLiveExhibits.resumePoiAutoplay());
     await expectCity("sapporo");

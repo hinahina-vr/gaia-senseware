@@ -19,6 +19,7 @@
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";
+  const HEARD_STORAGE_KEY = "gaia-senseware-heard-tracks:v1";
   const NAVIGATION_STATE_KEY = "gaia-senseware-bgm-navigation:v1";
   const NAVIGATION_STATE_MAX_AGE_MS = 30_000;
   const TRACK_SWITCH_FADE_MULTIPLIER = 2;
@@ -64,6 +65,66 @@
   let playbackRequested = false;
 
   const effectiveVolume = () => preferredVolume * mixGain;
+
+  // Scene visits, preloads and completion flags are not proof of listening.
+  // Only advancing, audible media can add a recording to this local archive.
+  const canonicalTrack = (track) => track === "sensorfield" ? "moonbook" : track;
+  const parseHeardTracks = (value) => {
+    try {
+      const saved = JSON.parse(value || "null");
+      if (saved?.version !== 1 || !Array.isArray(saved.tracks)) return [];
+      return saved.tracks.filter(track => typeof track === "string" && Object.hasOwn(TRACKS, track)).map(canonicalTrack);
+    } catch { return []; }
+  };
+  const readHeardTracks = () => {
+    try { return parseHeardTracks(window.localStorage.getItem(HEARD_STORAGE_KEY)); }
+    catch { return []; }
+  };
+  let heardTracks = new Set(readHeardTracks());
+  let listeningEpoch = 0;
+  const hasTrackBeenHeard = (track) => heardTracks.has(canonicalTrack(track));
+  const getHeardTracks = () => [...heardTracks];
+  const emitHeardTracks = () => window.dispatchEvent(new CustomEvent("gaia:audio-heard", {
+    detail: { tracks: getHeardTracks() },
+  }));
+  const rememberHeardTrack = (track) => {
+    if (hasTrackBeenHeard(track)) return;
+    // Merge other tabs' progress before writing. Storage is optional.
+    readHeardTracks().forEach(key => heardTracks.add(key));
+    heardTracks.add(canonicalTrack(track));
+    try {
+      window.localStorage.setItem(HEARD_STORAGE_KEY, JSON.stringify({ version: 1, tracks: getHeardTracks() }));
+    } catch { /* Keep this session's verified listening when storage is blocked. */ }
+    emitHeardTracks();
+  };
+  window.addEventListener("storage", event => {
+    if (event.key !== HEARD_STORAGE_KEY && event.key !== null) return;
+    if (event.storageArea && event.storageArea !== window.localStorage) return;
+    heardTracks = new Set(parseHeardTracks(event.newValue));
+    emitHeardTracks();
+  });
+  const observeListening = (player, track) => {
+    let lastTime = null;
+    let audibleSeconds = 0;
+    let epoch = listeningEpoch;
+    const reset = () => { lastTime = null; audibleSeconds = 0; };
+    ["playing", "pause", "seeking", "seeked", "emptied", "waiting"].forEach(name => player.addEventListener(name, reset));
+    player.addEventListener("timeupdate", () => {
+      if (hasTrackBeenHeard(track)) return;
+      if (epoch !== listeningEpoch) { reset(); epoch = listeningEpoch; }
+      const audible = player === audio && !player.paused && !player.seeking && !player.muted
+        && !muted && effectiveVolume() > 0 && player.volume > 0
+        && (!analysisSources.has(player) || analysisContext?.state === "running");
+      if (!audible) { reset(); return; }
+      const time = player.currentTime;
+      const delta = lastTime === null ? 0 : time - lastTime;
+      lastTime = time;
+      // Ignore seeking and discontinuities, not just successful play() calls.
+      if (delta > 0 && delta < 2) audibleSeconds += delta;
+      else audibleSeconds = 0;
+      if (audibleSeconds >= 0.35) rememberHeardTrack(track);
+    });
+  };
 
   const connectAnalysisSource = (player) => {
     if (!analysisContext || !analysisNode || analysisSources.has(player)) return;
@@ -218,6 +279,7 @@
     // Keep one player alive while the visitor moves between every mode.
     player.loop = true;
     player.volume = 0;
+    observeListening(player, track);
     player.load();
     players.set(track, player);
     connectAnalysisSource(player);
@@ -286,6 +348,7 @@
   const setVolume = (value, fadeSeconds = 0.22) => {
     const nextVolume = Math.max(0, Math.min(1, Number(value) || 0));
     preferredVolume = nextVolume;
+    if (preferredVolume === 0) listeningEpoch += 1;
     try {
       window.localStorage.setItem(VOLUME_STORAGE_KEY, String(preferredVolume));
     } catch {
@@ -329,6 +392,7 @@
   const setMuted = async (nextMuted) => {
     muted = Boolean(nextMuted);
     if (muted) {
+      listeningEpoch += 1;
       playbackRequested = false;
       if (audio && !audio.paused) fadeTo(0, 0.24, emitState);
       emitState();
@@ -583,6 +647,7 @@
 
   const setMixGain = (value, fadeSeconds = 0.35) => {
     mixGain = Math.max(0, Math.min(1, Number(value) || 0));
+    if (mixGain === 0) listeningEpoch += 1;
     if (audio && !audio.paused && !muted) fadeTo(effectiveVolume(), fadeSeconds, emitState);
     else emitState();
     return mixGain;
@@ -636,6 +701,8 @@
     toggleMuted,
     getState,
     getPlaybackState,
+    getHeardTracks,
+    hasTrackBeenHeard,
     enableAnalysis,
     getAnalysisFrame,
     seek,

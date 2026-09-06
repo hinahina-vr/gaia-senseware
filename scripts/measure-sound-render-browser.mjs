@@ -1,4 +1,5 @@
 import path from "node:path";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import { pathToFileURL } from "node:url";
 
 const [playwrightRoot, chromePath, routeUrl = "http://127.0.0.1:4173/?soundMorph=1#sound"] = process.argv.slice(2);
@@ -25,6 +26,7 @@ try {
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await seedHeardSoundArchive(page);
     await page.goto(routeUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => document.querySelector("#sound-layer")?.classList.contains("is-open"), null, { timeout: 75_000 });
     await page.waitForFunction(() => document.querySelector("#sound-visualizer")?.dataset.renderer === "webgl", null, { timeout: 15_000 });

@@ -1,5 +1,6 @@
 import { OBSERVATION_CITIES } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
-import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-exhibit-catalog-1";
+import { EARTH_CENTER_LONGITUDE, earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
+import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-exhibit-order-1";
 import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
@@ -17,7 +18,7 @@ const DESKTOP_START_ZOOM = 6;
 const MOBILE_START_ZOOM = 4.25;
 const ESTAT_WEBGL_HUB_COUNT = 8;
 const ESTAT_WEBGL_ANCHOR_TRANSITION_MS = 1400;
-const PREFECTURE_REGION_EXHIBITS = new Set(["19", "20", "21", "22", "23", "24", "25"]);
+const PREFECTURE_REGION_EXHIBITS = new Set(["averageTemperature", "summerHigh", "winterLow", "relativeHumidity", "sunshineHours", "precipitation", "rainyDays"]);
 const LONG_TERM_TEMPERATURE_KEYS = new Set(["averageTemperature", "summerHigh", "winterLow"]);
 const ESTAT_WEBGL_THEMES = Object.freeze({
   migration: Object.freeze({ index: 0, visual: "tidal-migration-currents" }),
@@ -173,7 +174,7 @@ const topologyGeometryPolygons = (geometry, decodedArcs) => {
 };
 
 const worldPoint = ([longitude, latitude]) => [
-  wrapLongitude(longitude - 138) + 180,
+  earthLongitudeToMapX(longitude),
   90 - latitude,
 ];
 
@@ -300,7 +301,6 @@ const loadSeries = () => {
   return seriesPromise;
 };
 
-const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
 const projection = () => {
   const rect = canvas?.getBoundingClientRect();
   if (!rect?.width || !rect?.height) return null;
@@ -308,7 +308,7 @@ const projection = () => {
   const zoom = Math.max(1, Number(overlay?.dataset.earthZoom) || 1);
   const offsetX = Number(overlay?.dataset.earthOffsetX) || 0;
   const offsetY = Number(overlay?.dataset.earthOffsetY) || 0;
-  const scale = Math.max(rect.width / 360, rect.height / 180) * zoom;
+  const scale = earthBaseScale(rect) * zoom;
   return {
     rect,
     scale,
@@ -320,14 +320,14 @@ const projection = () => {
 const project = (location, currentProjection) => {
   const { rect, scale, originX, originY } = currentProjection;
   return [
-    originX + (wrapLongitude(location.lon - 138) + 180) * scale,
+    originX + earthLongitudeToMapX(location.lon) * scale,
     originY + (90 - location.lat) * scale,
     rect,
   ];
 };
 
 const currentExhibit = () => EXHIBITS[activeIndex] || EXHIBITS[0];
-const usesPrefectureRegions = (exhibit = currentExhibit()) => PREFECTURE_REGION_EXHIBITS.has(exhibit.number);
+const usesPrefectureRegions = (exhibit = currentExhibit()) => PREFECTURE_REGION_EXHIBITS.has(exhibit.key);
 const currentPeriod = () => periodsFor()[periodIndex] || ESTAT_PREFECTURE_SNAPSHOT.period;
 const valuesFor = (index = periodIndex) => {
   const exhibit = currentExhibit();
@@ -773,7 +773,7 @@ const renderAtmosphereWebgl = (timestamp, currentProjection, values) => {
   atmosphereGl.uniform1i(atmosphereWebglLocations.oceanLand, 0);
   atmosphereGl.uniform1f(atmosphereWebglLocations.oceanReady, atmosphereOceanMask.ready ? 1 : 0);
   atmosphereGl.uniform4f(atmosphereWebglLocations.geoView,
-    -42 - currentProjection.originX / currentProjection.scale,
+    EARTH_CENTER_LONGITUDE - 180 - currentProjection.originX / currentProjection.scale,
     90 + currentProjection.originY / currentProjection.scale,
     rect.width / currentProjection.scale, rect.height / currentProjection.scale);
   atmosphereGl.drawArrays(atmosphereGl.TRIANGLES, 0, 6);
@@ -1296,8 +1296,10 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-number]").textContent = exhibit.number;
   readout.querySelector("[data-estat-title]").textContent = exhibit.shortTitle;
   readout.querySelector("[data-map-bank-toggle]").setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}。展示一覧を開く`);
-  readout.querySelector("[data-estat-place]").textContent = `${city.code} ${city.prefecture}`;
-  readout.querySelector("[data-estat-city]").textContent = temperatureStation?.station || city.city;
+  const placeName = temperatureStation?.station || city.city;
+  // Tokyo is the source's location name, not a municipality called Tokyo City.
+  const municipality = placeName === "東京" || placeName.endsWith("市") ? placeName : `${placeName}市`;
+  readout.querySelector("[data-estat-place]").textContent = `${city.prefecture}（${municipality}）`;
   readout.querySelector("[data-estat-value-label]").textContent = exhibit.valueLabel;
   readout.querySelector("[data-estat-unit]").textContent = exhibit.unit;
   animatePrimaryValue(value, exhibit);
@@ -1353,11 +1355,11 @@ const renderReadout = () => {
   }).join("");
   readout.querySelector("[data-estat-step='-1']")?.setAttribute(
     "aria-label",
-    activeIndex === 0 ? "前の展示、15へ" : "前の日本統計展示",
+    `前の展示、${String(Number(exhibit.number) - 1).padStart(2, "0")}へ`,
   );
   readout.querySelector("[data-estat-step='1']")?.setAttribute(
     "aria-label",
-    activeIndex === EXHIBITS.length - 1 ? "次の展示、26へ" : "次の日本統計展示",
+    `次の展示、${String(Number(exhibit.number) % 30 + 1).padStart(2, "0")}へ`,
   );
   markerButtons.forEach((button, index) => {
     const markerValue = values[index];
@@ -1512,16 +1514,9 @@ const setMonth = setPeriod;
 const stepExhibit = (direction) => {
   const step = Math.sign(Number(direction) || 0);
   if (!step || activeIndex < 0) return;
-  const earthButtons = globalThis.GaiaMapCategories.buttons().filter((button) => Number(button.textContent.trim()) <= 15);
-  if (step > 0 && activeIndex === EXHIBITS.length - 1) {
-    document.querySelector(".map-mode-bank .map-mode-button[data-firms-exhibit]")?.click();
-    return;
-  }
-  if (step < 0 && activeIndex === 0) {
-    earthButtons.at(-1)?.click();
-    return;
-  }
-  void select(activeIndex + step);
+  const route = globalThis.GaiaMapCategories.buttons();
+  const current = route.indexOf(buttons[activeIndex]);
+  if (current >= 0) route[(current + step + route.length) % route.length]?.click();
 };
 
 const select = async (index) => {
@@ -1530,7 +1525,7 @@ const select = async (index) => {
   globalThis.GaiaFirmsExhibit?.deactivate?.();
   if (activeIndex < 0) {
     savedHeading = {
-      number: document.querySelector("#japan-mode-number")?.textContent || "01",
+      number: document.querySelector("#japan-mode-number")?.textContent || "06",
       title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
     };
   }
@@ -1693,9 +1688,9 @@ const mount = () => {
   readout.setAttribute("aria-live", "polite");
   readout.innerHTML = `
     <div class="gaia-estat-chapter">
-      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="16 人の潮目。展示一覧を開く"><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
+      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="21 人の潮目。展示一覧を開く"><b data-estat-number>21</b><strong data-estat-title>人の潮目</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
     </div>
-    <div class="gaia-estat-place"><strong data-estat-place>01 北海道</strong><small data-estat-city>札幌</small></div>
+    <div class="gaia-estat-place"><p>都道府県</p><strong data-estat-place>北海道（札幌市）</strong></div>
     <div class="gaia-estat-primary"><p data-estat-value-label>転入超過</p><strong data-estat-value>—</strong><span data-estat-unit>人</span></div>
     <div class="gaia-estat-timeline">
       <header><span>PERIOD / <b data-estat-period>2026 / 06</b></span><strong data-estat-frequency>e-Stat · 月次</strong></header>
@@ -1712,52 +1707,7 @@ const mount = () => {
   decorateMapActions(readout.querySelector(".gaia-estat-actions"), readout.querySelector("[data-estat-source-action]"), readout.querySelector("[data-estat-analysis]"));
   layer.append(readout);
 
-  // Reuse the canonical 01–30 picker, including its descriptions and routing.
-  // This title used to be a non-interactive span above a hidden command dock.
-  const selectorToggle = readout.querySelector("[data-map-bank-toggle]");
-  const pickerToggle = () => document.querySelector(innerWidth <= 900 ? "#map-mobile-bank-toggle" : ".map-dock-bank-trigger");
-  const pickerIsOpen = () => pickerToggle()?.getAttribute("aria-expanded") === "true";
-  const syncPicker = () => {
-    selectorToggle.setAttribute("aria-expanded", String(pickerIsOpen()));
-    selectorToggle.setAttribute("aria-controls", innerWidth <= 900 ? bank.id : "map-dock-bank-popover");
-    if (activeIndex < 0 || !pickerIsOpen()) return;
-    const height = readout.getBoundingClientRect().height;
-    layer.style.setProperty("--estat-readout-height", `${height}px`);
-    const lift = Math.max(18, bank.getBoundingClientRect().top - readout.getBoundingClientRect().top + 12);
-    layer.style.setProperty("--estat-picker-lift", `${lift}px`);
-  };
-  if (!bank.id) bank.id = "map-exhibit-bank";
-  selectorToggle.addEventListener("click", () => {
-    pickerToggle()?.click();
-    syncPicker();
-    if (!pickerIsOpen()) selectorToggle.focus({ preventScroll: true });
-  });
-  for (const toggle of document.querySelectorAll(".map-dock-bank-trigger, #map-mobile-bank-toggle")) {
-    new MutationObserver(syncPicker).observe(toggle, { attributes: true, attributeFilter: ["aria-expanded"] });
-  }
-  new ResizeObserver(syncPicker).observe(readout);
-  addEventListener("resize", syncPicker, { passive: true });
-  document.addEventListener("pointerdown", (event) => {
-    if (activeIndex < 0 || innerWidth > 900 || !pickerIsOpen()) return;
-    if (bank.contains(event.target) || selectorToggle.contains(event.target)) return;
-    pickerToggle()?.click();
-  }, { capture: true });
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || activeIndex < 0 || !pickerIsOpen()) return;
-    // Close the picker before the map's Escape handler can leave the exhibit.
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    pickerToggle()?.click();
-    selectorToggle.focus({ preventScroll: true });
-  }, { capture: true });
-  bank.addEventListener("click", (event) => {
-    if (!event.target.closest?.(".map-mode-button") || selectorToggle.getAttribute("aria-expanded") !== "true") return;
-    requestAnimationFrame(() => {
-      const focusTarget = activeIndex >= 0 ? selectorToggle : document.querySelector("#japan-close");
-      focusTarget?.focus({ preventScroll: true });
-    });
-  }, { capture: true });
-
+  // [data-map-bank-toggle] is handled by the shared exhibition picker.
   buttons = EXHIBITS.map((exhibit, index) => {
     const button = document.createElement("button");
     button.className = "map-mode-button";

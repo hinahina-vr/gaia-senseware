@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 
 const base = process.argv[2] || "http://127.0.0.1:4397";
 const output = path.resolve(process.argv[3] || "artifacts/sound-recording-dissolve");
@@ -90,6 +91,7 @@ try {
     });
     page.on("pageerror", error => report.errors.push({ case: test.name, message: error.message }));
     page.on("response", response => { if (response.status() === 404) report.missing.push(response.url()); });
+    await seedHeardSoundArchive(page);
     await page.goto(`${base}/#sound`);
     await page.waitForFunction(() => document.querySelector("#gaia-boot")?.hidden);
     await waitTrack(page, "opening");
@@ -169,6 +171,7 @@ try {
   // Actual clicks, native audio playback, controls during the dissolve, and
   // slow artwork arriving after another selection/close are separate checks.
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await seedHeardSoundArchive(page);
   page.on("pageerror", error => report.errors.push({ case: "interaction", message: error.message }));
   await page.addInitScript(() => {
     globalThis.__qaPlayers = [];

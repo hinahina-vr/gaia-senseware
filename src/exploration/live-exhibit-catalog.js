@@ -2,7 +2,7 @@
 export const LIVE_EXHIBITS = Object.freeze([
   Object.freeze({
     id: "wind-field",
-    number: "10",
+    number: "15",
     title: "風脈 — WIND FIELD",
     shortTitle: "風脈",
     question: "風の強さは、場所によってどう違う？",
@@ -20,7 +20,7 @@ export const LIVE_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "carbon-pulse",
-    number: "11",
+    number: "16",
     title: "炭素の呼吸 — CARBON PULSE",
     shortTitle: "炭素の呼吸",
     question: "CO₂濃度の予測値は、場所でどう違う？",
@@ -38,7 +38,7 @@ export const LIVE_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "rain-chorus",
-    number: "12",
+    number: "17",
     title: "雨の記憶 — RAIN CHORUS",
     shortTitle: "雨の記憶",
     question: "雨の量は、場所によってどう違う？",
@@ -56,7 +56,7 @@ export const LIVE_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "temperature-field",
-    number: "13",
+    number: "18",
     title: "熱の輪郭 — TEMPERATURE FIELD",
     shortTitle: "熱の輪郭",
     question: "気温は、場所によってどう違う？",
@@ -74,7 +74,7 @@ export const LIVE_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "cloud-drift",
-    number: "14",
+    number: "19",
     title: "雲の層 — CLOUD DRIFT",
     shortTitle: "雲の層",
     question: "雲の多さは、場所によってどう違う？",
@@ -92,7 +92,7 @@ export const LIVE_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "pm25-haze",
-    number: "15",
+    number: "20",
     title: "微粒子の霞 — PM2.5 HAZE",
     shortTitle: "微粒子の霞",
     question: "PM2.5の予測値は、場所でどう違う？",

@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -11,6 +12,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
 try {
   const page = await browser.newPage({ viewport: { width: 2048, height: 1114 } });
   page.on("pageerror", error => report.errors.push(error.message));
+  await seedHeardSoundArchive(page);
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#sound-layer.is-open");
   await page.waitForTimeout(600);

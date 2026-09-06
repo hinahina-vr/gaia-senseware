@@ -36,9 +36,9 @@ try {
       const mode = (await fetch("/data/gaia-signals.json").then(r => r.json())).modes.find(m => m.id === "blue-circulation");
       const rect = document.querySelector("#japan-map").getBoundingClientRect();
       const d = document.querySelector("#japan-overlay").dataset;
-      const scale = Math.max(rect.width / 360, rect.height / 180) * +d.earthZoom;
+      const scale = (rect.width >= 901 ? rect.width / 360 : Math.max(rect.width / 360, rect.height / 180)) * +d.earthZoom;
       for (const row of mode.signals.currents) {
-        const x = rect.left + (rect.width - 360 * scale) / 2 + +d.earthOffsetX + ((row.lon - 138 + 540) % 360) * scale;
+        const x = rect.left + (rect.width - 360 * scale) / 2 + +d.earthOffsetX + ((row.lon - Number(d.earthCenterLongitude) + 540) % 360) * scale;
         const y = rect.top + (rect.height - 180 * scale) / 2 + +d.earthOffsetY + (90 - row.lat) * scale;
         if (x < 60 || x > innerWidth - 100 || y < 270 || y > innerHeight - 180) continue;
         if (document.elementFromPoint(x, y)?.closest("#japan-map")) return { x, y };

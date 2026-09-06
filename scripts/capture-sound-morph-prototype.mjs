@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import path from "node:path";
 import { chromium } from "playwright-core";
 
@@ -11,6 +12,7 @@ const assert = (ok, message) => { if (!ok) throw new Error(message); };
 try {
   const page = await browser.newPage({ viewport: { width: 2048, height: 1114 }, deviceScaleFactor: 1 });
   page.on("pageerror", e => report.errors.push(e.message));
+  await seedHeardSoundArchive(page);
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#sound-layer")?.classList.contains("is-open"));
   await page.waitForFunction(() => document.querySelector(".sound-character-scene")?.complete);

@@ -4456,6 +4456,7 @@
       control.disabled = true;
       dataSkip.disabled = true;
       shell.dataset.phase = "departing";
+      if (!motionReduced()) window.GaiaEndingGlitch?.randomize(layer);
       shell.classList.add("is-departing");
       layer.classList.add("is-true-end-transitioning");
       layer.dataset.trueEndTransitionPhase = "covering";
@@ -4495,6 +4496,7 @@
           return;
         }
         veil.classList.remove("is-covering", "is-holding");
+        window.GaiaEndingGlitch?.randomize(veil);
         veil.classList.add("is-revealing");
         staffRollFinaleTimer = window.setTimeout(() => {
           staffRollFinaleTimer = 0;

@@ -67,8 +67,8 @@ try {
     const project = async point => page.evaluate(p => {
       const r = document.querySelector("#japan-map").getBoundingClientRect();
       const d = document.querySelector("#japan-overlay").dataset;
-      const scale = Math.max(r.width / 360, r.height / 180) * (Number(d.earthZoom) || 1);
-      return { x: r.left + (r.width - scale * 360) / 2 + +d.earthOffsetX + ((p.lon - 138 + 540) % 360) * scale,
+      const scale = (r.width >= 901 ? r.width / 360 : Math.max(r.width / 360, r.height / 180)) * (Number(d.earthZoom) || 1);
+      return { x: r.left + (r.width - scale * 360) / 2 + +d.earthOffsetX + ((p.lon - Number(d.earthCenterLongitude) + 540) % 360) * scale,
         y: r.top + (r.height - scale * 180) / 2 + +d.earthOffsetY + (90 - p.lat) * scale };
     }, point);
     const click = async point => {

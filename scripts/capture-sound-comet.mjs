@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -8,6 +9,7 @@ await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 3840, height: 2088 } });
+  await seedHeardSoundArchive(page);
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#sound-layer.is-open");
   const recording = await page.evaluate(async () => {

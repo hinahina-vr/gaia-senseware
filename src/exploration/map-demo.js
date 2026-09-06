@@ -8,7 +8,7 @@ function mountMapDemo() {
   button.type = "button";
   button.setAttribute("aria-pressed", "false");
   button.setAttribute("aria-describedby", "gaia-map-demo-help");
-  button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path data-demo-play d="m8 5 11 7-11 7Z"/><path data-demo-stop d="M7 7h10v10H7Z"/></svg><span data-demo-label>デモ</span><span data-demo-seconds aria-hidden="true">25</span><i aria-hidden="true"></i>`;
+  button.innerHTML = `<span data-demo-fill aria-hidden="true"></span><span data-demo-icon aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path data-demo-play d="m9 6 9 6-9 6Z"/><path data-demo-stop d="M7 7h10v10H7Z"/></svg></span><span data-demo-label>デモ</span>`;
   const help = document.createElement("span");
   help.id = "gaia-map-demo-help";
   help.className = "map-demo-visually-hidden";
@@ -21,7 +21,29 @@ function mountMapDemo() {
   else layer.append(button);
   layer.append(help, status);
   const label = button.querySelector("[data-demo-label]");
-  const seconds = button.querySelector("[data-demo-seconds]");
+  const fill = button.querySelector("[data-demo-fill]");
+  let progressAnimation = null;
+  let previousProgress = { active: false, paused: false, remainingMs: 0 };
+  const syncProgress = state => {
+    const remaining = Math.max(0, Math.min(1, state.remainingMs / state.intervalMs));
+    button.style.setProperty("--demo-remaining", String(remaining));
+    const restart = state.active && (!previousProgress.active || previousProgress.paused !== state.paused
+      || state.remainingMs > previousProgress.remainingMs + 1);
+    if (!state.active || state.paused || restart) {
+      progressAnimation?.cancel();
+      progressAnimation = null;
+      const clipPath = `inset(0 ${(1 - remaining) * 100}% 0 0)`;
+      fill.style.clipPath = clipPath;
+      if (state.active && !state.paused) {
+        // Reveal the unchanged gradient through a shrinking window. The right
+        // edge travels left; the text and colors themselves never get squashed.
+        progressAnimation = fill.animate([{ clipPath }, { clipPath: "inset(0 100% 0 0)" }], {
+          duration: state.remainingMs, easing: "linear", fill: "forwards",
+        });
+      }
+    }
+    previousProgress = { active: state.active, paused: state.paused, remainingMs: state.remainingMs };
+  };
   const buttons = () => globalThis.GaiaMapCategories?.buttons(layer).filter(item => !item.disabled) || [];
   const number = item => Number(item.textContent.trim());
   const isAvailable = () => !layer.hidden && layer.getAttribute("aria-hidden") === "false"
@@ -44,10 +66,9 @@ function mountMapDemo() {
       layer.classList.toggle("is-demo-running", state.active);
       button.setAttribute("aria-pressed", String(state.active));
       button.setAttribute("aria-label", state.active ? "デモを停止" : "デモを開始");
-      button.title = state.active ? "デモ再生中 — 操作すると停止" : "全30展示を25秒ごとに自動で切り替える";
+      button.title = state.active ? "デモ再生中 — 操作すると停止" : "展示をゆっくり巡る";
       label.textContent = state.active ? "デモ中" : "デモ";
-      seconds.textContent = String(Math.ceil(state.remainingMs / 1000));
-      button.style.setProperty("--demo-remaining", String(state.remainingMs / state.intervalMs));
+      syncProgress(state);
       if (state.active !== wasActive) {
         status.textContent = state.active ? "デモを開始しました。25秒ごとに次の展示へ進みます。操作すると停止します。"
           : state.reason === "error" ? "展示を切り替えられなかったためデモを停止しました。" : "デモを停止しました。";
@@ -65,7 +86,7 @@ function mountMapDemo() {
     return controller.start();
   };
   button.setAttribute("aria-label", "デモを開始");
-  button.title = "全30展示を25秒ごとに自動で切り替える";
+  button.title = "展示をゆっくり巡る";
   button.addEventListener("click", () => {
     if (controller.getState().active) controller.stop();
     else start();

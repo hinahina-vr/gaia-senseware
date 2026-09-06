@@ -223,7 +223,7 @@ body.map-grid-desktop .map-grid-intro #japan-title {
   top: 50%;
   right: 0;
   left: 0;
-  height: clamp(132px, 19vh, 220px);
+  height: clamp(180px, 24vh, 260px);
   border-block: 1px solid rgba(139, 222, 255, 0.14);
   content: "";
   background:
@@ -234,11 +234,20 @@ body.map-grid-desktop .map-grid-intro #japan-title {
   transform-origin: left center;
 }
 
-.map-title-transition span {
+.map-title-transition-copy {
   box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  gap: clamp(12px, 1.8vh, 22px);
+  width: 100%;
+  min-width: 0;
+  padding-inline: clamp(24px, 6vw, 120px);
+  text-align: center;
+}
+
+#map-title-transition-text {
   min-width: 0;
   max-width: 100%;
-  padding-inline: clamp(24px, 6vw, 120px);
   color: #dcf8ff;
   font: 500 clamp(34px, 4.8vw, 72px)/1.15 var(--font-ja);
   letter-spacing: -0.035em;
@@ -249,9 +258,23 @@ body.map-grid-desktop .map-grid-intro #japan-title {
   white-space: nowrap;
 }
 
+#map-title-transition-subtitle {
+  max-width: 100%;
+  margin: 0;
+  color: #bedde7;
+  font: 400 clamp(14px, 1.25vw, 22px)/1.65 var(--font-ja);
+  letter-spacing: 0.08em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 18px rgba(123, 220, 255, 0.2);
+}
+
 @media (max-width: 720px) {
-  .map-title-transition span {
+  .map-title-transition-copy {
     padding-inline: 20px;
+  }
+
+  #map-title-transition-text {
     font-size: clamp(24px, 6vw, 34px);
     white-space: normal;
     text-wrap: balance;
@@ -260,44 +283,63 @@ body.map-grid-desktop .map-grid-intro #japan-title {
 
 .japan-layer.is-map-title-transitioning .map-title-transition {
   visibility: visible;
-  animation: map-title-separator-crossfade 1500ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+  animation: map-title-separator-crossfade var(--map-title-duration, 2500ms) cubic-bezier(0.2, 0.72, 0.22, 1) both;
 }
 
 .japan-layer.is-map-title-transitioning .map-title-transition::before {
-  animation: map-title-separator-band 1500ms cubic-bezier(0.16, 0.84, 0.22, 1) both;
+  animation: map-title-separator-band var(--map-title-duration, 2500ms) cubic-bezier(0.16, 0.84, 0.22, 1) both;
 }
 
-.japan-layer.is-map-title-transitioning .map-title-transition span {
-  animation: map-title-separator-type 1500ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+.japan-layer.is-map-title-transitioning .map-title-transition-copy {
+  animation: map-title-separator-copy-fade var(--map-title-duration, 2500ms) linear both;
+}
+
+.japan-layer.is-map-title-transitioning #map-title-transition-text {
+  animation: map-title-separator-type var(--map-title-duration, 2500ms) cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.japan-layer.is-map-title-transitioning #map-title-transition-subtitle {
+  animation: map-title-separator-subtitle var(--map-title-duration, 2500ms) ease-out both;
 }
 
 .japan-layer.is-map-title-transitioning #japan-title {
-  animation: map-title-return-home 1500ms ease both;
+  animation: map-title-return-home var(--map-title-duration, 2500ms) ease both;
 }
 
 @keyframes map-title-separator-crossfade {
   0% { opacity: 0; background: rgba(0, 5, 12, 0); }
-  6%, 84% { opacity: 1; background: rgba(0, 5, 12, 0.28); }
+  3.6%, 96% { opacity: 1; background: rgba(0, 5, 12, 0.28); }
   100% { opacity: 0; background: rgba(0, 5, 12, 0); }
 }
 
 @keyframes map-title-separator-band {
-  0% { opacity: 0; transform: translateY(-50%) scaleX(0); filter: none; }
-  4% { opacity: 1; }
-  40%, 84% { opacity: 1; transform: translateY(-50%) scaleX(1); filter: none; }
-  100% { opacity: 0; transform: translateY(-50%) scaleX(1); filter: blur(2px); }
+  0% { opacity: 0; transform: translate(0, -50%) scaleX(0); }
+  2.4% { opacity: 1; }
+  24% { opacity: 1; transform: translate(0, -50%) scaleX(1); }
+  90.4% {
+    opacity: 1;
+    transform: translate(0, -50%) scaleX(1);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.4);
+  }
+  100% { opacity: 1; transform: translate(102%, -50%) scaleX(1); }
+}
+
+@keyframes map-title-separator-copy-fade {
+  /* Keep both lines in place. The band starts 40ms before this fade ends. */
+  0%, 82% { opacity: 1; }
+  92%, 100% { opacity: 0; }
 }
 
 @keyframes map-title-separator-type {
   /* The band reaches the right edge at 600ms; only then does the type bloom. */
-  0%, 40% {
+  0%, 24% {
     opacity: 0;
     transform: translateY(8px) scale(0.99);
     filter: blur(7px);
     color: #dcf8ff;
     text-shadow: 0 0 0 rgba(220, 248, 255, 0);
   }
-  49% {
+  29.4% {
     opacity: 1;
     transform: translateY(0) scale(1.025);
     filter: blur(0.4px);
@@ -308,51 +350,49 @@ body.map-grid-desktop .map-grid-intro #japan-title {
       0 0 38px rgba(123, 220, 255, 0.88),
       0 0 82px rgba(65, 163, 255, 0.55);
   }
-  62%, 82% {
+  37.2%, 100% {
     opacity: 1;
     transform: none;
     filter: none;
     color: #dcf8ff;
     text-shadow: 0 0 22px rgba(123, 220, 255, 0.46), 0 0 58px rgba(65, 143, 255, 0.24);
   }
-  100% {
-    opacity: 0;
-    transform: translateY(-6px) scale(1.007);
-    filter: blur(3px);
-    color: #dcf8ff;
-    text-shadow: 0 0 30px rgba(123, 220, 255, 0.22), 0 0 68px rgba(65, 143, 255, 0.1);
-  }
+}
+
+@keyframes map-title-separator-subtitle {
+  0%, 29.4% { opacity: 0; }
+  37.2%, 100% { opacity: 1; }
 }
 
 @keyframes map-title-return-home {
-  0%, 82% { opacity: 0; }
-  96%, 100% { opacity: 1; }
+  0%, 90.4% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes map-title-separator-still {
   0%, 100% { opacity: 0; }
-  15%, 75% { opacity: 1; }
+  6%, 94% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .japan-layer.is-map-title-transitioning .map-title-transition,
   .japan-layer.is-map-title-transitioning .map-title-transition::before,
-  .japan-layer.is-map-title-transitioning .map-title-transition span,
-  .japan-layer.is-map-title-transitioning #japan-title {
-    animation-duration: 460ms !important;
-  }
-
-  .japan-layer.is-map-title-transitioning .map-title-transition::before,
-  .japan-layer.is-map-title-transitioning .map-title-transition span {
+  .japan-layer.is-map-title-transitioning #map-title-transition-text,
+  .japan-layer.is-map-title-transitioning #map-title-transition-subtitle {
     animation-name: map-title-separator-still;
     filter: none !important;
+  }
+
+  .japan-layer.is-map-title-transitioning .map-title-transition-copy,
+  .japan-layer.is-map-title-transitioning #japan-title {
+    animation: none;
   }
 
   .japan-layer.is-map-title-transitioning .map-title-transition::before {
     transform: translateY(-50%) !important;
   }
 
-  .japan-layer.is-map-title-transitioning .map-title-transition span {
+  .japan-layer.is-map-title-transitioning #map-title-transition-text {
     transform: none !important;
   }
 }
@@ -2460,11 +2500,67 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 }
 
+/* Keep the CO₂ value and both provenance counts readable in the fixed dock. */
+#japan-layer .signal-console-heading:has(.has-long-metric-label) { gap: 0; }
+#japan-layer .signal-console-heading:has(.has-long-metric-label) > [data-signal-act] { display: none; }
+@media (min-width: 901px) {
+  body.map-grid-desktop #japan-layer .signal-console-heading:has(.has-long-metric-label) {
+    align-self: start;
+    box-sizing: border-box;
+    height: var(--map-chapter-height);
+    min-height: 0;
+  }
+}
+#japan-layer .signal-console-heading > strong.has-breakdown {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+#japan-layer .signal-value-primary {
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+#japan-layer .signal-value-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 6px;
+  min-width: 0;
+  color: #b8d1da;
+  font: 500 clamp(10px, .52vw, 12px)/1.3 Consolas, "Courier New", monospace;
+  letter-spacing: 0;
+}
+#japan-layer .signal-value-details > span {
+  flex: 0 0 auto;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+@media (min-width: 901px) {
+  body.map-grid-desktop #japan-layer .signal-console-heading:has(.has-breakdown) {
+    align-self: start;
+    box-sizing: border-box;
+    height: var(--map-chapter-height);
+    min-height: 0;
+    gap: 4px;
+  }
+}
+@media (max-width: 720px) {
+  #japan-layer .signal-value-details { justify-content: flex-end; }
+}
+@media (min-width: 901px) and (max-width: 1280px) {
+  body.map-grid-desktop #japan-layer .signal-console-heading:has(.has-breakdown) { padding-inline: 6px; }
+  body.map-grid-desktop #japan-layer .signal-console-heading:has(.has-breakdown) > [data-signal-act] { letter-spacing: .05em; }
+}
+
 /* All map chapters remain reachable from the live planetary instrument deck. */
 .gaia-live-deck-chapter,
 .gaia-live-deck-location,
 .gaia-live-deck-question,
-.gaia-live-deck-modes,
 .gaia-live-deck-actions {
   min-width: 0;
   box-sizing: border-box;
@@ -3036,7 +3132,9 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
 @media (min-width: 901px) {
   body.map-grid-desktop .japan-layer.is-live-exhibit .map-command-dock {
-    display: none !important;
+    /* The dock is replaced visually, but its shared picker remains mounted. */
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
@@ -3280,115 +3378,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     background: transparent;
   }
 
-  .gaia-live-deck-modes {
-    position: absolute;
-    z-index: 7;
-    bottom: calc(100% + 12px);
-    left: clamp(86px, 7vw, 132px);
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-    gap: clamp(14px, 1.2vw, 24px);
-    align-items: start;
-    width: min(900px, calc(100% - clamp(172px, 14vw, 264px)));
-    padding: 14px 18px;
-    border: 1px solid rgba(var(--map-accent-rgb), 0.4);
-    border-radius: 10px;
-    background:
-      radial-gradient(circle at 50% 120%, rgba(var(--map-accent-rgb), 0.15), transparent 54%),
-      linear-gradient(145deg, rgba(4, 27, 40, 0.985), rgba(1, 13, 25, 0.985));
-    box-shadow: 0 -20px 58px rgba(0, 5, 15, 0.52), inset 0 1px rgba(230, 255, 255, 0.06);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateY(9px) scale(0.985);
-    transform-origin: bottom left;
-    transition: opacity 170ms ease, transform 230ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 230ms;
-    backdrop-filter: blur(18px) saturate(1.2);
-  }
-
-  .gaia-live-deck-mode-group {
-    display: grid;
-    min-width: 0;
-    gap: 10px;
-  }
-
-  .gaia-live-deck-mode-group > p {
-    margin: 0;
-    color: rgba(var(--map-accent-rgb), 0.68);
-    font: 700 7px/1 Consolas, monospace;
-    letter-spacing: 0.14em;
-  }
-
-  .gaia-live-deck-mode-group > div {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(7px, 0.55vw, 12px);
-    align-items: start;
-  }
-
-  .gaia-live-deck-mode-group[data-live-deck-group="archive"] > div {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .gaia-live-exhibit-readout.is-chapter-selector-open .gaia-live-deck-modes {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translateY(0) scale(1);
-    transition: opacity 170ms ease, transform 230ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
-  }
-
-  .gaia-live-deck-modes button {
-    position: relative;
-    display: grid;
-    gap: 6px;
-    min-width: 0;
-    padding: 2px;
-    place-items: center;
-    border: 0;
-    color: rgba(206, 232, 236, 0.42);
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .gaia-live-deck-modes button small {
-    color: inherit;
-    font: 700 6px/1 Consolas, monospace;
-    letter-spacing: 0.12em;
-  }
-
-  .gaia-live-deck-modes button i {
-    display: grid;
-    width: clamp(28px, 2.1vw, 42px);
-    aspect-ratio: 1;
-    place-items: center;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    font: 600 clamp(10px, 0.64vw, 14px)/1 Consolas, monospace;
-    font-style: normal;
-    background: rgba(1, 12, 20, 0.58);
-  }
-
-  .gaia-live-deck-modes button strong {
-    overflow: hidden;
-    max-width: 100%;
-    color: inherit;
-    font: 560 clamp(7px, 0.48vw, 10px)/1.15 var(--font-ja);
-    letter-spacing: 0.02em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .gaia-live-deck-modes button:is(:hover, :focus-visible, [aria-current="true"]) {
-    color: rgb(var(--map-accent-rgb));
-    outline: 0;
-    text-shadow: 0 0 12px rgba(var(--map-accent-rgb), 0.66);
-  }
-
-  .gaia-live-deck-modes button[aria-current="true"] i {
-    background: radial-gradient(circle, rgba(var(--map-accent-rgb), 0.3), rgba(1, 12, 20, 0.78) 70%);
-    box-shadow: 0 0 22px rgba(var(--map-accent-rgb), 0.42), inset 0 0 16px rgba(var(--map-accent-rgb), 0.18);
-  }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions.gaia-live-exhibit-actions {
     display: grid;
@@ -3505,9 +3494,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     font-size: clamp(30px, 3.5vw, 42px);
   }
 
-  .gaia-live-deck-modes button strong {
-    display: none;
-  }
 }
 
 @media (max-width: 900px) {
@@ -3570,8 +3556,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .gaia-live-exhibit-readout > :is(
     .gaia-live-deck-chapter,
-    .gaia-live-deck-location,
-    .gaia-live-deck-modes
+    .gaia-live-deck-location
   ) {
     display: none !important;
   }

@@ -13,23 +13,23 @@ const sample = JSON.parse(fs.readFileSync("data/firms-active-fire-snapshot.json"
 const ovation = fs.readFileSync("data/ovation-aurora-snapshot.json", "utf8");
 // Separate points around the visible centre make nearest-neighbour errors obvious.
 const firePoints = [
-  { ...sample.points[0], id: "poi-fire-a", lon: 130, lat: 6, frp: 42.5, confidence: 96 },
-  { ...sample.points[1], id: "poi-fire-b", lon: 148, lat: -10, frp: 18.3, confidence: 81 },
-  { ...sample.points[2], id: "poi-fire-future", lon: 140, lat: 24, frp: 83.1, confidence: 88 },
+  { ...sample.points[0], id: "poi-fire-a", lon: 138, lat: 6, frp: 42.5, confidence: 96 },
+  { ...sample.points[1], id: "poi-fire-b", lon: 156, lat: -10, frp: 18.3, confidence: 81 },
+  { ...sample.points[2], id: "poi-fire-future", lon: 148, lat: 24, frp: 83.1, confidence: 88 },
 ];
 const fire = { ...sample, points: firePoints, summary: { ...sample.summary, displayed: 3, detected: 3, maxFrp: 83.1 } };
 const quakePoints = [
-  { id: "poi-quake-a", lon: 130, lat: 6, magnitude: 5.3, depth: 12, label: "TEST EPICENTRE ALPHA" },
-  { id: "poi-quake-b", lon: 148, lat: -10, magnitude: 3.1, depth: 47, label: "TEST EPICENTRE BETA" },
+  { id: "poi-quake-a", lon: 138, lat: 6, magnitude: 5.3, depth: 12, label: "TEST EPICENTRE ALPHA" },
+  { id: "poi-quake-b", lon: 156, lat: -10, magnitude: 3.1, depth: 47, label: "TEST EPICENTRE BETA" },
 ];
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 
 const project = (page, point) => page.evaluate(({ lon, lat }) => {
   const rect = document.querySelector("#japan-map").getBoundingClientRect();
   const data = document.querySelector("#japan-overlay").dataset;
-  const scale = Math.max(rect.width / 360, rect.height / 180) * (Number(data.earthZoom) || 1);
+  const scale = (rect.width >= 901 ? rect.width / 360 : Math.max(rect.width / 360, rect.height / 180)) * (Number(data.earthZoom) || 1);
   return {
-    x: rect.left + (rect.width - 360 * scale) / 2 + (Number(data.earthOffsetX) || 0) + ((lon - 138 + 540) % 360) * scale,
+    x: rect.left + (rect.width - 360 * scale) / 2 + (Number(data.earthOffsetX) || 0) + ((lon - Number(data.earthCenterLongitude) + 540) % 360) * scale,
     y: rect.top + (rect.height - 180 * scale) / 2 + (Number(data.earthOffsetY) || 0) + (90 - lat) * scale,
   };
 }, point);
@@ -37,7 +37,7 @@ const project = (page, point) => page.evaluate(({ lon, lat }) => {
 try {
   // CSS-pixel radius, visible-only, nearest-only, and no world-copy/empty-area fallback.
   const view = { rect: { left: 10, top: 20, width: 720, height: 360 }, originX: 0, originY: 0, scale: 2 };
-  const points = [{ lon: 138, lat: 0 }, { lon: 143, lat: 0 }];
+  const points = [{ lon: 150, lat: 0 }, { lon: 155, lat: 0 }];
   assert.equal(pickProjectedPoi(points, view, 380, 200).index, 1);
   assert.equal(pickProjectedPoi(points, view, 370, 200, "mouse", () => false), null);
   assert.equal(pickProjectedPoi(points, view, 345, 200, "mouse"), null);
@@ -74,6 +74,7 @@ try {
     page.on("pageerror", error => report.errors.push(error.message));
     await page.goto(base + "/?preview=live-poi#world", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && globalThis.GaiaPlanetSignals && globalThis.GaiaFirmsExhibit);
+    await page.evaluate(() => globalThis.GaiaMapObservationAdapter.waitSignalsReady());
     await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
     const card = page.locator("#japan-poi-card");
     const checkFocus = async (state) => {
@@ -157,7 +158,7 @@ try {
         point = Array.from({ length: 240 }, (_, index) => ({
           lat: Math.asin(-1 + 2 * (index + .5) / 240) * 180 / Math.PI,
           lon: ((index * 137.50776405003785 + 180) % 360) - 180,
-        })).find(p => p.lon > 120 && p.lon < 155 && p.lat > -10 && p.lat < 12);
+        })).find(p => p.lon > 126 && p.lon < 156 && p.lat > -10 && p.lat < 12);
       }
       if (!mobile) {
         const at = await project(page, point);
@@ -210,7 +211,9 @@ try {
         await tap(point);
         await checkCard(number, /TEST EPICENTRE ALPHA/);
         await page.locator("#japan-poi-close").click();
-        await page.evaluate(() => globalThis.GaiaMapObservationAdapter.zoomEarthBy(1.35));
+        // Keep the test POI inside the zoom anchor; the world overview no
+        // longer places East Asia in the centre of a desktop viewport.
+        await page.evaluate(point => globalThis.GaiaMapObservationAdapter.focusEarthLocation({ ...point, zoom: 1.35, durationMs: 0 }), point);
         await page.waitForTimeout(300);
         await tap(point);
         await checkCard(number, /TEST EPICENTRE ALPHA/);
@@ -226,7 +229,7 @@ try {
     await activate(29);
     await tap({ lon: 138, lat: 36 }); // Empty map: never show a base-mode POI.
     assert.equal(await card.isVisible(), false);
-    await page.locator("#japan-mode-list .map-mode-button").first().evaluate(el => el.click());
+    await page.locator('.map-mode-bank [data-map-standard-index="0"]').evaluate(el => el.click());
     assert.equal(await card.isVisible(), false);
     assert.equal(await page.evaluate(() => globalThis.GaiaPlanetSignals.getState().active), false);
     await context.close();

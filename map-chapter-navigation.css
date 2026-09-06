@@ -110,7 +110,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-selector-toggle, .gaia-estat-selector-toggle, .gaia-firms-chapter > div > span, .gaia-planet-chapter > div > strong) {
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-selector-toggle, .gaia-estat-selector-toggle, .gaia-firms-chapter > div > span, .gaia-planet-chapter-title) {
     flex: 1;
     min-width: 0;
   }
@@ -133,7 +133,7 @@
     margin: 0;
     padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: 0;
     font: 300 28px/1 Georgia, serif;
     transform: translateY(-50%);
     touch-action: manipulation;
@@ -170,7 +170,51 @@
   }
 }
 
-/* Live maps use the same question-first reading format as MAP 01–09. */
+/* The chapter controls show only their chevrons, on both sides and at every
+   viewport size. Keep their existing click targets and a text-only focus cue. */
+#japan-layer :is([data-map-dock-mode-step], [data-live-deck-step], [data-estat-step], [data-firms-step], [data-planet-step]) {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#japan-layer :is([data-map-dock-mode-step], [data-live-deck-step], [data-estat-step], [data-firms-step], [data-planet-step]):focus-visible {
+  color: #f0fffd;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+
+/* The featured chapters keep a quiet title-sized entry to the full list. */
+#japan-layer .gaia-featured-selector-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  width: auto;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+#japan-layer .gaia-featured-selector-toggle > span { min-width: 0; }
+#japan-layer .gaia-featured-selector-toggle:is(:hover, [aria-expanded="true"]) strong { text-decoration: underline; text-underline-offset: 5px; }
+#japan-layer .gaia-featured-selector-toggle:focus-visible { outline: 1px solid #bce9e7; outline-offset: 3px; }
+@media (min-width: 721px) and (max-width: 900px) {
+  /* The featured entry's legend starts below the tablet title, not behind it. */
+  #japan-layer :is(.gaia-firms-legend, .gaia-planet-signals-legend) {
+    top: max(196px, calc(env(safe-area-inset-top) + 180px));
+  }
+}
+
+/* Live maps use the same question-first reading format as the original chapters. */
 #japan-layer .gaia-live-deck-question {
   position: relative;
   z-index: 1;

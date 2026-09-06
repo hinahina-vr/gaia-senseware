@@ -10,8 +10,41 @@ fs.mkdirSync(output, { recursive: true });
 const report = { status: "running", checks: [], errors: [] };
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 let activePage;
-const labels = ["気候と炭素", "空と天気", "水と森", "人口と暮らし", "資源とエネルギー", "大地の活動"];
-const numbers = [[1, 11, 19, 20, 21], [10, 13, 14, 15, 22, 23, 27, 28, 30], [2, 3, 7, 12, 24, 25], [9, 16, 17, 18], [4, 5, 8], [6, 26, 29]];
+const labels = ["惑星のいま", "気候と炭素", "空と天気", "水と森", "人口と暮らし", "資源とエネルギー", "大地の活動"];
+const numbers = [[1, 2, 3, 4, 5], [6, 16, 24, 25, 26], [15, 18, 19, 20, 27, 28], [7, 8, 12, 17, 29, 30], [14, 21, 22, 23], [9, 10, 13], [11]];
+const inspectPalette = async (page, width, selected) => {
+  await page.locator("#japan-close").focus();
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(320);
+  const palette = await page.locator(".map-mode-bank .map-mode-button").evaluateAll(buttons => buttons.map(button => {
+    const style = getComputedStyle(button);
+    const mark = getComputedStyle(button, "::after");
+    return { number: Number(button.textContent.trim()), current: button.getAttribute("aria-current") === "true",
+      disabled: button.disabled, color: style.color, border: style.borderTopColor, background: style.backgroundColor,
+      image: style.backgroundImage, shadow: style.boxShadow, animation: style.animationName,
+      mark: mark.content, markBorder: mark.borderRightWidth };
+  }));
+  assert.equal(palette.length, 30);
+  assert.deepEqual(palette.filter(button => button.current).map(button => button.number), [selected]);
+  for (const button of palette) {
+    assert.equal(button.disabled, false, `${width}/${button.number}: selectable button disabled`);
+    assert.equal(button.image, "none", `${width}/${button.number}: provider gradient leaked into picker`);
+    assert.equal(button.animation, "none", `${width}/${button.number}: old colored selection flash remains`);
+    if (button.current) {
+      assert.equal(button.color, "rgb(240, 255, 253)");
+      assert.equal(button.border, "rgb(131, 222, 214)");
+      assert.equal(button.background, "rgb(22, 69, 80)");
+      assert.equal(button.mark, '\"\"');
+      assert.equal(parseFloat(button.markBorder) > 0, true);
+    } else {
+      assert.equal(button.color, "rgb(197, 213, 223)", `${width}/${button.number}: inconsistent idle text`);
+      assert.equal(button.border, "rgb(66, 92, 107)", `${width}/${button.number}: inconsistent idle border`);
+      assert.equal(button.background, "rgb(16, 35, 46)", `${width}/${button.number}: inconsistent idle surface`);
+      assert.equal(button.shadow, "none");
+    }
+  }
+  (report.palettes ||= []).push({ width, selected, buttons: palette });
+};
 try {
   for (const width of widths) {
     const height = width === 3840 ? 2160 : width < 600 ? 844 : 900;
@@ -40,7 +73,9 @@ try {
     page.on("pageerror", error => report.errors.push(`${width}: ${error.message}`));
     await page.goto(`${base}/?preview=subject-categories#world`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true"
-      && document.querySelectorAll(".map-category-group .map-mode-button").length === 30);
+      && document.querySelectorAll(".map-category-group .map-mode-button").length === 30
+      && document.querySelector("#japan-mode-number").textContent === "01"
+      && document.querySelector("#japan-layer").classList.contains("is-firms-exhibit"));
     await page.evaluate(() => GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
     const settled = () => page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
     const select = async number => {
@@ -50,7 +85,8 @@ try {
       await page.waitForTimeout(120);
     };
     const openMainPicker = async () => {
-      if (width > 900) await page.locator(".map-dock-bank-trigger").click();
+      if (await page.locator(".gaia-featured-selector-toggle:visible").count()) await page.locator(".gaia-featured-selector-toggle:visible").click();
+      else if (width > 900) await page.locator(".map-dock-bank-trigger").click();
       else if (await page.locator("#map-mobile-bank-toggle").isVisible()) await page.locator("#map-mobile-bank-toggle").click();
       await page.waitForTimeout(250);
     };
@@ -70,6 +106,9 @@ try {
       const button = page.locator(".map-category-group .map-mode-button").filter({ hasText: new RegExp(`^${String(number).padStart(2, "0")}$`) });
       await button.scrollIntoViewIfNeeded();
       await button.focus();
+      const focus = await button.evaluate(button => ({ style: getComputedStyle(button).outlineStyle, width: getComputedStyle(button).outlineWidth }));
+      assert.equal(focus.style, "solid", `${width}/${number}: keyboard focus missing`);
+      assert.equal(focus.width, "2px");
       await page.waitForFunction(number => document.querySelector("#map-mode-preview").getAttribute("aria-hidden") === "false"
         && document.querySelector("#map-mode-preview-number").textContent.startsWith(`${String(number).padStart(2, "0")} /`), number);
       const scan = await button.evaluate(button => {
@@ -82,7 +121,7 @@ try {
       assert(scan.bankOverflow <= 2, `${width}/${number}: picker horizontal overflow ${scan.bankOverflow}`);
       assert.equal(await page.locator("#japan-mode-number").textContent(), "01");
     }
-    await page.locator("#japan-close").focus();
+    await inspectPalette(page, width, 1);
     await page.locator(".map-mode-groups").evaluate(node => { node.scrollTop = 0; });
     if (width < 900) await page.locator(".map-mode-bank").evaluate(node => { node.scrollTop = 0; });
     await page.waitForTimeout(250);
@@ -94,11 +133,11 @@ try {
     assert.equal(await page.locator("#japan-mode-number").textContent(), "12");
     for (let number = 1; number <= 30; number++) {
       await select(number);
-      const chapter = number <= 9 || (number <= 15 && width <= 900) ? ".map-dock-bank-copy" : number <= 15 ? ".gaia-live-deck-chapter"
-        : number <= 25 ? ".gaia-estat-chapter" : number === 26 ? ".gaia-firms-chapter" : ".gaia-planet-chapter";
+      const chapter = number === 1 ? ".gaia-firms-chapter" : number <= 5 ? ".gaia-planet-chapter"
+        : number <= 14 || (number <= 20 && width <= 900) ? ".map-dock-bank-copy" : number <= 20 ? ".gaia-live-deck-chapter" : ".gaia-estat-chapter";
       const scan = await page.locator(chapter).evaluate(chapter => {
         const label = chapter.querySelector("[data-map-category-label]");
-        const title = chapter.querySelector("[data-map-dock-title], [data-live-deck-title], [data-estat-title], div > span > strong, [data-planet-title]");
+        const title = chapter.querySelector("[data-map-dock-title], [data-live-deck-title], [data-estat-title], .gaia-featured-selector-toggle strong, [data-planet-title]");
         const range = document.createRange(); range.selectNodeContents(label);
         const r = range.getBoundingClientRect();
         const style = getComputedStyle(label);
@@ -122,7 +161,7 @@ try {
       assert.equal(scan.size >= 10, true); assert.match(scan.font, /Yu Gothic UI/);
       assert.deepEqual(scan.labels, [String(number).padStart(2, "0")], `${width}/${number}: stale active buttons`);
       assert.deepEqual(scan.currentGroups, [category]);
-      assert.equal(scan.liveActive, number >= 10 && number <= 15, `${width}/${number}: live renderer deactivation`);
+      assert.equal(scan.liveActive, number >= 15 && number <= 20, `${width}/${number}: live renderer deactivation`);
       assert(scan.glyphs.x >= 0 && scan.glyphs.right <= width + 1 && scan.glyphs.y > height / 2 && scan.glyphs.bottom <= height,
         `${width}/${number}: category missing from lower strip ${JSON.stringify(scan.glyphs)}`);
       assert(scan.glyphs.width <= scan.rect.width + 1, `${width}/${number}: truncated category`);
@@ -132,22 +171,23 @@ try {
         if (width > 900) await page.screenshot({ path: path.join(output, `${width}-${number}-band.png`), clip: { x: 0, y: height - 110, width, height: 110 } });
       }
     }
+    await inspectPalette(page, width, 30);
     if (width > 900) {
-      await select(12);
+      await select(17);
       await page.locator(".gaia-live-deck-selector-toggle").click();
       await page.waitForTimeout(300);
-      const quick = await page.locator(".gaia-live-deck-mode-group").evaluateAll(groups => groups.map(group => ({
-        label: group.querySelector("p").textContent,
-        numbers: [...group.querySelectorAll("button small")].map(node => Number(node.textContent)),
+      const quick = await page.locator(".map-category-group").evaluateAll(groups => groups.map(group => ({
+        label: group.querySelector("strong").textContent,
+        numbers: [...group.querySelectorAll(".map-mode-button")].map(node => Number(node.textContent)),
       })));
       assert.deepEqual(quick.map(group => group.label), labels);
-      assert.deepEqual(quick.map(group => group.numbers), numbers.map(group => group.filter(number => number <= 15)));
+      assert.deepEqual(quick.map(group => group.numbers), numbers);
       await page.screenshot({ path: path.join(output, `${width}-quick-picker.jpg`), type: "jpeg", quality: 90 });
-      await page.locator('[data-live-deck-kind="standard"][data-live-deck-index="3"]').click();
-      await page.waitForFunction(() => document.querySelector("#japan-mode-number").textContent === "04"
+      await page.locator('.map-mode-bank [data-map-standard-index="3"]').click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number").textContent === "09"
         && !document.querySelector("#japan-layer").classList.contains("is-live-exhibit"));
     }
-    console.log(`PASS ${width}: six categories, 30 unique/hittable previews, all 30 lower-strip labels, renderer cleanup, numeric sorting`);
+    console.log(`PASS ${width}: featured five first, seven categories, 30 unique/hittable previews, all 30 lower-strip labels, renderer cleanup, numeric sorting`);
     await context.close();
   }
   assert.deepEqual(report.errors, []); report.status = "passed";

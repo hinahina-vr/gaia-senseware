@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -30,6 +31,7 @@ for (const viewport of [
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
 
+  await seedHeardSoundArchive(page);
   await page.goto(routeUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => {
     const layer = document.querySelector("#sound-layer");

@@ -626,7 +626,7 @@ try {
   assert.equal(liveCanvas.error, 0, "live WebGL field reported an error");
   assert.equal(await directPage.locator("[data-live-deck-source]").isVisible(), true, "live exhibit lost the visible SOURCE action");
   await directPage.locator(".gaia-live-deck-selector-toggle").click();
-  await directPage.locator('[data-live-deck-kind="standard"][data-live-deck-index="0"]').click();
+  await directPage.locator('.map-mode-bank [data-map-standard-index="0"]').click();
   await directPage.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit"));
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
   assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined", "retired generated sound runtime loaded after leaving live exhibits");

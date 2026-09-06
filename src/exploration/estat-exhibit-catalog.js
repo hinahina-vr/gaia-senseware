@@ -7,7 +7,7 @@ const JMA_TEMPERATURE_HISTORY_SOURCE = "https://www.data.jma.go.jp/stats/etrn/in
 export const ESTAT_EXHIBITS = Object.freeze([
   Object.freeze({
     id: "estat-migration",
-    number: "16",
+    number: "21",
     shortTitle: "人の潮目",
     title: "人の潮目 — PEOPLE TIDE",
     key: "migration",
@@ -23,7 +23,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-lodging",
-    number: "17",
+    number: "22",
     shortTitle: "旅の灯",
     title: "旅の灯 — STAYING LIGHTS",
     key: "lodging",
@@ -39,7 +39,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-housing",
-    number: "18",
+    number: "23",
     shortTitle: "住まいの芽吹き",
     title: "住まいの芽吹き — NEW HOMES",
     key: "housing",
@@ -55,7 +55,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-average-temperature",
-    number: "19",
+    number: "24",
     shortTitle: "空の体温",
     title: "空の体温 — ANNUAL TEMPERATURE",
     key: "averageTemperature",
@@ -76,7 +76,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-summer-high",
-    number: "20",
+    number: "25",
     shortTitle: "日最高気温の年平均",
     title: "日最高気温の年平均 — ANNUAL MEAN DAILY HIGH",
     key: "summerHigh",
@@ -97,7 +97,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-winter-low",
-    number: "21",
+    number: "26",
     shortTitle: "日最低気温の年平均",
     title: "日最低気温の年平均 — ANNUAL MEAN DAILY LOW",
     key: "winterLow",
@@ -118,7 +118,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-relative-humidity",
-    number: "22",
+    number: "27",
     shortTitle: "湿りの膜",
     title: "湿りの膜 — HUMID AIR",
     key: "relativeHumidity",
@@ -136,7 +136,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-sunshine-hours",
-    number: "23",
+    number: "28",
     shortTitle: "光の貯金",
     title: "光の貯金 — SUNSHINE HOURS",
     key: "sunshineHours",
@@ -155,7 +155,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-precipitation",
-    number: "24",
+    number: "29",
     shortTitle: "雨の器",
     title: "雨の器 — ANNUAL RAINFALL",
     key: "precipitation",
@@ -174,7 +174,7 @@ export const ESTAT_EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "estat-rainy-days",
-    number: "25",
+    number: "30",
     shortTitle: "雨の足跡",
     title: "雨の足跡 — RAINY DAYS",
     key: "rainyDays",

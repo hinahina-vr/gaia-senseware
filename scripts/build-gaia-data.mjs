@@ -905,7 +905,7 @@ const modes = [
     { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
     "再生可能電力は、どの国でどれくらい使われているでしょう。",
     [
-      source({ id: "worldbank-renewable", organisation: "World Bank", title: "Renewable electricity output (% of total)", url: "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS", period: "latest available by country", unit: "%", resolution: `${renewableRows.length} country values`, transformation: "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。スライダーは比率の低い国から高い国へ移動します。", caveat: "COUNTRY VALUE。国によって最新年が異なります。", rows: renewableRows }),
+      source({ id: "worldbank-renewable", organisation: "World Bank", title: "Renewable electricity output (% of total)", url: "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS", period: "latest available by country", unit: "%", resolution: `${renewableRows.length} country values`, transformation: "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。自動再生とスライダーは発電割合の高い国から低い国へ移動します。", caveat: "COUNTRY VALUE。国によって最新年が異なります。", rows: renewableRows }),
       source({ id: "nasa-power-renewable", organisation: "NASA POWER", title: "Solar and wind climatology / global stratified sample", url: URLS.power, period: "climatology", unit: "kWh/m²/day, m/s", resolution: `選択${powerRows.length}地点`, transformation: "選択国の代表地点について、日射を黄色い円、風を緑の矢印で補足表示します。", caveat: "31地点の自然条件だけを見た値です。現在の再生可能電力比率を説明する因果モデルや導入可能量ではありません。", rows: powerRows }),
     ],
     { potential: powerRows, current: renewableRows },

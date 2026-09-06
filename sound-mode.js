@@ -306,6 +306,37 @@
   };
 
   const getAudio = () => window.GaiaOpeningAudio;
+  const archiveTrack = (track) => track === "sensorfield" ? "moonbook" : track;
+  const isUnlocked = (track) => Boolean(tracks[track] && getAudio()?.hasTrackBeenHeard?.(track));
+  const activeUnlockedTrack = (state) => {
+    const track = archiveTrack(state?.track);
+    return isUnlocked(track) ? track : "";
+  };
+  const lockedPresentation = {
+    number: "SOUND ARCHIVE / LOCKED",
+    title: "まだ聴いていない曲",
+    description: "作品の中で聴いた曲が、ここに記録されます。未解放の曲名・説明・ジャケットは表示されません。",
+  };
+  const syncTrackLocks = () => {
+    trackButtons.forEach((button, index) => {
+      const track = button.dataset.soundTrack;
+      const unlocked = isUnlocked(track);
+      const title = unlocked ? tracks[track].title : "未解放";
+      button.disabled = !unlocked;
+      button.setAttribute("aria-disabled", String(!unlocked));
+      button.classList.toggle("is-locked", !unlocked);
+      button.setAttribute("aria-label", `${String(index + 1).padStart(2, "0")} ${title}`);
+      button.querySelector(".sound-track-name").textContent = title;
+      button.querySelector(".sound-track-meta").textContent = unlocked
+        ? tracks[track].number.split(" / ")[1] : "作品の中で聴くと解放";
+      const canvas = button.querySelector(".sound-track-morph-canvas");
+      canvas.dataset.title = unlocked ? title : "";
+      const glyph = button.querySelector(".sound-track-constellation");
+      glyph.dataset.asterism = unlocked ? constellationPatterns[index].name : "locked";
+    });
+    const count = trackKeys.filter(isUnlocked).length;
+    layer.querySelector(".sound-track-heading strong").textContent = `${count} / ${trackKeys.length} UNLOCKED`;
+  };
 
   const nowPlaying = layer.querySelector(".sound-now-playing");
   const playerPanel = layer.querySelector(".sound-player");
@@ -321,7 +352,7 @@
   let presentationWidth = 0;
 
   const prepareCover = (track) => {
-    if (!tracks[track]) return Promise.resolve(null);
+    if (!isUnlocked(track)) return Promise.resolve(null);
     if (coverCache.has(track)) return coverCache.get(track);
     const artwork = new Image();
     artwork.decoding = "async";
@@ -365,7 +396,7 @@
     probe.style.width = `${width}px`;
     playerPanel.append(probe);
     let height = 0;
-    for (const metadata of Object.values(tracks)) {
+    for (const metadata of [lockedPresentation, ...trackKeys.filter(isUnlocked).map(track => tracks[track])]) {
       probe.querySelector("p:first-of-type").textContent = metadata.number;
       probe.querySelector("h3").textContent = metadata.title;
       probe.querySelector("p:last-child").textContent = metadata.description;
@@ -401,7 +432,7 @@
     void prepareCover(track).then(artwork => {
       // A late image decode must never restore an older selection or reopen a
       // closed player. Only the latest audible track owns this presentation.
-      if (generation !== presentationGeneration || !isOpen) return;
+      if (generation !== presentationGeneration || !isOpen || !isUnlocked(track)) return;
       let echo = null;
       if (animate && !presentationMotion.matches) {
         echo = makePresentationCopy();
@@ -438,6 +469,22 @@
       playerPanel.classList.add("is-track-changing");
       presentationTimer = window.setTimeout(clearPresentationMotion, 1800);
     });
+  };
+
+  const presentLocked = () => {
+    if (requestedPresentation === "locked") return;
+    requestedPresentation = "locked";
+    presentedTrack = "";
+    presentationGeneration += 1;
+    clearPresentationMotion();
+    const hasRecordings = trackKeys.some(isUnlocked);
+    trackNumber.textContent = hasRecordings ? "SOUND ARCHIVE" : lockedPresentation.number;
+    trackTitle.textContent = hasRecordings ? "聴いた曲を選んでください" : lockedPresentation.title;
+    description.textContent = lockedPresentation.description;
+    coverImage.hidden = true;
+    coverImage.removeAttribute("src");
+    nowPlaying.removeAttribute("data-track");
+    nowPlaying.setAttribute("aria-busy", "false");
   };
 
   const createSoundVisualizer = (canvas) => {
@@ -1362,11 +1409,11 @@
   };
 
   const render = (state = getAudio()?.getPlaybackState?.(), updateInterface = true) => {
-    const activeTrack = tracks[state?.track] ? state.track : "opening";
+    const activeTrack = activeUnlockedTrack(state);
     const volumePercent = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
-    const trackDuration = state?.duration || 0;
-    const elapsed = state?.currentTime || 0;
-    const isPlaying = Boolean(state?.playing && !state?.muted);
+    const trackDuration = activeTrack ? state?.duration || 0 : 0;
+    const elapsed = activeTrack ? state?.currentTime || 0 : 0;
+    const isPlaying = Boolean(activeTrack && state?.playing && !state?.muted);
     const analysis = getAudio()?.getAnalysisFrame?.();
 
     visualizerState = {
@@ -1393,16 +1440,18 @@
     setAttribute(layer, "data-analysis", analysis?.active ? "live" : (analysis?.supported ? "ready" : "unavailable"));
     setAttribute(layer, "data-track", activeTrack);
     setAttribute(playButton, "aria-pressed", String(isPlaying));
-    setAttribute(playButton, "aria-label", isPlaying ? "一時停止する" : "再生する");
-    if (isOpen) presentTrack(activeTrack);
+    playButton.disabled = !activeTrack;
+    setAttribute(playButton, "aria-label", !activeTrack ? "解放済みの曲を選んでください" : isPlaying ? "一時停止する" : "再生する");
+    if (!activeTrack) presentLocked();
+    else if (isOpen) presentTrack(activeTrack);
     setText(currentTime, formatTime(elapsed));
     setText(duration, trackDuration > 0 ? formatTime(trackDuration) : "—:—");
     if (volume instanceof HTMLInputElement) volume.value = String(volumePercent);
     setText(volumeValue, `${volumePercent}%`);
 
+    if (progress instanceof HTMLInputElement) progress.disabled = trackDuration <= 0;
     if (!isScrubbing && progress instanceof HTMLInputElement) {
       progress.value = trackDuration > 0 ? String(Math.round((elapsed / trackDuration) * 1000)) : "0";
-      progress.disabled = trackDuration <= 0;
     }
 
     trackButtons.forEach((button) => {
@@ -1468,8 +1517,9 @@
   const togglePlayback = async () => {
     const api = getAudio();
     if (!api) return;
-    const analysisReady = api.enableAnalysis?.();
     const state = api.getState();
+    if (!activeUnlockedTrack(state)) return;
+    const analysisReady = api.enableAnalysis?.();
     if (state.playing && !state.muted) {
       await api.setMuted(true);
     } else {
@@ -1498,12 +1548,12 @@
   trackButtons.forEach((button) => {
     // Warm only the intended recording; keep twelve full-size backgrounds out
     // of the initial sound-mode load and out of the animation's critical path.
-    const warmCover = () => { if (isOpen) void prepareCover(button.dataset.soundTrack); };
+    const warmCover = () => { if (isOpen && !button.disabled) void prepareCover(button.dataset.soundTrack); };
     button.addEventListener("pointerenter", warmCover);
     button.addEventListener("focus", warmCover);
     button.addEventListener("click", async () => {
       const track = button.dataset.soundTrack;
-      if (!tracks[track]) return;
+      if (!isOpen || !isUnlocked(track)) return;
       warmCover();
       const api = getAudio();
       const analysisReady = api?.enableAnalysis?.();
@@ -1515,16 +1565,17 @@
     });
   });
 
-  progress?.addEventListener("pointerdown", () => { isScrubbing = true; });
+  progress?.addEventListener("pointerdown", () => { isScrubbing = !progress.disabled; });
   progress?.addEventListener("input", () => {
-    if (!(progress instanceof HTMLInputElement)) return;
+    if (!(progress instanceof HTMLInputElement) || progress.disabled) return;
     const state = getAudio()?.getPlaybackState?.();
     const previewTime = (Number(progress.value) / 1000) * (state?.duration || 0);
     if (currentTime) currentTime.textContent = formatTime(previewTime);
   });
   progress?.addEventListener("change", () => {
-    if (!(progress instanceof HTMLInputElement)) return;
+    if (!(progress instanceof HTMLInputElement) || progress.disabled) return;
     const state = getAudio()?.getPlaybackState?.();
+    if (!activeUnlockedTrack(state)) return;
     getAudio()?.seek?.((Number(progress.value) / 1000) * (state?.duration || 0));
     isScrubbing = false;
     render();
@@ -1538,6 +1589,15 @@
   });
 
   window.addEventListener("gaia:audio-state", () => render());
+  window.addEventListener("gaia:audio-heard", () => {
+    syncTrackLocks();
+    requestedPresentation = "";
+    presentationGeneration += 1;
+    clearPresentationMotion();
+    if (!isUnlocked(presentedTrack)) presentLocked();
+    render();
+    requestPresentationMeasure();
+  });
   document.addEventListener("keydown", (event) => {
     if (!isOpen) return;
     if (event.key === "Escape") {
@@ -1551,6 +1611,7 @@
     }
   });
 
+  syncTrackLocks();
   render();
   if (window.location.hash === "#sound") {
     open();

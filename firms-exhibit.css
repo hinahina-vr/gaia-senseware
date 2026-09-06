@@ -196,6 +196,7 @@
 .gaia-firms-chapter b { color: #ff803f; font: 800 clamp(26px, 1.3vw, 32px)/1 Consolas, monospace; }
 .gaia-firms-chapter strong { overflow: hidden; font: 650 clamp(21px, 1.1vw, 28px)/1.2 var(--font-ja); text-overflow: ellipsis; white-space: nowrap; }
 .gaia-firms-count > strong { display: flex; align-items: baseline; gap: 6px; }
+.gaia-firms-count > p { white-space: nowrap; }
 .gaia-firms-count > strong b { color: #fff; font: 700 clamp(27px, 1.55vw, 36px)/1 Consolas, monospace; }
 .gaia-firms-count > strong span { color: rgba(255, 227, 207, 0.8); font: 650 clamp(13px, 0.7vw, 17px)/1 var(--font-ja); }
 .gaia-firms-count > strong i { font-style: normal; }
@@ -204,9 +205,11 @@
 .gaia-firms-primary > p { grid-column: 1 / -1; }
 .gaia-firms-primary > strong { color: #fff6dd; font: 500 clamp(30px, 2.2vw, 47px)/0.94 Consolas, monospace; font-variant-numeric: tabular-nums; text-align: right; text-shadow: 0 0 25px rgba(255, 77, 25, 0.38); }
 .gaia-firms-primary > span { align-self: end; padding-bottom: 4px; color: rgba(255, 224, 197, 0.78); font: 650 clamp(15px, 0.85vw, 20px)/1 sans-serif; }
-.gaia-firms-timeline header { display: flex; justify-content: space-between; gap: 8px; }
+.gaia-firms-timeline { grid-template-columns: minmax(0, 1fr); }
+.gaia-firms-timeline header { display: grid; grid-template-columns: minmax(0, 1fr) max-content; min-width: 0; gap: 8px; }
 .gaia-firms-timeline header span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gaia-firms-timeline input { width: 100%; height: 18px; margin: 0; accent-color: #ff7031; cursor: pointer; }
+.gaia-firms-timeline header strong { white-space: nowrap; }
+.gaia-firms-timeline input { min-width: 0; width: 100%; height: 18px; margin: 0; accent-color: #ff7031; cursor: pointer; }
 .gaia-firms-timeline > button {
   justify-self: start;
   padding: 4px 9px;
@@ -217,8 +220,9 @@
   font: 650 10px/1 var(--font-ja);
   cursor: pointer;
 }
-.gaia-firms-quality { grid-template-columns: 1fr 1fr; gap: 8px; }
+.gaia-firms-quality { grid-template-columns: repeat(2, minmax(max-content, 1fr)); gap: 8px; }
 .gaia-firms-quality span { display: grid; gap: 8px; font-size: clamp(11px, 0.63vw, 15px); letter-spacing: 0.05em; }
+.gaia-firms-quality > span { white-space: nowrap; }
 .gaia-firms-quality strong { color: #fff; font: 700 clamp(18px, 1vw, 23px)/1.15 Consolas, var(--font-ja); letter-spacing: 0; text-transform: none; }
 .gaia-firms-copy { gap: 5px; }
 .gaia-firms-copy p { margin: 0; color: rgba(255, 240, 225, 0.85); font: 600 12px/1.52 var(--font-ja); }

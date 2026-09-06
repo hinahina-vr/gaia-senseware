@@ -33,6 +33,7 @@ import {
 } from "./statistics-lab-core.js";
 import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-statistical-categories-1";
 import { createStatisticsAi } from "./statistics-ai.js?v=gaia-observation-dialogue-1";
+import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-data-insights-1";
 
 const q = (selector) => document.querySelector(selector);
 const lab = q("#gaia-statistics-lab");
@@ -95,6 +96,7 @@ if (!lab || !openButton) {
     recordSortHeaders: [...document.querySelectorAll(".gaia-statistics-records thead th[data-record-sort]")],
     recordSortButtons: [...document.querySelectorAll(".gaia-statistics-records [data-record-sort-action]")],
     insights: q("#gaia-statistics-insights"),
+    findings: q("#gaia-statistics-findings"),
     detailPanels: [...document.querySelectorAll(".gaia-statistics-stage > details")],
     panelBackButtons: [...document.querySelectorAll(".gaia-statistics-panel-back")],
     viewTabs: [...document.querySelectorAll("[data-stat-view]")],
@@ -186,6 +188,7 @@ if (!lab || !openButton) {
     "rhythm-of-disaster": "Rhythm of Disaster / 地震の時間",
     "three-ecologies": "Three Ecologies / 生態・社会・文化",
     "earth-organ": "Earth Organ / 再生可能エネルギー",
+    "population-tide": "Population Tide / 人口のうねり",
     "estat-prefecture": "公的統計 / 47都道府県",
     "nasa-firms": "燃える惑星 / NASA FIRMS",
   };
@@ -195,8 +198,8 @@ if (!lab || !openButton) {
     "blue-circulation": "summary",
     "forest-cloud-engine": "summary",
     "pollination-protocol": "categorical",
-    "nothing-is-waste": "difference-ci",
-    "anthropocene-scar": "scatter",
+    "nothing-is-waste": "summary",
+    "anthropocene-scar": "summary",
     "rhythm-of-disaster": "discrete",
     "three-ecologies": "scatter",
     "earth-organ": "multiple",
@@ -230,7 +233,8 @@ if (!lab || !openButton) {
     renderToken: 0,
   };
 
-  const finite = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
+  const finite = (value) => value === null || value === undefined || value === "" || typeof value === "boolean"
+    ? null : Number.isFinite(Number(value)) ? Number(value) : null;
   const pad2 = (value) => String(value).padStart(2, "0");
   const format = (value, digits = 3) => {
     if (typeof value === "string") return value;
@@ -245,6 +249,31 @@ if (!lab || !openButton) {
     return left.map((row) => ({ ...row, ...(rightMap.get(row.id || row.iso3 || row.country || row.name) || {}) }));
   };
 
+  const buildAnnualDataset = (snapshot, modeId, position = 100) => {
+    const population = modeId === "population-tide";
+    const signals = snapshot.modes.find(mode => mode.id === modeId)?.signals || {};
+    const rows = signals[population ? "population" : "emissions"] || [];
+    const years = [...new Set(rows.map(row => row.year))].sort((a, b) => a - b);
+    // Match the map's year slots; missing country-years stay missing.
+    const progress = Math.max(0, Math.min(100, Number(position) || 0));
+    const year = years[Math.min(years.length - 1, Math.floor(progress / 100 * years.length))];
+    const metric = population ? "population" : "emissionsMtCo2";
+    const selected = rows.filter(row => row.year === year && Number.isFinite(row[metric]));
+    const urban = new Map((signals.nightLights || []).map(row => [row.id, row]));
+    const urbanYear = signals.nightLights?.[0]?.year;
+    const label = population ? "人口" : "化石燃料由来CO₂排出量";
+    return {
+      id: population ? "population" : "emissions-urban", modeId, defaultMethod: "summary",
+      title: `${year}年の${label}（${selected.length}国・地域）`, unit: population ? "人" : "Mt CO₂", yLabel: label,
+      xLabel: population ? "国・地域" : `都市化率（${urbanYear}年）`,
+      periodStart: String(year), periodEnd: String(year), provenance: ["SOURCE"],
+      rows: selected.map(row => ({ id: row.iso3 || row.id, label: row.countryJa || row.country || row.name,
+        value: row[metric], y: row[metric], year: row.year, provenance: "SOURCE",
+        ...(population ? {} : { x: urban.get(row.id)?.urbanPercent, urbanYear }),
+      })),
+    };
+  };
+
   const buildDatasets = (snapshot) => {
     const modes = new Map(snapshot.modes.map((mode) => [mode.id, mode]));
     const breathing = modes.get("breathing-earth")?.signals || {};
@@ -252,7 +281,6 @@ if (!lab || !openButton) {
     const forest = modes.get("forest-cloud-engine")?.signals || {};
     const pollination = modes.get("pollination-protocol")?.signals || {};
     const waste = modes.get("nothing-is-waste")?.signals || {};
-    const scar = modes.get("anthropocene-scar")?.signals || {};
     const disaster = modes.get("rhythm-of-disaster")?.signals || {};
     const ecologies = modes.get("three-ecologies")?.signals || {};
     const organ = modes.get("earth-organ")?.signals || {};
@@ -277,7 +305,6 @@ if (!lab || !openButton) {
     const gaps = sortedEvents.slice(1).map((row, index) => ({ id: row.id, label: row.date.toISOString().slice(0, 10), value: (row.date - sortedEvents[index].date) / 86_400_000, provenance: "DERIVED" }));
     const wasteRows = (waste.countryWaste || []).map((row) => ({ id: row.id, label: row.name, value: Number(row.recyclePercent), x: Number(row.lon), y: Number(row.recyclePercent), provenance: row.valueStatus === "SOURCE" ? "SOURCE" : "IMPUTED", ...row }));
     const forestUrban = (ecologies.pairedCountries || []).map((row) => ({ id: row.id, label: row.name, x: Number(row.forestPercent), y: Number(row.urbanPercent), value: Number(row.forestPercent), provenance: "SOURCE", ...row }));
-    const emissionsUrban = joinById(scar.emissions || [], scar.nightLights || []).map((row) => ({ id: row.id, label: row.name, x: Number(row.urbanPercent), y: Number(row.emissionsMtCo2e), value: Number(row.emissionsMtCo2e), provenance: "SOURCE", ...row }));
     const renewables = joinById(organ.current || [], organ.potential || []).map((row) => ({ id: row.id, label: row.name, x: Number(row.solarKwhM2Day), y: Number(row.renewablePercent), value: Number(row.renewablePercent), provenance: "SOURCE", ...row }));
     const culture = (ecologies.culture || []).map((row, index) => ({ id: String(index), label: row.name, category: row.category, group: row.region, value: index, provenance: "SOURCE", ...row }));
     const interactions = (pollination.interactions || []).map((row, index) => ({ id: `i${index}`, label: row.targetTaxon, category: row.interaction, group: row.sourceTaxon, value: index, provenance: "SOURCE", ...row }));
@@ -303,11 +330,12 @@ if (!lab || !openButton) {
       { id: "rainfall", modeId: "forest-cloud-engine", title: "31地点の平均降水量", rows: rainfall, unit: "mm/day", xLabel: "経度", yLabel: "降水量", provenance: ["SOURCE"] },
       { id: "pollination", modeId: "pollination-protocol", title: "送粉相互作用と記録方式", rows: [...interactions, ...occurrences], categoricalSets: [interactions, occurrences], unit: "件", provenance: ["SOURCE"] },
       { id: "waste", modeId: "nothing-is-waste", title: "31か国の再資源化率", rows: wasteRows, unit: "%", xLabel: "経度", yLabel: "再資源化率", provenance: ["SOURCE", "IMPUTED"] },
-      { id: "emissions-urban", modeId: "anthropocene-scar", title: "都市化率と温室効果ガス排出", rows: emissionsUrban, unit: "MtCO₂e", xLabel: "都市化率", yLabel: "排出量", provenance: ["SOURCE"] },
+      buildAnnualDataset(snapshot, "anthropocene-scar"),
       { id: "earthquakes", modeId: "rhythm-of-disaster", title: "M7以上地震の年別件数（2001–2025）", rows: yearly, gaps, unit: "件/年", xLabel: "年", yLabel: "発生件数", provenance: ["SOURCE", "DERIVED"] },
       { id: "forest-urban", modeId: "three-ecologies", title: "31か国の森林率と都市化率", rows: forestUrban, unit: "%", valueLabel: "森林率", xLabel: "森林率", yLabel: "都市化率", provenance: ["SOURCE"] },
       { id: "culture", modeId: "three-ecologies", title: "文化遺産カテゴリと地域", rows: culture, unit: "件", provenance: ["SOURCE"] },
       { id: "renewables", modeId: "earth-organ", title: "再生可能比率と自然条件", rows: renewables, unit: "%", xLabel: "太陽光ポテンシャル", yLabel: "再生可能比率", provenance: ["SOURCE"] },
+      buildAnnualDataset(snapshot, "population-tide"),
     ];
   };
 
@@ -1066,34 +1094,29 @@ if (!lab || !openButton) {
 
   const metricText = ([label, value, unit]) => `${label}: ${format(value)}${unit || ""}`;
   const renderTakeaway = (result) => {
-    const insight = result.insight;
-    const stats = result.kind === "summary" ? result.stats : null;
+    const dataset = currentDataset();
+    const insight = result.dataInsight || buildDataInsight({ result, dataset, rows: rowsFor(dataset), methodId: state.methodId, recordQuery: state.recordQuery });
+    result.dataInsight = insight;
     ui.takeawayEvidence.replaceChildren();
     ui.takeaway.dataset.state = insight ? "ready" : "empty";
     ui.takeawayHeadline.textContent = insight?.headline || "この条件では、まだ結論を表示できません。";
-    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = stats ? "この分布から" : "この分析から";
-    if (stats) ui.takeawayHeadline.textContent = stats.skewness > 0.5 ? "大きい値の側に、裾が伸びる。" : stats.skewness < -0.5 ? "小さい値の側に、裾が伸びる。" : "左右の偏りは、小さい。";
-    ui.takeawayBody.textContent = insight?.interpretation || insight?.meaning || "データや分析方法を変えて、別の見方を試してください。";
-    if (stats) ui.takeawayBody.textContent = `観測値の半分は${format(stats.q1, 2)}〜${format(stats.q3, 2)}${currentDataset().unit || ""}の間にあります。平均だけでは見えない広がりを、棒の高さと下の点で確かめられます。`;
-    ui.takeawayCaveat.textContent = insight?.limitations?.[0]
-      ? `注意：${insight.limitations[0]}`
-      : "注意：グラフだけで因果関係を判断せず、データの範囲と前提を確認してください。";
-    const evidence = stats ? [["平均", stats.mean, currentDataset().unit], ["中央値", stats.median, currentDataset().unit], ["観測範囲", `${format(stats.minimum, 2)}–${format(stats.maximum, 2)}`, currentDataset().unit]] : (insight?.evidence || []).slice(0, 3);
+    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = "データからみるインサイト";
+    ui.takeawayBody.textContent = insight.summary;
+    ui.takeawayCaveat.textContent = `注意：${insight.caveat}`;
+    const evidence = insight.evidence.slice(0, 3);
     evidence.forEach((metric) => {
       const button = document.createElement("button");
       button.type = "button";
       const label = document.createElement("span");
       label.textContent = metric[0] === "n" ? "観測数" : metric[0];
       const value = document.createElement("strong");
-      value.textContent = format(metric[1], stats ? 2 : 3);
+      value.textContent = format(metric[1], 2);
       if (metric[2]) { const unit = document.createElement("small"); unit.textContent = ` ${metric[2]}`; value.append(unit); }
       button.append(label, value);
-      button.title = "計算結果を開いて根拠を確認";
+      button.title = "インサイトを開いて対象範囲と根拠を確認";
       button.addEventListener("click", () => {
-        const details = q(".gaia-statistics-values");
-        details.open = true;
-        details.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-        ui.formula.focus();
+        selectResultView("findings");
+        ui.findings.focus({ preventScroll: true });
       });
       ui.takeawayEvidence.append(button);
     });
@@ -1102,6 +1125,19 @@ if (!lab || !openButton) {
       note.textContent = "数値的な根拠は計算結果で確認できます";
       ui.takeawayEvidence.append(note);
     }
+    ui.findings.replaceChildren();
+    const heading = document.createElement("h4"); heading.textContent = insight.headline;
+    const scope = document.createElement("p"); scope.className = "gaia-statistics-finding-scope"; scope.textContent = insight.scope;
+    ui.findings.append(heading, scope);
+    insight.findings.forEach((finding) => {
+      const article = document.createElement("article"); article.className = "gaia-statistics-finding";
+      const title = document.createElement("h5"); title.textContent = finding.title;
+      const body = document.createElement("p"); body.textContent = finding.body;
+      article.append(title, body); ui.findings.append(article);
+    });
+    const supporting = document.createElement("button"); supporting.type = "button"; supporting.className = "gaia-statistics-next-button"; supporting.textContent = "数値の内訳で裏付けを確認 →";
+    supporting.addEventListener("click", () => { selectResultView("values"); ui.formula.focus({ preventScroll: true }); });
+    ui.findings.append(supporting);
   };
 
   const renderMetrics = (result, dataset) => {
@@ -1208,7 +1244,7 @@ if (!lab || !openButton) {
     const insight = result.insight;
     ui.insights.replaceChildren();
     if (!insight) return;
-    const meaning = createInsightCard("meaning", 1, "この図が示すこと", insight.headline || "分析結果", insight.meaning || "");
+    const meaning = createInsightCard("meaning", 1, "この分析の根拠", insight.headline || "分析結果", insight.meaning || "");
     if (insight.evidence?.length) {
       const evidence = document.createElement("div"); evidence.className = "gaia-statistics-evidence"; evidence.setAttribute("aria-label", "計算根拠を開く数値");
       insight.evidence.forEach((metric) => {
@@ -1220,7 +1256,7 @@ if (!lab || !openButton) {
     }
     ui.insights.append(
       meaning,
-      createInsightCard("interpretation", 2, "データから見えたこと", insight.interpretation || "この保存標本から読み取れる傾向を表示します。", ""),
+      createInsightCard("interpretation", 2, "分析結果の補足", insight.interpretation || "この保存標本から読み取れる傾向を表示します。", ""),
       createInsightCard("limitations", 3, "注意して読むこと", "ここからは言えないこと", "", insight.limitations || ["標本設計とモデル仮定を確認してください。"]),
     );
     const next = createInsightCard("next", 4, "次に確かめる", "関連する分析へ進む", "");
@@ -1544,6 +1580,7 @@ if (!lab || !openButton) {
 
   const syncResultView = () => {
     const active = ui.detailPanels.find(panel => panel.open)?.dataset.statPanel || "chart";
+    ui.visual.closest(".gaia-statistics-stage").dataset.resultView = active;
     ui.viewTabs.forEach(tab => { const selected = tab.dataset.statView === active; tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1; });
     ui.visual.style.visibility = active === "chart" ? "visible" : "hidden";
     ui.visual.toggleAttribute("inert", active !== "chart");
@@ -1574,6 +1611,7 @@ if (!lab || !openButton) {
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
+    state.result = null;
     aiButton.disabled = true;
     aiButton.title = "分析データを準備しています。";
     syncMethodAvailability();
@@ -1641,7 +1679,25 @@ if (!lab || !openButton) {
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
     state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
     ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId}　/　${dataset.title}`;
-    if (chooseDefault) { const method = dataset.defaultMethod || DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
+    if (chooseDefault) {
+      // An entry from the map starts with this dataset, not a previous search.
+      // Explicit saved views keep their own filters through chooseDefault=false.
+      window.clearTimeout(state.filterTimer);
+      state.recordQuery = "";
+      state.selectedRecordId = "";
+      ui.recordFilter.value = "";
+      ui.filterClear.disabled = true;
+      const preferred = dataset.defaultMethod || DEFAULT_METHOD[dataset.modeId] || "summary";
+      const candidates = [...new Set([preferred, "summary", ...METHOD_LOOKUP.keys()])];
+      // Use the same calculation guards as the method picker. Never turn on
+      // imputed/derived data merely to make a suggested analysis work.
+      const method = candidates.find(candidate => METHOD_LOOKUP.has(candidate)
+        && methodAvailability(candidate, dataset).available) || "summary";
+      state.lectureId = METHOD_LOOKUP.get(method).group.id;
+      state.methodId = method;
+      renderLectures();
+      renderMethods();
+    }
     render();
   };
 
@@ -1690,7 +1746,7 @@ if (!lab || !openButton) {
 
   const installExternalDataset = (dataset) => {
     if (!dataset || typeof dataset !== "object" || !Array.isArray(dataset.rows) || !dataset.id) return null;
-    const rows = dataset.rows.filter((row) => row && Number.isFinite(Number(row.value))).map((row, index) => ({
+    const rows = dataset.rows.filter((row) => row && finite(row.value) !== null).map((row, index) => ({
       ...row,
       id: String(row.id ?? index),
       label: String(row.label ?? row.id ?? index),
@@ -1714,13 +1770,22 @@ if (!lab || !openButton) {
   };
 
   const open = async ({ modeId, datasetId, dataset } = {}) => {
+    state.result = null;
+    state.renderToken += 1;
     state.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : openButton; ui.status.textContent = "LOADING DATA";
     lab.hidden = false; lab.setAttribute("aria-hidden", "false"); document.body.classList.add("gaia-statistics-open"); state.open = true; setMenuOpen(false); document.addEventListener("keydown", trapFocus, true);
     try {
       await ensureReady();
       if (!state.open) return;
-      const externalDataset = installExternalDataset(dataset);
-      const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.(); const inferredMode = modeId || externalDataset?.modeId || state.snapshot?.modes?.[adapterState?.modeIndex]?.id || state.modeId;
+      let externalDataset = installExternalDataset(dataset);
+      const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.();
+      // Renderer indices follow the current exhibit catalog, not the older
+      // snapshot ordering (which still contains the retired pollination mode).
+      const currentMode = globalThis.GaiaAppContent?.modes?.[adapterState?.modeIndex]?.id;
+      const inferredMode = modeId || externalDataset?.modeId || currentMode || state.modeId;
+      if (!externalDataset && !datasetId && ["population-tide", "anthropocene-scar"].includes(inferredMode)) {
+        externalDataset = installExternalDataset(buildAnnualDataset(state.snapshot, inferredMode, adapterState?.signalTimePosition));
+      }
       const preferred = externalDataset?.id || datasetId || state.datasets.find((candidate) => candidate.modeId === inferredMode)?.id || state.datasets[0]?.id;
       setDataset(preferred, true); ui.close.focus({ preventScroll: true }); window.dispatchEvent(new CustomEvent("gaia:statistics-open", { detail: { modeId: inferredMode, datasetId: preferred } }));
     } catch (error) {
@@ -1762,7 +1827,16 @@ if (!lab || !openButton) {
     open,
     close,
     getState: () => ({ open: state.open, modeId: state.modeId, datasetId: state.datasetId, lectureId: state.lectureId, methodId: state.methodId, includeDerived: state.includeDerived, recordQuery: state.recordQuery, recordSortKey: state.recordSortKey, recordSortDirection: state.recordSortDirection, selectedRecordId: state.selectedRecordId, savedViewCount: state.savedViews.length, analysisReady: Boolean(state.result) }),
-    run: (methodId, datasetId = state.datasetId) => runAnalysis(methodId, state.datasets.find((dataset) => dataset.id === datasetId) || currentDataset()),
+    run: (methodId, datasetId = state.datasetId) => {
+      const dataset = state.datasets.find((candidate) => candidate.id === datasetId) || currentDataset();
+      const rows = rowsFor(dataset), recordQuery = state.recordQuery;
+      const attach = result => {
+        result.dataInsight = buildDataInsight({ result, dataset, rows, methodId, recordQuery });
+        return result;
+      };
+      const result = runAnalysis(methodId, dataset);
+      return result instanceof Promise ? result.then(attach) : attach(result);
+    },
   });
   window.dispatchEvent(new CustomEvent("gaia:statistics-lab-ready"));
 }

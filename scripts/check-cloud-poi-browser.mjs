@@ -54,13 +54,13 @@ try {
       const clouds = document.querySelector("#gaia-planet-atmosphere-canvas");
       const map = document.querySelector("#japan-map").getBoundingClientRect();
       const data = document.querySelector("#japan-overlay").dataset;
-      const scale = Math.max(map.width / 360, map.height / 180) * (Number(data.earthZoom) || 1);
+      const scale = (map.width >= 901 ? map.width / 360 : Math.max(map.width / 360, map.height / 180)) * (Number(data.earthZoom) || 1);
       const points = Array.from({ length: 240 }, (_, index) => ({
         lat: Math.asin(-1 + 2 * (index + .5) / 240) * 180 / Math.PI,
         lon: ((index * 137.50776405003785 + 180) % 360) - 180,
       }));
       const point = points.map(p => ({ ...p,
-        x: (map.width - 360 * scale) / 2 + (Number(data.earthOffsetX) || 0) + ((p.lon - 138 + 540) % 360) * scale,
+        x: (map.width - 360 * scale) / 2 + (Number(data.earthOffsetX) || 0) + ((p.lon - Number(data.earthCenterLongitude) + 540) % 360) * scale,
         y: (map.height - 180 * scale) / 2 + (Number(data.earthOffsetY) || 0) + (90 - p.lat) * scale,
       })).find(p => p.x > map.width * .3 && p.x < map.width * .7 && p.y > map.height * .4 && p.y < map.height * .6);
       const ratio = canvas.width / map.width;

@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -12,6 +13,7 @@ try {
   const page = await browser.newPage();
   page.on("pageerror", error => report.errors.push(error.message));
   await page.setViewportSize({ width: 1701, height: 925 });
+  await seedHeardSoundArchive(page);
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#sound-layer.is-open");
   await page.locator('[data-sound-track="windowlight"]').evaluate(button => button.click());

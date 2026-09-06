@@ -5,6 +5,8 @@ import { chromium } from "playwright-core";
 
 const base = process.argv[2] || "http://127.0.0.1:4397";
 const output = path.resolve(process.argv[3] || "artifacts/all-exhibit-separators");
+const requestedWidths = process.argv[4]?.split(",").map(Number);
+const requestedNumbers = process.argv[5]?.split(",").map(Number);
 fs.mkdirSync(output, { recursive: true });
 const report = { status: "running", checks: [], errors: [] };
 let currentPage;
@@ -12,7 +14,7 @@ const browser = await chromium.launch({ executablePath: "C:/Program Files/Google
 try {
   for (const { width, reduced } of [
     { width: 1440 }, { width: 390 }, { width: 320, reduced: true }, { width: 3840, reduced: true },
-  ]) {
+  ].filter(viewport => !requestedWidths || requestedWidths.includes(viewport.width))) {
     const height = width === 3840 ? 2088 : width <= 720 ? 844 : 900;
     const context = await browser.newContext({
       viewport: { width, height }, reducedMotion: reduced ? "reduce" : "no-preference", hasTouch: width <= 720,
@@ -52,18 +54,25 @@ try {
       const title = document.querySelector("#japan-title");
       const separator = document.querySelector("#map-title-transition");
       const text = separator.querySelector("span");
+      const subtitle = document.querySelector("#map-title-transition-subtitle");
       const data = document.querySelector("#japan-overlay").dataset;
       const rect = text.getBoundingClientRect();
       const range = document.createRange();
       range.selectNodeContents(text);
       const glyphs = [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom }));
+      range.selectNodeContents(subtitle);
+      const subtitleGlyphs = [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom }));
       return {
         number: title.dataset.exhibitNumber, title: title.textContent, text: text.textContent,
+        subtitle: subtitle.textContent, expectedSubtitle: GaiaAppContent.MAP_TITLE_SUBTITLES[title.dataset.exhibitNumber],
+        subtitleOpacity: Number(getComputedStyle(subtitle).opacity), subtitleGlyphs,
+        titleFont: getComputedStyle(text).fontFamily, subtitleFont: getComputedStyle(subtitle).fontFamily,
         running: document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"),
         state: data.titleSeparatorState, startedAt: Number(data.titleSeparatorStartedAt), endsAt: Number(data.titleSeparatorEndsAt),
         animation: getComputedStyle(separator).animationName, duration: getComputedStyle(separator).animationDuration,
         visibility: getComputedStyle(separator).visibility, opacity: Number(getComputedStyle(separator).opacity),
         pointerEvents: getComputedStyle(separator).pointerEvents,
+        copyAnimation: getComputedStyle(separator.querySelector(".map-title-transition-copy")).animationName,
         textOpacity: Number(getComputedStyle(text).opacity),
         bandScale: new DOMMatrix(getComputedStyle(separator, "::before").transform).a,
         bandOrigin: getComputedStyle(separator, "::before").transformOrigin,
@@ -73,36 +82,47 @@ try {
     await select(2);
     await settled();
     let baseline;
-    for (const number of [1, ...Array.from({ length: 21 }, (_, i) => i + 10)]) {
+    const numbers = requestedNumbers || Array.from({ length: 30 }, (_, i) => i + 1);
+    for (const number of numbers) {
       await select(number);
       await page.waitForFunction(number => {
         const text = document.querySelector("#map-title-transition-text").textContent;
-        return text.startsWith(`${String(number).padStart(2, "0")}　`)
+        const heading = document.querySelector("#japan-title");
+        return heading.dataset.exhibitNumber === String(number).padStart(2, "0")
+          && text === heading.textContent
           && document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning");
       }, number);
-      await page.waitForTimeout(reduced ? 100 : 930);
+      // Sample the settled hold, not the reduced-motion 88ms entrance fade.
+      // A heavy 4K frame can start the CSS animation after the JS timer.
+      await page.waitForTimeout(reduced ? 240 : 1050);
       const result = await scan();
       report.checks.push({ width, reduced: Boolean(reduced), ...result });
-      assert.equal(result.text, `${result.number}　${result.title}`, `${width}/${number}: stale separator title`);
+      assert.equal(result.text, result.title, `${width}/${number}: separator must show the name without its number`);
+      assert.equal(result.subtitle, result.expectedSubtitle, `${width}/${number}: stale subtitle`);
+      assert.equal(result.subtitleFont, result.titleFont, `${width}/${number}: subtitle must match the Mincho heading font`);
+      assert.match(result.subtitleFont, /Yu Mincho/u);
+      assert(result.subtitle.length >= 12);
+      assert(result.subtitleOpacity > .95, `${width}/${number}: subtitle not visible`);
       assert.equal(result.number, String(number).padStart(2, "0"));
       assert.equal(result.running, true);
       assert.equal(result.state, "running");
-      assert.equal(result.animation, "map-title-separator-crossfade");
-      assert.equal(result.duration, reduced ? "0.46s" : "1.5s");
+      assert.equal(result.animation, reduced ? "map-title-separator-still" : "map-title-separator-crossfade");
+      assert.equal(result.copyAnimation, reduced ? "none" : "map-title-separator-copy-fade");
+      assert.equal(result.duration, reduced ? "1.46s" : "2.5s");
       assert.equal(result.visibility, "visible");
       assert(result.opacity > .4, `${width}/${number}: separator not visible`);
       assert(result.textOpacity > .95, `${width}/${number}: typography did not settle after the band`);
       assert(Math.abs(result.bandScale - 1) < .001, `${width}/${number}: band did not reach the right edge`);
       assert(result.bandOrigin.startsWith("0px "), `${width}/${number}: band is not anchored to the left`);
       assert.equal(result.pointerEvents, "none", "Separator must not block chapter navigation");
-      assert(Math.abs(result.endsAt - result.startedAt - (reduced ? 460 : 1500)) < 1);
-      for (const rect of [result.rect, ...result.glyphs]) {
+      assert(Math.abs(result.endsAt - result.startedAt - (reduced ? 1460 : 2500)) < 1);
+      for (const rect of [result.rect, ...result.glyphs, ...result.subtitleGlyphs]) {
         assert(rect.x >= 0 && rect.right <= width + 1 && rect.y >= 0 && rect.bottom <= height + 1,
           `${width}/${number}: title clipped ${JSON.stringify(rect)}`);
       }
-      if (number === 1) baseline = result;
+      if (!baseline) baseline = result;
       else assert.equal(result.animation, baseline.animation);
-      if ([11, 18, 26, 30].includes(number)) {
+      if ([6, 11, 14, 18, 20, 26, 30].includes(number)) {
         await page.screenshot({ path: path.join(output, `${width}-${number}-separator.jpg`), type: "jpeg", quality: 85 });
       }
       // Same heading/POI refreshes must neither restart an active separator nor replay it afterwards.
@@ -129,25 +149,27 @@ try {
       assert.equal((await scan()).number, String(number));
     }
     const latest = await scan();
-    await page.waitForTimeout(reduced ? 170 : 1000);
+    await page.waitForTimeout(reduced ? 1000 : 1900);
     const stillLatest = await scan();
     assert.equal(stillLatest.text, latest.text);
+    assert.equal(stillLatest.subtitle, latest.subtitle);
     assert.equal(stillLatest.startedAt, latest.startedAt);
     assert.equal(stillLatest.running, true, "An older separator timer ended the latest one");
     await settled();
     // Returning to the unchanged underlying base mode still gets its own separator.
     await select(1);
-    await page.waitForFunction(() => document.querySelector("#map-title-transition-text").textContent.startsWith("01　")
+    await page.waitForFunction(() => document.querySelector("#japan-title").dataset.exhibitNumber === "01"
+      && document.querySelector("#map-title-transition-text").textContent === document.querySelector("#japan-title").textContent
       && document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
     await settled();
     await select(11);
     await page.locator("#japan-close").click();
-    await page.waitForTimeout(reduced ? 500 : 1600);
+    await page.waitForTimeout(reduced ? 1500 : 2600);
     const closed = await scan();
     assert.equal(closed.running, false);
     assert.equal(closed.state, "cancelled", "Close must cancel the pending separator");
     assert.equal(await page.locator("#japan-layer").getAttribute("aria-hidden"), "true");
-    console.log(JSON.stringify({ width, reduced: Boolean(reduced), status: "passed", exhibits: 22 }));
+    console.log(JSON.stringify({ width, reduced: Boolean(reduced), status: "passed", exhibits: numbers.length }));
     await context.close();
   }
   assert.deepEqual(report.errors, []);

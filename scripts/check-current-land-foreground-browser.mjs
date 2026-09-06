@@ -17,8 +17,8 @@ try {
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
       window.projectLandProbe = (lon, lat) => {
         const canvas = document.querySelector("#japan-overlay"), r = canvas.getBoundingClientRect();
-        const scale = Math.max(r.width / 360, r.height / 180) * Number(canvas.dataset.earthZoom);
-        return { x: (r.width - 360 * scale) / 2 + Number(canvas.dataset.earthOffsetX) + ((lon - 138 + 540) % 360) * scale,
+        const scale = (r.width >= 901 ? r.width / 360 : Math.max(r.width / 360, r.height / 180)) * Number(canvas.dataset.earthZoom);
+        return { x: (r.width - 360 * scale) / 2 + Number(canvas.dataset.earthOffsetX) + ((lon - Number(canvas.dataset.earthCenterLongitude) + 540) % 360) * scale,
           y: (r.height - 180 * scale) / 2 + Number(canvas.dataset.earthOffsetY) + (90 - lat) * scale };
       };
       window.readLandProbe = () => {

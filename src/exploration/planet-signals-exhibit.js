@@ -1,7 +1,8 @@
-import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
+import { earthBaseScale, earthLongitudeToMapX as mapLongitude } from "./world-projection.js?v=gaia-japan-center-1";
 import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { buildPlanetStatistics } from "./planet-statistics.js?v=gaia-unified-actions-1";
-import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-satellite-clouds-1";
+import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-japan-center-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
 import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-unified-metric-legend-1";
 
@@ -18,7 +19,7 @@ const GLOBAL_OBSERVATION_POINTS = Object.freeze(Array.from({ length: GLOBAL_SAMP
 const DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "global-wind-pressure",
-    number: "27",
+    number: "02",
     shortTitle: "大気をなぞる",
     title: "大気をなぞる — WIND / PRESSURE",
     signalLabel: "風速・風向・気圧",
@@ -35,7 +36,7 @@ const DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     id: "global-aerosol-light",
-    number: "28",
+    number: "03",
     shortTitle: "大気の散乱",
     title: "大気の散乱 — AEROSOL LIGHT",
     signalLabel: "PM2.5・光学的厚さ",
@@ -52,7 +53,7 @@ const DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     id: "usgs-earthquake-ripples",
-    number: "29",
+    number: "04",
     shortTitle: "地殻の波紋",
     title: "地殻の波紋 — EARTHQUAKES",
     signalLabel: "全規模・直近24時間",
@@ -69,7 +70,7 @@ const DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     id: "global-cloud-radiance",
-    number: "30",
+    number: "05",
     shortTitle: "雲を透る光",
     title: "雲を透る光 — CLOUD / RADIATION",
     signalLabel: "雲量・短波放射",
@@ -93,7 +94,6 @@ const CACHE_PREFIX = "gaia-planet-signals-v3:";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const FRAME_INTERVAL_MS = 1000 / 30;
 const MAX_CANVAS_PIXELS = 1_500_000;
-const EARTH_INITIAL_CENTER_LONGITUDE = 138;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const fract = (value) => value - Math.floor(value);
 const hash = (value) => fract(Math.sin(value * 12.9898 + 78.233) * 43758.5453);
@@ -157,13 +157,12 @@ let anchorFocusKey = "";
 let anchorFocusChangedAt = 0;
 let poiArrival = null;
 let poiRenderedAt = 0;
-const poiOpacity = index => poiArrival?.opacity(index, poiRenderedAt) ?? 1;
+let focusedEpicenterIndex = -1;
+const poiOpacity = index => index === focusedEpicenterIndex ? 1 : poiArrival?.opacity(index, poiRenderedAt) ?? 1;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
 const average = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
-const mapLongitude = (longitude) => wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
 const asFinite = (value, fallback = 0) => value !== null && value !== undefined && value !== ""
   && Number.isFinite(Number(value)) ? Number(value) : fallback;
 const formatNumber = (value, decimals = 1) => Number(value).toLocaleString("ja-JP", {
@@ -328,6 +327,29 @@ const loadData = async (definition) => {
   }
 };
 
+const strongestEarthquake = data => data?.points?.reduce((best, point) => !best || point.magnitude > best.magnitude ? point : best, null);
+
+const focusStrongestEarthquake = () => {
+  if (activeIndex < 0 || DEFINITIONS[activeIndex].renderer !== "quake" || readout.dataset.loading === "true") return;
+  const point = strongestEarthquake(currentData);
+  if (!point) return;
+  focusedEpicenterIndex = currentData.points.indexOf(point);
+  // An explicit selection must be visible even during the staggered arrival.
+  canvas.dataset.planetFocusedEpicenter = point.id;
+  globalThis.GaiaMapObservationAdapter?.closePoi?.();
+  const rect = map.getBoundingClientRect();
+  const baseScale = earthBaseScale(rect);
+  const mapX = mapLongitude(point.lon), mapY = 90 - point.lat;
+  const requiredScale = Math.max(rect.width * .5 / Math.max(1, mapX), rect.width * .5 / Math.max(1, 360 - mapX),
+    rect.height * .4 / Math.max(1, mapY), rect.height * .6 / Math.max(1, 180 - mapY));
+  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
+    lon: point.lon, lat: point.lat,
+    zoom: clamp(Math.max(3, requiredScale / baseScale + .04), 1, 8),
+    targetX: .5, targetY: .4, durationMs: reducedMotion ? 0 : 750,
+    label: `planet-epicenter:${point.id}`,
+  });
+};
+
 const summarize = (definition, data) => {
   if (definition.renderer === "cloud") {
     return {
@@ -363,7 +385,7 @@ const summarize = (definition, data) => {
     };
   }
   if (definition.loader === "earthquake") {
-    const strongest = data.points.reduce((best, point) => point.magnitude > best.magnitude ? point : best, data.points[0]);
+    const strongest = strongestEarthquake(data);
     return {
       primary: formatNumber(strongest.magnitude),
       unit: "M",
@@ -382,7 +404,7 @@ const projection = () => {
   const overlay = document.querySelector("#japan-overlay");
   if (!rect?.width || !rect?.height || !(overlay instanceof HTMLElement)) return null;
   const zoom = Math.max(1, Number(overlay.dataset.earthZoom) || 1);
-  const scale = Math.max(rect.width / 360, rect.height / 180) * zoom;
+  const scale = earthBaseScale(rect) * zoom;
   return {
     rect,
     scale,
@@ -535,6 +557,13 @@ const drawQuakes = (time, view, data, definition) => {
     context.arc(center.x, center.y, 1.2 + magnitude * 0.45, 0, Math.PI * 2);
     context.fillStyle = `rgba(255, 241, 202, ${0.38 + magnitude * 0.055})`;
     context.fill();
+    if (index === focusedEpicenterIndex) {
+      context.beginPath();
+      context.arc(center.x, center.y, 12, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(${definition.rgb}, .95)`;
+      context.lineWidth = 1.5;
+      context.stroke();
+    }
     context.restore();
   });
 };
@@ -721,6 +750,8 @@ const resumeDrawing = () => {
 };
 
 const applyHeading = (definition) => {
+  readout.querySelector("[data-planet-number]").textContent = definition.number;
+  readout.querySelector("[data-planet-title]").textContent = definition.shortTitle;
   const number = document.querySelector("#japan-mode-number");
   const bankTitle = document.querySelector("#japan-mode-title");
   const mapTitle = document.querySelector("#japan-title");
@@ -775,7 +806,6 @@ const renderReadout = (definition, data) => {
   legend.style.setProperty("--planet-accent", definition.accent);
   legend.style.setProperty("--planet-rgb", definition.rgb);
   readout.querySelector("[data-planet-kicker]").textContent = `${definition.number} / ${definition.signalLabel}`;
-  readout.querySelector("[data-planet-title]").textContent = definition.shortTitle;
   readout.querySelector("[data-planet-primary-label]").textContent = definition.primaryLabel;
   readout.querySelector("[data-planet-primary]").textContent = summary.primary;
   readout.querySelector("[data-planet-unit]").textContent = summary.unit;
@@ -783,6 +813,14 @@ const renderReadout = (definition, data) => {
   readout.querySelector("[data-planet-secondary-a]").textContent = summary.secondary[0][1];
   readout.querySelector("[data-planet-secondary-b-label]").textContent = summary.secondary[1][0];
   readout.querySelector("[data-planet-secondary-b]").textContent = summary.secondary[1][1];
+  const epicenter = readout.querySelector("[data-planet-epicenter]");
+  if (definition.renderer === "quake") {
+    const name = summary.secondary[1][1];
+    readout.querySelector("[data-planet-epicenter-name]").textContent = name;
+    epicenter.setAttribute("aria-label", `最大震源 ${name}へ移動`);
+    epicenter.title = `${name}の震源へ移動`;
+    epicenter.disabled = false;
+  }
   readout.querySelector("[data-planet-caption]").textContent = definition.caption;
   readout.querySelector("[data-planet-state]").textContent = data.sourceState;
   readout.querySelector("[data-planet-time]").textContent = formatJst(data.observedAt);
@@ -823,12 +861,14 @@ const select = async (index) => {
   globalThis.GaiaFirmsExhibit?.deactivate?.();
   if (activeIndex < 0) {
     savedHeading = {
-      number: document.querySelector("#japan-mode-number")?.textContent || "01",
+      number: document.querySelector("#japan-mode-number")?.textContent || "06",
       title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
     };
   }
   activeIndex = index;
   currentData = null;
+  focusedEpicenterIndex = -1;
+  delete canvas.dataset.planetFocusedEpicenter;
   poiArrival = null;
   canvas.dataset.planetArrivalPhase = "loading";
   canvas.dataset.planetArrivalActive = "0";
@@ -851,13 +891,21 @@ const select = async (index) => {
   document.querySelectorAll(".map-mode-button:not([data-planet-exhibit])").forEach((item) => item.setAttribute("aria-current", "false"));
   applyHeading(definition);
   readout.dataset.loading = "true";
+  readout.dataset.planetRenderer = definition.renderer;
+  const epicenter = readout.querySelector("[data-planet-epicenter]");
+  epicenter.hidden = definition.renderer !== "quake";
+  epicenter.disabled = true;
+  epicenter.removeAttribute("title");
+  epicenter.setAttribute("aria-label", "最大震源を読み込み中");
+  readout.querySelector("[data-planet-epicenter-name]").textContent = "読み込み中";
+  readout.querySelector("[data-planet-secondary-b-item]").hidden = definition.renderer === "quake";
+  readout.querySelector("[data-planet-secondary-b-label]").textContent = definition.renderer === "quake" ? "最大震源" : "—";
   readout.querySelector("[data-planet-analysis]").disabled = true;
   const sourceLink = readout.querySelector("[data-planet-source-link]");
   sourceLink.href = definition.sourcePage;
   sourceLink.title = definition.sourceName;
   sourceLink.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
   readout.querySelector("[data-planet-kicker]").textContent = `${definition.number} / CONNECTING`;
-  readout.querySelector("[data-planet-title]").textContent = definition.shortTitle;
   readout.querySelector("[data-planet-primary]").textContent = "—";
   readout.querySelector("[data-planet-unit]").textContent = "";
   updatePlanetLegend(definition);
@@ -876,7 +924,7 @@ const select = async (index) => {
   renderReadout(definition, data);
   if (definition.renderer === "quake") atmosphereRenderer?.suspend();
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
-    lon: 0,
+    lon: 138,
     lat: 0,
     zoom: 1,
     targetX: 0.5,
@@ -894,6 +942,8 @@ const deactivate = () => {
   activeIndex = -1;
   selectionRevision++;
   currentData = null;
+  focusedEpicenterIndex = -1;
+  delete canvas.dataset.planetFocusedEpicenter;
   poiArrival = null;
   canvas.dataset.planetArrivalPhase = "idle";
   canvas.dataset.planetArrivalActive = "0";
@@ -1006,12 +1056,13 @@ const mount = () => {
   readout.innerHTML = `
     <div class="gaia-planet-chapter">
       <p data-planet-kicker></p>
-      <div><button type="button" data-planet-step="-1" aria-label="前の展示">‹</button><strong data-planet-title></strong><button type="button" data-planet-step="1" aria-label="次の展示">›</button></div>
+      <div><button type="button" data-planet-step="-1" aria-label="前の展示">‹</button><button type="button" class="gaia-featured-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="展示一覧を開く"><span class="gaia-planet-chapter-title"><b data-planet-number></b><strong data-planet-title></strong></span></button><button type="button" data-planet-step="1" aria-label="次の展示">›</button></div>
     </div>
     <div class="gaia-planet-primary"><p data-planet-primary-label></p><strong data-planet-primary>—</strong><span data-planet-unit></span></div>
     <div class="gaia-planet-metrics">
       <span><small data-planet-secondary-a-label>—</small><strong data-planet-secondary-a>—</strong></span>
-      <span><small data-planet-secondary-b-label>—</small><strong data-planet-secondary-b>—</strong></span>
+      <span data-planet-secondary-b-item><small data-planet-secondary-b-label>—</small><strong data-planet-secondary-b>—</strong></span>
+      <button type="button" data-planet-epicenter hidden disabled><small>最大震源</small><strong data-planet-epicenter-name></strong><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="5"/><path d="M10 1v5m0 8v5M1 10h5m8 0h5"/></svg></button>
     </div>
     <div class="gaia-planet-copy"><p data-planet-caption></p><small><b data-planet-state>FETCHING</b> · <time data-planet-time>—</time></small></div>
     <div class="gaia-planet-source"><a data-planet-source-link target="_blank" rel="noopener noreferrer"></a><button type="button" data-planet-analysis disabled></button></div>
@@ -1042,6 +1093,7 @@ const mount = () => {
   }, { capture: true });
   readout.querySelectorAll("[data-planet-step]").forEach((item) => item.addEventListener("click", () => step(item.dataset.planetStep)));
   readout.querySelector("[data-planet-analysis]").addEventListener("click", openStatistics);
+  readout.querySelector("[data-planet-epicenter]").addEventListener("click", focusStrongestEarthquake);
   addEventListener("resize", () => { if (activeIndex >= 0) lastRenderedAt = 0; }, { passive: true });
   addEventListener("gaia:japan-close", pauseDrawing);
   addEventListener("gaia:japan-open", resumeDrawing);

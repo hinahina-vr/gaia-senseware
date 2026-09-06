@@ -90,7 +90,7 @@ try {
   assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—30");
   assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15);
   assert.equal(await page.locator("#japan-estat-mode-list .map-mode-button").count(), 10);
-  assert.equal(await page.locator(".gaia-live-city-picker option").count(), 47);
+  assert.equal(await page.locator(".gaia-live-prefecture-picker option").count(), 47);
   assert.equal(await page.locator(".gaia-live-city-marker").count(), 47);
   const prefectureOrder = await page.evaluate(() => globalThis.GaiaLiveExhibits.observationPoints.map(({ code, id }) => ({ code, id })));
   assert.deepEqual(prefectureOrder.map(({ code }) => code), Array.from({ length: 47 }, (_, index) => String(index + 1).padStart(2, "0")));
@@ -136,7 +136,7 @@ try {
   const hokkaidoState = await page.evaluate(() => ({
     city: document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity,
     code: document.querySelector('.gaia-live-city-marker[aria-current="true"]')?.dataset.prefectureCode,
-    picker: document.querySelector(".gaia-live-city-picker select")?.value,
+    picker: document.querySelector(".gaia-live-prefecture-picker select")?.value,
     target: document.querySelector("#japan-overlay")?.dataset.viewTarget,
     zoom: Number(document.querySelector("#japan-overlay")?.dataset.earthZoom),
   }));
@@ -194,12 +194,12 @@ try {
   await page.waitForTimeout(360);
   await page.screenshot({ path: windFieldScreenshot });
 
-  await page.locator('.gaia-live-city-picker [data-live-poi-step="1"]').click();
+  await page.locator('.gaia-live-prefecture-picker [data-live-poi-step="1"]').click();
   await page.waitForFunction(() => (
     document.querySelector(".japan-layer")?.dataset.livePoiTransition === "settled"
     && document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "aomori"
   ));
-  await page.locator('.gaia-live-city-picker [data-live-poi-step="-1"]').click();
+  await page.locator('.gaia-live-prefecture-picker [data-live-poi-step="-1"]').click();
   await page.waitForFunction(() => (
     document.querySelector(".japan-layer")?.dataset.livePoiTransition === "settled"
     && document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "sapporo"
@@ -222,7 +222,7 @@ try {
   const aomoriState = await page.evaluate(() => ({
     city: document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity,
     code: document.querySelector('.gaia-live-city-marker[aria-current="true"]')?.dataset.prefectureCode,
-    picker: document.querySelector(".gaia-live-city-picker select")?.value,
+    picker: document.querySelector(".gaia-live-prefecture-picker select")?.value,
     target: document.querySelector("#japan-overlay")?.dataset.viewTarget,
     zoom: Number(document.querySelector("#japan-overlay")?.dataset.earthZoom),
   }));
@@ -250,7 +250,7 @@ try {
     const state = await page.locator("#gaia-live-exhibit-canvas").evaluate((canvas) => ({
       anchorLatitude: Number(canvas.dataset.anchorLatitude),
       anchorLongitude: Number(canvas.dataset.anchorLongitude),
-      deckModeCount: document.querySelectorAll('.gaia-live-deck-modes [data-live-deck-kind="live"]').length,
+      deckModeCount: document.querySelectorAll('.map-mode-bank [data-live-exhibit]').length,
       deckRect: (() => {
         const rect = document.querySelector(".gaia-live-exhibit-readout")?.getBoundingClientRect();
         return rect ? { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width } : null;
@@ -277,7 +277,7 @@ try {
     assert.equal(state.deckModeCount, 6);
     assert.equal(await page.locator("#gaia-map-zoom-controls").isVisible(), true, `${contract.id}: shared zoom controls disappeared`);
     assert(state.feedTimeFontSize >= 12, `${contract.id}: live timestamp is too small ${JSON.stringify(state)}`);
-    assert.equal(await page.locator(".gaia-live-deck-location > p").textContent(), "MODEL / JAPAN · 47 PREFECTURES");
+    assert.equal(await page.locator(".gaia-live-deck-location > p").textContent(), "都道府県");
     assert(state.deckRect && state.deckRect.left >= 0 && state.deckRect.right <= 1440, `${contract.id}: deck leaves the viewport`);
     assert.match(await page.locator("[data-live-anchor-source]").textContent(), /MODEL GRID/u);
     assert.match(await page.locator("[data-live-exhibit-source]").textContent(), /SOURCE DATA MISSING/u);
@@ -412,7 +412,7 @@ try {
   await page.locator('[data-live-city-marker="osaka"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "osaka");
   await page.waitForFunction(() => Math.abs(Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.anchorLatitude) - 34.6937) < 0.01);
-  assert.match(await page.locator(".gaia-live-city-picker select").inputValue(), /osaka/u);
+  assert.match(await page.locator(".gaia-live-prefecture-picker select").inputValue(), /osaka/u);
 
   await page.locator('#japan-mode-list [data-live-exhibit="pm25-haze"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "5");

@@ -29,6 +29,7 @@ const requiredKeys = [
   "INTRO_PATHS",
   "INTRO_MODE_CHOICES",
   "MAP_MODE_DESCRIPTIONS",
+  "MAP_TITLE_SUBTITLES",
   "SPACE_MODE_CHOICES",
   "modes",
   "modeConcepts",
@@ -40,9 +41,17 @@ assert.ok(content, "GaiaAppContent was not published on window");
 assert.ok(Object.isFrozen(content), "GaiaAppContent must be frozen");
 assert.deepEqual(Object.keys(content), requiredKeys);
 assert.equal(content.modes.length, 9, "Earth mode catalog must contain 9 exhibits");
+assert.deepEqual(Array.from(content.modes, mode => mode.mapNumber), Array.from({ length: 9 }, (_, index) => String(index + 6).padStart(2, "0")));
 assert.equal(content.INTRO_MODE_CHOICES.length, 9, "Entrance catalog must contain 9 choices");
 assert.ok(Object.isFrozen(content.MAP_MODE_DESCRIPTIONS), "Map picker copy must be frozen");
 assert.equal(Object.keys(content.MAP_MODE_DESCRIPTIONS).length, 30, "Every map needs a short picker description");
+assert.ok(Object.isFrozen(content.MAP_TITLE_SUBTITLES));
+assert.deepEqual(Object.keys(content.MAP_TITLE_SUBTITLES).sort(), Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(2, "0")));
+for (const [number, subtitle] of Object.entries(content.MAP_TITLE_SUBTITLES)) {
+  assert.equal(typeof subtitle, "string");
+  assert(subtitle.length >= 12 && subtitle.length <= 32, `${number}: keep the separator subtitle short`);
+  assert.doesNotMatch(subtitle, /[<>\n]/u);
+}
 for (const [id, copy] of Object.entries(content.MAP_MODE_DESCRIPTIONS)) {
   assert.equal(typeof copy, "string", `${id}: map description must be text`);
   assert.ok(copy.length >= 20 && copy.length <= 85, `${id}: keep picker descriptions concise`);

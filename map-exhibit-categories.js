@@ -1,21 +1,22 @@
 (() => {
   "use strict";
 
-  // Subjects are independent of provider, geography, cadence and renderer.
-  // Exhibit numbers and numeric previous/next navigation remain stable.
+  // The five global spectacles lead the route; the remaining exhibits retain
+  // their relative order within the subject groups. IDs/renderer indices stay stable.
   const definitions = Object.freeze([
-    { id: "climate", label: "気候と炭素", summary: "CO₂濃度・長期の気温変化", color: "#f3b48f", numbers: [1, 11, 19, 20, 21] },
-    { id: "weather", label: "空と天気", summary: "風・雲・気温・空気の状態", color: "#9ed5ed", numbers: [10, 13, 14, 15, 22, 23, 27, 28, 30] },
-    { id: "water", label: "水と森", summary: "海流・雨・森林のつながり", color: "#95d8c2", numbers: [2, 3, 7, 12, 24, 25] },
-    { id: "people", label: "人口と暮らし", summary: "人口・移動・旅・住まい", color: "#e8cf9b", numbers: [9, 16, 17, 18] },
-    { id: "resources", label: "資源とエネルギー", summary: "再資源化・排出・再生可能電力", color: "#b8c9ef", numbers: [4, 5, 8] },
-    { id: "earth", label: "大地の活動", summary: "地震・火災・高温の検知", color: "#d7abd8", numbers: [6, 26, 29] },
+    { id: "planet", label: "惑星のいま", summary: "火災・風・大気・地震・雲を世界から", color: "#9ee4dc", numbers: [1, 2, 3, 4, 5] },
+    { id: "climate", label: "気候と炭素", summary: "CO₂濃度・長期の気温変化", color: "#f3b48f", numbers: [6, 16, 24, 25, 26] },
+    { id: "weather", label: "空と天気", summary: "風・雲・気温・空気の状態", color: "#9ed5ed", numbers: [15, 18, 19, 20, 27, 28] },
+    { id: "water", label: "水と森", summary: "海流・雨・森林のつながり", color: "#95d8c2", numbers: [7, 8, 12, 17, 29, 30] },
+    { id: "people", label: "人口と暮らし", summary: "人口・移動・旅・住まい", color: "#e8cf9b", numbers: [14, 21, 22, 23] },
+    { id: "resources", label: "資源とエネルギー", summary: "再資源化・排出・再生可能電力", color: "#b8c9ef", numbers: [9, 10, 13] },
+    { id: "earth", label: "大地の活動", summary: "世界の大地震、その時と場所", color: "#d7abd8", numbers: [11] },
   ].map(category => Object.freeze({ ...category, numbers: Object.freeze(category.numbers) })));
   const byNumber = new Map(definitions.flatMap(category => category.numbers.map(number => [number, category])));
   const get = number => byNumber.get(Number(number)) || null;
   const buttons = (root = document) => [...root.querySelectorAll(".map-mode-bank .map-mode-button")]
     .sort((a, b) => Number(a.textContent.trim()) - Number(b.textContent.trim()));
-  const standardButtons = () => buttons().filter(button => Number(button.textContent.trim()) <= 9);
+  const standardButtons = () => buttons().filter(button => button.hasAttribute("data-map-standard-index"));
   globalThis.GaiaMapCategories = Object.freeze({ definitions, get, buttons, standardButtons });
 
   const layer = document.querySelector("#japan-layer");
@@ -87,6 +88,14 @@
       setText(label, category.label);
       label.style.setProperty("--map-category-color", category.color);
     }
+    // App startup precedes the lazy renderers. Apply the requested public
+    // chapter only once all real buttons exist, through the normal click path.
+    const pending = layer.dataset.mapEntryExhibit;
+    if (pending && layer.getAttribute("aria-hidden") === "false" && buttons().length === 30) {
+      const target = buttons().find(button => Number(button.textContent.trim()) === Number(pending));
+      delete layer.dataset.mapEntryExhibit;
+      if (target && (!target.hasAttribute("data-map-standard-index") || target.getAttribute("aria-current") !== "true")) target.click();
+    }
   };
   const schedule = () => {
     if (scheduled) return;
@@ -94,8 +103,11 @@
     requestAnimationFrame(sync);
   };
   new MutationObserver(schedule).observe(layer, { childList: true, subtree: true });
-  for (const event of ["gaia:app-ready", "gaia:japan-mode-change", "gaia:live-exhibit-change", "gaia:estat-exhibit-change", "gaia:firms-change", "gaia:planet-signals-change"]) {
+  for (const event of ["gaia:app-ready", "gaia:japan-open", "gaia:japan-mode-change", "gaia:live-exhibit-change", "gaia:estat-exhibit-change", "gaia:firms-change", "gaia:planet-signals-change"]) {
     addEventListener(event, schedule);
   }
+  groups.addEventListener("click", event => {
+    if (event.target instanceof Element && event.target.closest(".map-mode-button")) delete layer.dataset.mapEntryExhibit;
+  }, { capture: true });
   schedule();
 })();

@@ -333,7 +333,7 @@ try {
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "54s" : "60s");
-    assert.equal(initial.trackDelay, "11.2s", `${viewport.name}: credits did not wait for the centered title`);
+    assert.equal(initial.trackDelay, "17.6s", `${viewport.name}: credits did not wait for the centered title`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
     assert(initial.copyrightGap >= 0 && initial.copyrightGap <= 20, `${viewport.name}: copyright group geometry is invalid (${initial.copyrightGap}px)`);
     assert.equal(initial.copyrightParentClass, "novel-staff-roll-closing-action", `${viewport.name}: copyright is outside the thank-you group`);
@@ -392,7 +392,7 @@ try {
     });
     assert(titleToCreditTiming, `${viewport.name}: first staff name never entered the viewport`);
     assert(titleToCreditTiming.time >= titleToCreditTiming.logoEndTime, `${viewport.name}: staff names began before the logo faded out`);
-    assert(titleToCreditTiming.time >= 11_200 && titleToCreditTiming.time < 15_000, `${viewport.name}: unexpected title-to-credit gap`);
+    assert(titleToCreditTiming.time >= 17_600 && titleToCreditTiming.time < 21_400, `${viewport.name}: unexpected title-to-credit gap`);
     initial.titleToCreditTiming = titleToCreditTiming;
     [
       "企画・原案",
@@ -483,7 +483,7 @@ try {
       const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-whiteout");
       if (animation) {
         animation.pause();
-        animation.currentTime = 1_900;
+        animation.currentTime = 3_800;
       }
       return Number(getComputedStyle(node).opacity);
     });
@@ -510,7 +510,7 @@ try {
     }, null, { timeout: 10_000 });
     const endingPlayback = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
     const endingTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
-    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "rolling", null, { timeout: 12_000 });
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "rolling", null, { timeout: 22_000 });
     const beforeY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     await page.waitForTimeout(650);
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
@@ -640,6 +640,9 @@ try {
           phase: layer.dataset.trueEndTransitionPhase,
           opacity: Number(getComputedStyle(noise).opacity),
           transform: getComputedStyle(noise).transform,
+          bandTransform: getComputedStyle(veil, "::before").transform,
+          dropoutTransform: getComputedStyle(veil, "::after").transform,
+          signature: getComputedStyle(veil).getPropertyValue("--glitch-noise-x1") + getComputedStyle(veil).getPropertyValue("--glitch-bands-x2"),
           bandOpacity: Number(getComputedStyle(veil, "::before").opacity),
           veilOpacity: Number(getComputedStyle(veil).opacity),
         });
@@ -688,7 +691,14 @@ try {
       assert(noisyFrames.length >= 2, `${viewport.name}: missing noise burst during ${phase}`);
       assert(new Set(noisyFrames.map((frame) => frame.transform)).size >= 2, `${viewport.name}: noise tile did not move during ${phase}`);
       assert(noisyFrames.some((frame) => frame.bandOpacity > 0.2), `${viewport.name}: missing colored tear bands`);
+      for (const frame of noisyFrames) for (const transform of [frame.transform, frame.bandTransform, frame.dropoutTransform]) {
+        if (transform === "none") continue;
+        const components = transform.match(/matrix\(([^)]+)\)/u)?.[1].split(",").map(Number);
+        assert(components && Math.abs(components[5]) < .001, `${viewport.name}: glitch moved vertically: ${transform}`);
+      }
     }
+    assert.notEqual(transitionTrace.noise.find(frame => frame.phase === "covering")?.signature,
+      transitionTrace.noise.find(frame => frame.phase === "revealing")?.signature, "Entry and reveal reuse the same noise burst");
     assert(transitionTrace.noise.filter((frame) => frame.phase === "holding").every((frame) => frame.opacity === 0 && frame.bandOpacity === 0), `${viewport.name}: the black hold did not settle`);
     initial.transitionTrace = { ...transitionTrace, choreographyMs };
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
@@ -733,7 +743,7 @@ try {
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.locator(".true-end-finale button").click();
       await page.waitForFunction(() => document.querySelector(".true-end-exit-veil")?.dataset.phase === "covering");
-      await page.waitForFunction(() => document.querySelector(".true-end-exit-veil")?.dataset.phase === "black", null, { timeout: 2_000 });
+      await page.waitForFunction(() => document.querySelector(".true-end-exit-veil")?.dataset.phase === "white", null, { timeout: 4_000 });
       const revealObserved = page.waitForFunction(() => {
         const intro = document.querySelector("#intro-layer");
         return document.querySelector(".true-end-exit-veil")?.dataset.phase === "revealing"
@@ -751,7 +761,7 @@ try {
           };
         }),
       }));
-      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-exit-black.png`) });
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-exit-white.png`) });
       const revealResult = await revealObserved;
       assert.equal(revealResult.observed, true, `${viewport.name}: true-end reveal was not observed (${JSON.stringify(revealResult.state)})`);
       trueEndExit = await page.evaluate(() => {
@@ -763,7 +773,7 @@ try {
           novelHidden: document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true",
         };
       });
-      assert(["revealing", "complete"].includes(trueEndExit.phase), `${viewport.name}: GAIA page appeared without the black-to-clear fade`);
+      assert(["revealing", "complete"].includes(trueEndExit.phase), `${viewport.name}: GAIA page appeared without the white-to-clear fade`);
       assert.equal(trueEndExit.label, "物語をはじめる", `${viewport.name}: GAIA story button did not reset after APEIRONCENE`);
       assert.equal(trueEndExit.destination, "story", `${viewport.name}: completed APEIRONCENE remained the story destination`);
       assert.equal(trueEndExit.novelHidden, true, `${viewport.name}: APEIRONCENE layer remained active after exit`);

@@ -1,4 +1,5 @@
-import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
+import { earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
 import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-unified-actions-1";
 import { FIRE_REVEAL_EDGE, FIRE_COLUMN_LIFETIME, FIRE_COLUMN_LIMIT, FIRE_COLUMN_MOBILE_LIMIT,
   fireSequence, inverseFireEase, FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT } from "./fire-ignition.js?v=gaia-fire-columns-1";
@@ -12,11 +13,10 @@ const HOLD_MS = 4_000;
 const EXTINGUISH_MS = 8_000;
 const FRAME_INTERVAL_MS = 1000 / 30;
 const MAX_CANVAS_PIXELS = 1_600_000;
-const EARTH_INITIAL_CENTER_LONGITUDE = 138;
 
 const DEFINITION = Object.freeze({
   id: "nasa-firms-active-fire",
-  number: "26",
+  number: "01",
   shortTitle: "燃える惑星",
   title: "燃える惑星 — ACTIVE FIRE",
   signalLabel: "火災・熱異常",
@@ -54,9 +54,6 @@ let savedHeading;
 let renderedPlayback = null;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
-const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
-const earthLongitudeToMapX = (longitude) =>
-  wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
 const ease = (value) => {
   const progress = clamp01(value);
   return progress * progress * (3 - 2 * progress);
@@ -316,7 +313,7 @@ const uploadPoints = () => {
   canvas.dataset.firmsPointCount = String(pointCount);
   canvas.dataset.firmsAttributeEncoding = "frp-size-confidence-alpha-daynight-color";
   canvas.dataset.firmsSequence = "acquisition-time";
-  canvas.dataset.firmsProjection = "japan-centered-equirectangular-138";
+  canvas.dataset.firmsProjection = "japan-pacific-equirectangular-150";
 };
 
 const currentProjection = () => {
@@ -324,7 +321,7 @@ const currentProjection = () => {
   const overlay = document.querySelector("#japan-overlay");
   if (!rect?.width || !rect?.height || !(overlay instanceof HTMLElement)) return null;
   const zoom = Math.max(1, Number(overlay.dataset.earthZoom) || 1);
-  const scale = Math.max(rect.width / 360, rect.height / 180) * zoom;
+  const scale = earthBaseScale(rect) * zoom;
   const offsetX = Number(overlay.dataset.earthOffsetX) || 0;
   const offsetY = Number(overlay.dataset.earthOffsetY) || 0;
   return {
@@ -600,7 +597,7 @@ const select = async () => {
   globalThis.GaiaPlanetSignals?.deactivate?.();
   if (!active) {
     savedHeading = {
-      number: document.querySelector("#japan-mode-number")?.textContent || "01",
+      number: document.querySelector("#japan-mode-number")?.textContent || "06",
       title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
     };
   }
@@ -621,7 +618,7 @@ const select = async () => {
   playbackEnabled = true;
   cycleStartedAt = performance.now();
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
-    lon: 0,
+    lon: 138,
     lat: 0,
     zoom: 1,
     targetX: 0.5,
@@ -713,7 +710,7 @@ const mount = () => {
   readout.innerHTML = `
     <div class="gaia-firms-chapter">
       <p>EARTH / NASA FIRMS · GLOBAL 24H</p>
-      <div><button type="button" data-firms-step="-1" aria-label="前の展示、25へ">‹</button><span><b>26</b><strong>燃える惑星</strong></span><button type="button" data-firms-step="1" aria-label="次の展示、27 大気をなぞるへ">›</button></div>
+      <div><button type="button" data-firms-step="-1" aria-label="前の展示、30 雨の足跡へ">‹</button><button type="button" class="gaia-featured-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="${DEFINITION.number} ${DEFINITION.shortTitle}。展示一覧を開く"><span><b>${DEFINITION.number}</b><strong>${DEFINITION.shortTitle}</strong></span></button><button type="button" data-firms-step="1" aria-label="次の展示、02 大気をなぞるへ">›</button></div>
     </div>
     <div class="gaia-firms-count"><p>OBSERVED / ACQUISITION-TIME RELAY</p><strong><b data-firms-visible>0</b><span> / <i data-firms-total>—</i> 表示点</span></strong><small data-firms-time>観測待機</small></div>
     <div class="gaia-firms-primary"><p>最大 火災放射パワー</p><strong data-firms-max-frp>—</strong><span>MW</span></div>
@@ -738,7 +735,7 @@ const mount = () => {
   button.textContent = DEFINITION.number;
   button.dataset.firmsExhibit = DEFINITION.id;
   button.dataset.mapPreviewSurface = "map";
-  button.setAttribute("aria-label", "26 燃える惑星、NASA FIRMSの全球火災展示へ切り替える");
+  button.setAttribute("aria-label", `${DEFINITION.number} ${DEFINITION.shortTitle}、NASA FIRMSの全球火災展示へ切り替える`);
   button.setAttribute("aria-describedby", "map-mode-preview");
   button.setAttribute("aria-current", "false");
   button.addEventListener("click", () => { void select(); });

@@ -23,6 +23,8 @@ const select = (page, number) => page.evaluate(number => {
 const readPhases = (page, times) => page.evaluate(times => {
   const layer = document.querySelector("#map-title-transition");
   const title = document.querySelector("#map-title-transition-text");
+  const subtitle = document.querySelector("#map-title-transition-subtitle");
+  const copy = layer.querySelector(".map-title-transition-copy");
   const animations = layer.getAnimations({ subtree: true });
   return times.map(time => {
     animations.forEach(animation => { animation.pause(); animation.currentTime = time; });
@@ -30,12 +32,17 @@ const readPhases = (page, times) => page.evaluate(times => {
     const band = getComputedStyle(layer, "::before");
     const type = getComputedStyle(title);
     const rect = title.getBoundingClientRect();
+    const subRect = subtitle.getBoundingClientRect();
+    const copyMatrix = new DOMMatrix(getComputedStyle(copy).transform);
     return {
       time, names: animations.map(animation => animation.animationName),
       rootOpacity: Number(root.opacity), rootPointer: root.pointerEvents,
       bandOpacity: Number(band.opacity), bandScale: new DOMMatrix(band.transform).a,
       bandX: new DOMMatrix(band.transform).e, bandOrigin: band.transformOrigin,
       bandCurve: band.animationTimingFunction,
+      copyX: copyMatrix.e, copyY: copyMatrix.f, copyOpacity: Number(getComputedStyle(copy).opacity), overflow: root.overflow,
+      subtitle: subtitle.textContent, subtitleOpacity: Number(getComputedStyle(subtitle).opacity),
+      subtitleRect: { x: subRect.x, right: subRect.right, y: subRect.y, bottom: subRect.bottom },
       text: title.textContent, typeOpacity: Number(type.opacity), typeScale: new DOMMatrix(type.transform).a,
       typeFilter: type.filter, typeColor: type.color, typeShadow: type.textShadow,
       rect: { x: rect.x, right: rect.right, y: rect.y, bottom: rect.bottom },
@@ -56,20 +63,30 @@ try {
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true"
       && document.querySelectorAll(".map-mode-bank .map-mode-button").length === 30 && document.querySelector("#gaia-boot")?.hidden);
     await page.evaluate(() => GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
-    await select(page, 2);
+    await select(page, 7);
     await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
-    await select(page, 1);
-    await page.waitForFunction(() => document.querySelector("#map-title-transition-text").textContent.startsWith("01　")
+    await select(page, 6);
+    await page.waitForFunction(() => document.querySelector("#map-title-transition-text").textContent === "地球の一呼吸"
+      && document.querySelector("#japan-title").dataset.exhibitNumber === "06"
       && document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
-    const times = viewport.reduced ? [0, 100, 230, 460] : [0, 150, 300, 450, 600, 690, 735, 1050, 1400, 1500];
+    const times = viewport.reduced ? [0, 100, 1230, 1460] : [0, 150, 300, 450, 600, 690, 735, 1050, 2050, 2175, 2260, 2280, 2300, 2380, 2440, 2500];
     const phases = await readPhases(page, times);
+    const scan = { viewport, phases, passed: false };
+    report.scans.push(scan);
     for (const phase of phases) {
-      assert.equal(phase.text, "01　地球の一呼吸");
+      assert.equal(phase.text, "地球の一呼吸");
+      assert.equal(phase.subtitle, "CO₂の記録から、地球の呼吸をたどる");
       assert.equal(phase.rootPointer, "none");
       assert(phase.bandOrigin.startsWith("0px "), `${viewport.name}: band does not start at the left edge`);
-      assert.equal(phase.bandX, 0);
-      assert(phase.rect.x >= -1 && phase.rect.right <= viewport.width + 1
-        && phase.rect.y >= -1 && phase.rect.bottom <= viewport.height + 1, `${viewport.name}: type escapes the viewport`);
+      assert.equal(phase.copyX, 0, "Text must never slide with the band");
+      assert.equal(phase.copyY, 0, "Text must remain anchored while fading");
+      assert.equal(phase.overflow, "hidden", "The outgoing band must be clipped");
+      if (viewport.reduced || phase.time <= 2260) assert.equal(phase.bandX, 0);
+      for (const rect of [phase.rect, phase.subtitleRect]) {
+        assert(rect.x >= -1 && rect.right <= viewport.width + 1
+          && rect.y >= -1 && rect.bottom <= viewport.height + 1, `${viewport.name}: type escapes the viewport`);
+      }
+      assert(phase.subtitleRect.y > phase.rect.bottom, "Subtitle must sit below the title");
     }
     if (viewport.reduced) {
       assert(phases.every(phase => phase.bandScale === 1 && phase.typeScale === 1 && phase.typeFilter === "none"));
@@ -77,7 +94,7 @@ try {
       assert.equal(phases[1].typeOpacity, 1);
       assert.equal(phases[1].typeShadow, phases[2].typeShadow, "Reduced motion must not flare");
     } else {
-      const [start, quarter, half, threeQuarters, bandDone, typeArriving, bloom, hold, leave, end] = phases;
+      const [start, quarter, half, threeQuarters, bandDone, typeArriving, bloom, hold, extendedHold, fading, exitStart, overlapping, faded, leave, laterLeave, end] = phases;
       assert.equal(start.bandScale, 0);
       assert(quarter.bandScale > .5 && quarter.bandScale < 1);
       assert(half.bandScale > quarter.bandScale && half.bandScale < 1);
@@ -94,8 +111,25 @@ try {
       assert.equal(hold.typeFilter, "none");
       assert.equal(hold.typeScale, 1);
       assert.equal(hold.typeOpacity, 1);
-      assert.equal(leave.bandScale, 1, "The departing band retracted instead of dissolving");
-      assert(leave.rootOpacity < hold.rootOpacity);
+      assert.equal(hold.subtitleOpacity, 1);
+      assert.equal(extendedHold.typeOpacity, 1, "Title must remain readable for another second");
+      assert.equal(extendedHold.subtitleOpacity, 1);
+      assert.equal(extendedHold.rootOpacity, 1);
+      assert.equal(extendedHold.copyOpacity, 1);
+      assert(Math.abs(fading.copyOpacity - .5) < .01, "Both lines fade in place before the band moves");
+      assert.equal(fading.bandX, 0);
+      assert.equal(exitStart.bandX, 0);
+      assert(exitStart.copyOpacity > 0 && exitStart.copyOpacity < .2, "The text is almost gone when the band starts");
+      assert(overlapping.bandX > 0 && overlapping.copyOpacity > 0 && overlapping.copyOpacity < .1, "Band departure overlaps only the end of the fade");
+      assert(faded.copyOpacity < .001);
+      assert.equal(leave.copyOpacity, 0);
+      for (const phase of [fading, exitStart, overlapping, faded, leave, laterLeave, end]) {
+        assert.deepEqual(phase.rect, hold.rect, "Title moved during the fade");
+        assert.deepEqual(phase.subtitleRect, hold.subtitleRect, "Subtitle moved during the fade");
+      }
+      assert(leave.bandX > 0 && laterLeave.bandX > leave.bandX, "Band must accelerate to the right");
+      assert.equal(leave.bandScale, 1, "The departing band must not retract");
+      assert(end.bandX >= viewport.width, "The band must fully clear the viewport");
       assert.equal(end.rootOpacity, 0);
     }
     const clip = await page.evaluate(() => {
@@ -105,12 +139,12 @@ try {
       const y = Math.max(0, Math.floor(rect.top + rect.height / 2 - bandHeight / 2 - 24));
       return { x: Math.max(0, Math.ceil(rect.x)), y, width: Math.min(innerWidth, Math.floor(rect.width)), height: Math.min(innerHeight - y, Math.ceil(bandHeight + 48)) };
     });
-    for (const time of viewport.reduced ? [100] : [150, 600, 735, 1050]) {
+    for (const time of viewport.reduced ? [100] : [150, 600, 735, 2050, 2175, 2260, 2280, 2380]) {
       await readPhases(page, [time]);
       await page.screenshot({ path: path.join(output, `${viewport.name}-${time}.jpg`), type: "jpeg", quality: 87, clip });
     }
-    // The visual stages use the existing 1500/460ms lifecycle. They must not
-    // extend the POI reveal gate or leave a paused CSS surface behind.
+    // The extra reading time also extends the POI gate; cleanup must still
+    // remove every paused surface at the end of the shared lifecycle.
     await page.waitForFunction(() => !document.querySelector("#japan-layer").classList.contains("is-map-title-transitioning"));
     const completed = await page.evaluate(() => ({
       state: document.querySelector("#japan-overlay").dataset.titleSeparatorState,
@@ -121,9 +155,9 @@ try {
     assert.equal(completed.state, "complete");
     assert.equal(completed.animations, 0);
     assert.equal(completed.opacity, "0");
-    assert(Math.abs(completed.duration - (viewport.reduced ? 460 : 1500)) < 1);
-    report.scans.push({ viewport, phases, completed, passed: true });
-    console.log(`${viewport.name}: left-to-right ease-out, delayed type bloom, and lifecycle passed`);
+    assert(Math.abs(completed.duration - (viewport.reduced ? 1460 : 2500)) < 1);
+    Object.assign(scan, { completed, passed: true });
+    console.log(`${viewport.name}: band entrance, bloom, subtitle, stationary text fade, near-end band departure and lifecycle passed`);
     await page.close();
   }
   assert.deepEqual(report.errors, []);

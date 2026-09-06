@@ -153,12 +153,12 @@ try {
         const zoom = Number(overlay?.dataset.earthZoom) || 1;
         const offsetX = Number(overlay?.dataset.earthOffsetX) || 0;
         const offsetY = Number(overlay?.dataset.earthOffsetY) || 0;
-        const baseScale = mapRect ? Math.max(mapRect.width / 360, mapRect.height / 180) : 0;
+        const baseScale = mapRect ? (mapRect.width >= 901 ? mapRect.width / 360 : Math.max(mapRect.width / 360, mapRect.height / 180)) : 0;
         const scale = baseScale * zoom;
-        const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
+        const wrapLongitude = (longitude) => ((longitude - Number(overlay.dataset.earthCenterLongitude) + 540) % 360) - 180;
         const europe = mapRect ? {
           x: mapRect.left + (mapRect.width - 360 * scale) / 2 + offsetX
-            + (wrapLongitude(10 - 138) + 180) * scale,
+            + (wrapLongitude(10) + 180) * scale,
           y: mapRect.top + (mapRect.height - 180 * scale) / 2 + offsetY + (90 - 50) * scale,
         } : null;
         const europeHit = europe && europe.x >= 0 && europe.x < innerWidth && europe.y >= 0 && europe.y < innerHeight

@@ -172,7 +172,12 @@
     };
 
     const getTimelineRange = () => {
+      const stepCount = Number(timelineInput?.dataset.mapStepCount);
+      if (stepCount > 0) return { start: 1, end: stepCount, width: Math.max(2, String(stepCount).length) };
       const label = panels.data.querySelector("[data-signal-time-label]")?.textContent?.trim() || "";
+      // A playback suffix (e.g. "1958→2050 · 3倍速") is not the end year.
+      const explicitRange = label.match(/(\d{1,4})\s*[→〜～–—]\s*(\d{1,4})/u);
+      if (explicitRange) return { start: Number(explicitRange[1]), end: Number(explicitRange[2]), width: Math.max(explicitRange[1].length, explicitRange[2].length) };
       const values = [...label.matchAll(/\d{1,4}/gu)].map((match) => ({
         value: Number(match[0]),
         width: match[0].length,
@@ -216,25 +221,44 @@
         : null;
       const stepValue = stepMatch?.[1]
         || (Number.isFinite(rangeValue) ? String(rangeValue).padStart(range?.width || 2, "0") : "—");
-      const value = match?.[0] || stepValue;
+      const stepCount = Number(timelineInput?.dataset.mapStepCount);
+      const value = stepCount > 0
+        ? String(Number(timelineInput.dataset.mapStepIndex) + 1).padStart(2, "0")
+        : match?.[0] || stepValue;
       year.querySelector("[data-map-dock-year]").textContent = value;
-      year.querySelector("[data-map-dock-year-unit]").textContent = match ? "年" : "STEP";
-      year.classList.toggle("has-year", Boolean(match));
-      year.classList.toggle("has-step", !match);
+      const hasYear = stepCount > 0 ? false : Boolean(match);
+      year.querySelector("[data-map-dock-year-unit]").textContent = hasYear ? "年" : "STEP";
+      year.classList.toggle("has-year", hasYear);
+      year.classList.toggle("has-step", !hasYear);
     };
 
     year.querySelectorAll("[data-map-dock-year-step]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (!timelineInput) return;
+        if (!timelineInput || timelineInput.disabled) return;
         const direction = Number(button.dataset.mapDockYearStep) || 0;
         const range = getTimelineRange();
         const minimum = Number(timelineInput.min || 0);
         const maximum = Number(timelineInput.max || 100);
-        const unitCount = range ? Math.max(1, Math.abs(range.end - range.start)) : 100;
-        const increment = Math.max(Number(timelineInput.step || 1), (maximum - minimum) / unitCount);
-        timelineInput.value = String(Math.min(maximum, Math.max(minimum, Number(timelineInput.value) + direction * increment)));
+        const stepCount = Number(timelineInput.dataset.mapStepCount);
+        if (stepCount > 0) {
+          const current = Number(timelineInput.dataset.mapStepIndex) || 0;
+          const next = (current + direction + stepCount) % stepCount;
+          // Waste uses integer indices; the other country displays divide a
+          // normalized slider into bins. Select the interior to avoid rounding
+          // across a bin edge, and expose exact slider endpoints for 01/last.
+          timelineInput.value = String(maximum - minimum + 1 === stepCount
+            ? minimum + next
+            : next === 0 ? minimum
+              : next === stepCount - 1 ? maximum
+                : minimum + (next + .5) / stepCount * (maximum - minimum));
+        } else {
+          // Chronological year/day scales retain their bounded time range.
+          const unitCount = range ? Math.max(1, Math.abs(range.end - range.start)) : 100;
+          const increment = Math.max(Number(timelineInput.step || 1), (maximum - minimum) / unitCount);
+          timelineInput.value = String(Math.min(maximum, Math.max(minimum, Number(timelineInput.value) + direction * increment)));
+        }
         timelineInput.dispatchEvent(new Event("input", { bubbles: true }));
         timelineInput.dispatchEvent(new Event("change", { bubbles: true }));
         requestAnimationFrame(syncYear);
@@ -253,6 +277,67 @@
     };
 
     bankTrigger.addEventListener("click", () => setBankOpen(bankTrigger.getAttribute("aria-expanded") !== "true"));
+    // Every replacement dock opens the same real 30-button category picker.
+    const mobileBankTrigger = japanLayer.querySelector("#map-mobile-bank-toggle");
+    const pickerTitle = () => [...japanLayer.querySelectorAll("[data-map-bank-toggle]")]
+      .find(title => title.getBoundingClientRect().width > 0 && getComputedStyle(title).visibility !== "hidden");
+    const pickerTrigger = () => innerWidth < DESKTOP_MIN ? mobileBankTrigger : bankTrigger;
+    const pickerIsOpen = () => pickerTrigger()?.getAttribute("aria-expanded") === "true";
+    const pickerFocusTarget = () => pickerTitle() || pickerTrigger();
+    const observedReadouts = new WeakSet();
+    const resizePicker = new ResizeObserver(() => { if (pickerIsOpen()) syncPicker(); });
+    const syncPicker = () => {
+      const title = pickerTitle();
+      for (const control of japanLayer.querySelectorAll("[data-map-bank-toggle]")) {
+        control.setAttribute("aria-expanded", String(control === title && pickerIsOpen()));
+        control.setAttribute("aria-controls", innerWidth < DESKTOP_MIN ? panels.bank.id : bankPopover.id);
+        control.setAttribute("aria-label", `${control.textContent.trim().replace(/\s+/gu, " ")}。展示一覧を開く`);
+      }
+      const readout = title?.closest("section") || dock;
+      if (!observedReadouts.has(readout)) {
+        observedReadouts.add(readout);
+        resizePicker.observe(readout);
+      }
+      const bounds = readout.getBoundingClientRect();
+      japanLayer.style.setProperty("--map-picker-readout-height", `${bounds.height}px`);
+      japanLayer.style.setProperty("--map-picker-lift", `${Math.max(18, panels.bank.getBoundingClientRect().top - bounds.top + 12)}px`);
+      // Leave the top-left Back/Demo controls clear, even on short desktops.
+      japanLayer.style.setProperty("--map-picker-available-height", `${Math.max(120, bounds.top - 86)}px`);
+    };
+    if (!panels.bank.id) panels.bank.id = "map-exhibit-bank";
+    japanLayer.addEventListener("click", (event) => {
+      const title = event.target.closest?.("[data-map-bank-toggle]");
+      if (!title) return;
+      pickerTrigger()?.click();
+      syncPicker();
+      if (!pickerIsOpen()) title.focus({ preventScroll: true });
+    });
+    for (const trigger of [bankTrigger, mobileBankTrigger].filter(Boolean)) {
+      new MutationObserver(syncPicker).observe(trigger, { attributes: true, attributeFilter: ["aria-expanded"] });
+    }
+    addEventListener("resize", syncPicker, { passive: true });
+    for (const event of ["gaia:japan-mode-change", "gaia:live-exhibit-change", "gaia:estat-exhibit-change", "gaia:firms-change", "gaia:planet-signals-change"]) {
+      addEventListener(event, () => {
+        if (pickerIsOpen()) pickerTrigger()?.click();
+        requestAnimationFrame(syncPicker);
+      });
+    }
+    document.addEventListener("pointerdown", (event) => {
+      if (innerWidth >= DESKTOP_MIN || !pickerIsOpen() || panels.bank.contains(event.target)
+        || event.target.closest?.("[data-map-bank-toggle]")) return;
+      pickerTrigger()?.click();
+    }, { capture: true });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !pickerIsOpen()) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      pickerTrigger()?.click();
+      pickerFocusTarget()?.focus({ preventScroll: true });
+    }, { capture: true });
+    panels.bank.addEventListener("click", (event) => {
+      if (!event.target.closest?.(".map-mode-button") || !pickerIsOpen()) return;
+      requestAnimationFrame(() => pickerFocusTarget()?.focus({ preventScroll: true }));
+    }, { capture: true });
     [bankPrevious, bankNext].forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
@@ -382,7 +467,7 @@
   const measureLayout = () => {
     scheduled = 0;
     const desktop = innerWidth >= DESKTOP_MIN;
-    const legendTarget = desktop ? japanLayer : panels.data;
+    const legendTarget = desktop || legendDock?.classList.contains("is-user-positioned") ? japanLayer : panels.data;
     if (legendDock instanceof HTMLElement && legendTarget instanceof HTMLElement && legendDock.parentElement !== legendTarget) {
       legendTarget.append(legendDock);
     }

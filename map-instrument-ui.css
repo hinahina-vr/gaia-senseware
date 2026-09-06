@@ -227,6 +227,36 @@ body.map-grid-desktop [data-gaia-mode-guide-replay="map"]:is(:hover, :focus-visi
 .japan-poi-source-icon { display: grid; width: 28px; height: 28px; font-size: 0; place-items: center; }
 .japan-poi-source-icon svg { width: 18px; height: 18px; }
 
+/* Country history is lazy-loaded inside the existing POI, never a second popup. */
+#japan-poi-card.has-country-history { z-index: 40; width: min(540px, calc(100vw - 40px)); }
+#japan-poi-card.has-country-history #japan-poi-close { position: sticky; float: right; top: 0; z-index: 2; margin: -8px -12px 0 0; background: #112833; }
+#japan-poi-card.has-country-history .japan-poi-fact:last-child { grid-column: 1 / -1; }
+.country-emissions-history { margin-top: 12px; color: #bdced5; font: 400 12px/1.6 var(--font-ui-ja); }
+.country-emissions-history[hidden] { display: none; }
+.country-emissions-status { display: grid; min-height: 230px; margin: 0; place-content: center; color: #a5bec8; }
+.country-emissions-figure { margin: 0; }
+.country-emissions-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; margin-bottom: 6px; }
+.country-emissions-caption strong { color: #e2ecef; font-weight: 500; }
+.country-emissions-caption span { color: #9fb8c3; font-size: 11px; }
+.country-emissions-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.country-emissions-chart text { fill: #a7bdc7; font: 12px var(--font-ui-ja); }
+.country-emissions-grid { stroke: rgba(168, 203, 215, .19); stroke-width: 1; }
+.country-emissions-line { fill: none; stroke: #edbb87; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.country-emissions-point { fill: #edbb87; }
+.country-emissions-selected-guide { stroke: #b5ced6; stroke-width: 1; stroke-dasharray: 3 4; }
+.country-emissions-selected { fill: #fff1d6; stroke: #142b35; stroke-width: 2; }
+.country-emissions-selected-note { margin: 3px 0 5px; color: #f0c794; font-variant-numeric: tabular-nums; }
+.country-emissions-note { margin: 0; color: #92adb8; font-size: 10px; line-height: 1.7; }
+.country-emissions-values { margin-top: 5px; color: #b5d4dc; }
+.country-emissions-values summary { display: list-item; width: fit-content; min-height: 44px; padding-block: 12px; cursor: pointer; font-size: 11px; }
+.country-emissions-values :is(summary, .country-emissions-table-scroll):focus-visible { outline: 1px solid #b5d4dc; outline-offset: 2px; }
+.country-emissions-table-scroll { max-height: 180px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.country-emissions-values table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.country-emissions-values caption { text-align: left; color: #95aeb9; font-size: 10px; }
+.country-emissions-values :is(th, td) { padding: 4px 8px; border-bottom: 1px solid rgba(168, 203, 215, .13); text-align: right; font-weight: 400; }
+.country-emissions-values th:first-child { text-align: left; }
+.country-emissions-values .is-selected { color: #f0c794; background: rgba(237, 187, 135, .06); }
+
 /* Observation values, freshness and provenance have distinct compact groups.
    Retain overflow:auto as an accessibility fallback, not a clipped panel. */
 #japan-poi-card.has-observation-summary .japan-poi-meta { display: block; }
@@ -245,6 +275,7 @@ body.map-grid-desktop [data-gaia-mode-guide-replay="map"]:is(:hover, :focus-visi
 @media (max-width: 900px) {
   #gaia-map-zoom-controls { right: max(10px, env(safe-area-inset-right)); }
   #map-signal-encoding-legend-dock .signal-encoding-legend { grid-template-columns: 1fr; }
+  #japan-poi-card.has-country-history { top: auto !important; right: 12px; bottom: max(84px, calc(env(safe-area-inset-bottom) + 70px)); left: 12px !important; width: auto; }
 }
 @media (max-width: 720px) {
   #japan-poi-card {
@@ -256,6 +287,8 @@ body.map-grid-desktop [data-gaia-mode-guide-replay="map"]:is(:hover, :focus-visi
     padding: 16px 18px 10px;
   }
   .japan-poi-name { font-size: 19px; }
+  #japan-poi-card.has-country-history { width: auto; }
+  .country-emissions-chart text { font-size: 17px; }
 }
 
 @media (max-height: 540px) and (min-width: 721px) {

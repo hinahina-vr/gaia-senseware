@@ -248,22 +248,22 @@ try {
       assert.equal(await liveSelectorToggle.isVisible(), true, "pc: live chapter center control is hidden");
       assert.equal(await liveSelectorToggle.locator("i").count(), 0, "pc: chapter title must not show a dropdown chevron");
       assert.equal(await liveSelectorToggle.getAttribute("aria-expanded"), "false");
-      assert.equal(await page.locator(".gaia-live-deck-modes").isVisible(), false, "pc: live selector should start collapsed");
+      assert.equal(await page.locator(".map-dock-bank-popover").isVisible(), false, "pc: shared selector should start collapsed");
       await liveSelectorToggle.click();
-      await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
-      assert.equal(await page.locator(".gaia-live-deck-modes").isVisible(), true, "pc: live selector did not open");
-      assert.equal(await page.locator(".gaia-live-deck-modes button").count(), 15, "pc: live selector must expose every map chapter");
+      await page.waitForFunction(() => document.querySelector(".map-mode-bank")?.classList.contains("is-dock-bank-expanded"));
+      assert.equal(await page.locator(".map-dock-bank-popover").isVisible(), true, "pc: shared selector did not open");
+      assert.equal(await page.locator(".map-mode-bank .map-mode-button").count(), 30, "pc: selector must expose every map chapter");
       await page.waitForTimeout(700);
       await page.screenshot({ path: path.join(outputDir, "pc-live-chapter-selector-open.png"), fullPage: false });
-      await page.locator('.gaia-live-deck-modes button[data-live-deck-kind="live"][data-live-deck-index="4"]').click();
-      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "14"
+      await page.locator('.map-mode-bank [data-live-exhibit="cloud-drift"]').click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "19"
         && document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
-        && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
+        && !document.querySelector(".map-mode-bank")?.classList.contains("is-dock-bank-expanded"));
       await liveSelectorToggle.click();
-      await page.locator('.gaia-live-deck-modes button[data-live-deck-kind="standard"][data-live-deck-index="1"]').click();
-      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "02"
+      await page.locator('.map-mode-bank [data-map-standard-index="1"]').click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "07"
         && !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
-        && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
+        && !document.querySelector(".map-mode-bank")?.classList.contains("is-dock-bank-expanded"));
       await page.locator('.map-mode-bank [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
       const liveChapterSteps = page.locator(".gaia-live-deck-chapter [data-live-deck-step]");
       await liveChapterSteps.first().click();

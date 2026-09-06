@@ -25,8 +25,8 @@
   const SCENE_TITLE_HOLD_MS = 1664;
   const SCENE_TITLE_OUT_MS = 360;
   const SCENE_REVEAL_MS = 920;
-  const FINALE_EXIT_COVER_MS = 760;
-  const FINALE_EXIT_BLACK_HOLD_MS = 360;
+  const FINALE_EXIT_COVER_MS = 2_400;
+  const FINALE_EXIT_WHITE_HOLD_MS = 600;
   const FINALE_EXIT_REVEAL_MS = 1_850;
   const FINALE_EXIT_DESTINATION_WAIT_MS = 8_000;
   const segmenter = typeof Intl?.Segmenter === "function"
@@ -586,20 +586,21 @@
       finaleExit.disabled = true;
       const exitVeil = createElement("div", "true-end-exit-veil");
       exitVeil.setAttribute("aria-hidden", "true");
-      exitVeil.dataset.phase = "flash";
-      document.body.append(exitVeil);
-
-      if (reducedMotion()) {
-        exitVeil.dataset.phase = "black";
-        onExit?.();
-        exitVeil.remove();
-        return;
-      }
-
-      requestAnimationFrame(() => { exitVeil.dataset.phase = "covering"; });
-      window.setTimeout(() => {
-        exitVeil.dataset.phase = "black";
+      const reduced = reducedMotion();
+      exitVeil.style.setProperty("--true-end-exit-cover-duration", `${reduced ? 400 : FINALE_EXIT_COVER_MS}ms`);
+      exitVeil.style.setProperty("--true-end-exit-reveal-duration", `${reduced ? 400 : FINALE_EXIT_REVEAL_MS}ms`);
+      // Wait for the actual fade to finish before changing screens. There is
+      // one continuous rise to white, no noise, flashing or black interlude.
+      exitVeil.addEventListener("animationend", (event) => {
+        if (event.target !== exitVeil) return;
+        if (event.animationName === "true-end-exit-reveal") {
+          exitVeil.remove();
+          return;
+        }
+        if (event.animationName !== "true-end-exit-cover") return;
+        exitVeil.dataset.phase = "white";
         window.setTimeout(() => {
+          if (!exitVeil.isConnected) return;
           onExit?.();
           const destinationWaitStartedAt = performance.now();
           const revealDestination = () => {
@@ -613,11 +614,12 @@
               return;
             }
             exitVeil.dataset.phase = "revealing";
-            window.setTimeout(() => exitVeil.remove(), FINALE_EXIT_REVEAL_MS + 120);
           };
           requestAnimationFrame(revealDestination);
-        }, FINALE_EXIT_BLACK_HOLD_MS);
-      }, FINALE_EXIT_COVER_MS);
+        }, reduced ? 0 : FINALE_EXIT_WHITE_HOLD_MS);
+      });
+      exitVeil.dataset.phase = "covering";
+      document.body.append(exitVeil);
     });
 
     transitioning = true;

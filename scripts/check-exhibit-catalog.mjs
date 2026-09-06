@@ -35,7 +35,7 @@ for (const unknown of ["unknown", "", null, undefined]) {
   }
 }
 
-assert.deepEqual(LIVE_EXHIBITS.map(exhibit => exhibit.number), ["10", "11", "12", "13", "14", "15"]);
+assert.deepEqual(LIVE_EXHIBITS.map(exhibit => exhibit.number), ["15", "16", "17", "18", "19", "20"]);
 assert.deepEqual(LIVE_EXHIBITS.map(exhibit => exhibit.key), ["weatherWindSpeed", "forecastCo2", "weatherPrecipitation", "weatherTemperature", "cloudCover", "pm25"]);
 for (const exhibit of LIVE_EXHIBITS) {
   assert(exhibit.title && exhibit.shortTitle && exhibit.question && exhibit.caption);
@@ -43,7 +43,7 @@ for (const exhibit of LIVE_EXHIBITS) {
   assert.match(exhibit.accent, /^#[a-f0-9]{6}$/iu);
   assert(Object.isFrozen(exhibit.location));
 }
-assert.deepEqual(ESTAT_EXHIBITS.map(exhibit => exhibit.number), Array.from({ length: 10 }, (_, index) => String(index + 16)));
+assert.deepEqual(ESTAT_EXHIBITS.map(exhibit => exhibit.number), Array.from({ length: 10 }, (_, index) => String(index + 21)));
 assert.deepEqual(ESTAT_EXHIBITS.map(exhibit => exhibit.key), ["migration", "lodging", "housing", "averageTemperature", "summerHigh", "winterLow", "relativeHumidity", "sunshineHours", "precipitation", "rainyDays"]);
 for (const exhibit of ESTAT_EXHIBITS) {
   assert(exhibit.title && exhibit.shortTitle && exhibit.valueLabel && exhibit.unit);

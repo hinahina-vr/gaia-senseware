@@ -38,8 +38,8 @@ try {
       const record = await page.evaluate(point => {
         const rect = document.querySelector("#japan-map").getBoundingClientRect();
         const data = document.querySelector("#japan-overlay").dataset;
-        const scale = Math.max(rect.width / 360, rect.height / 180) * (+data.earthZoom || 1);
-        const x = rect.left + (rect.width - 360 * scale) / 2 + (+data.earthOffsetX || 0) + ((point.lon - 138 + 540) % 360) * scale;
+        const scale = (rect.width >= 901 ? rect.width / 360 : Math.max(rect.width / 360, rect.height / 180)) * (+data.earthZoom || 1);
+        const x = rect.left + (rect.width - 360 * scale) / 2 + (+data.earthOffsetX || 0) + ((point.lon - Number(data.earthCenterLongitude) + 540) % 360) * scale;
         const y = rect.top + (rect.height - 180 * scale) / 2 + (+data.earthOffsetY || 0) + (90 - point.lat) * scale;
         return globalThis.GaiaPlanetSignals.findPoiAt(x, y, "mouse")?.record;
       }, point);

@@ -9429,7 +9429,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll {
   --novel-staff-roll-duration: 60s;
-  --novel-staff-roll-start-offset: 11.2s;
+  --novel-staff-roll-start-offset: 17.6s;
   --novel-staff-roll-closing-gap: 55dvh;
   --novel-staff-roll-viewport-height: 100dvh;
   position: absolute;
@@ -9456,7 +9456,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   pointer-events: none;
   background: #fffefa;
   opacity: 0;
-  animation: novel-staff-roll-whiteout 3.2s cubic-bezier(0.42, 0, 0.23, 1) both;
+  animation: novel-staff-roll-whiteout 6.4s cubic-bezier(0.42, 0, 0.23, 1) both;
 }
 
 .novel-staff-roll > .novel-staff-roll-data-skip {
@@ -9522,7 +9522,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   background-position: center;
   background-size: cover;
   opacity: 0;
-  animation: novel-staff-roll-stage-reveal 3.2s ease-in-out both;
+  animation: novel-staff-roll-stage-reveal 6.4s ease-in-out both;
 }
 
 .novel-staff-roll-stage::before,
@@ -9582,7 +9582,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   margin: 0;
   pointer-events: none;
   opacity: 0;
-  animation: novel-staff-roll-title-focus 8s 3.2s ease-in-out both;
+  /* Fade in for 6.4s, hold for 3.2s, then dissolve for the existing 1.6s. */
+  animation: novel-staff-roll-title-focus 11.2s 6.4s ease-in-out both;
 }
 
 .novel-staff-roll-title > span {
@@ -9925,7 +9926,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll.is-departing .novel-staff-roll-stage {
-  animation: novel-staff-roll-depart 360ms steps(10, end) both;
+  animation: novel-staff-roll-depart 360ms steps(1, end) both;
+  animation-duration: var(--glitch-stage-duration, 360ms);
 }
 
 .novel-staff-roll.is-departing .novel-staff-roll-closing {
@@ -9955,8 +9957,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   background:
     repeating-linear-gradient(180deg, rgba(24, 233, 249, 0.78) 0 2px, transparent 2px 8px, rgba(255, 89, 160, 0.58) 8px 10px, transparent 10px 17px),
     linear-gradient(90deg, transparent 0 14%, rgba(145, 255, 246, 0.78) 14% 36%, transparent 36% 64%, rgba(235, 127, 186, 0.6) 64% 91%, transparent 91%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0 9%, #000 9% 12%, transparent 12% 31%, #000 31% 36%, transparent 36% 57%, #000 57% 59%, transparent 59% 78%, #000 78% 84%, transparent 84%);
-  mask-image: linear-gradient(180deg, transparent 0 9%, #000 9% 12%, transparent 12% 31%, #000 31% 36%, transparent 36% 57%, #000 57% 59%, transparent 59% 78%, #000 78% 84%, transparent 84%);
+  -webkit-mask-image: var(--glitch-bands-mask, linear-gradient(180deg, transparent 0 9%, #000 9% 12%, transparent 12% 31%, #000 31% 36%, transparent 36% 57%, #000 57% 59%, transparent 59% 78%, #000 78% 84%, transparent 84%));
+  mask-image: var(--glitch-bands-mask, linear-gradient(180deg, transparent 0 9%, #000 9% 12%, transparent 12% 31%, #000 31% 36%, transparent 36% 57%, #000 57% 59%, transparent 59% 78%, #000 78% 84%, transparent 84%));
   mix-blend-mode: screen;
   opacity: 0;
 }
@@ -9964,7 +9966,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 .novel-staff-roll-transition-veil::after {
   /* Localized scan dropouts, not a full-screen white strobe. */
   background:
-    linear-gradient(180deg, transparent 0 42%, rgba(194, 250, 255, 0.76) 42% 42.4%, transparent 42.4%),
+    linear-gradient(180deg, transparent 0 var(--glitch-dropout-row, 42%), rgba(194, 250, 255, 0.76) var(--glitch-dropout-row, 42%) var(--glitch-dropout-end, 42.4%), transparent var(--glitch-dropout-end, 42.4%)),
     repeating-linear-gradient(180deg, rgba(4, 12, 20, 0.3) 0 2px, transparent 2px 4px);
   opacity: 0;
 }
@@ -9985,15 +9987,15 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-covering::before {
-  animation: novel-staff-roll-exit-bands 430ms steps(10, end) both;
+  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 410ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::after {
-  animation: novel-staff-roll-exit-dropout 430ms steps(8, end) both;
+  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 390ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering .novel-staff-roll-transition-noise {
-  animation: novel-staff-roll-exit-noise 430ms steps(10, end) both;
+  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 420ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-holding {
@@ -10009,15 +10011,15 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-revealing::before {
-  animation: novel-staff-roll-exit-bands 420ms steps(8, end) both;
+  animation: novel-staff-roll-exit-bands var(--glitch-bands-duration, 410ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing::after {
-  animation: novel-staff-roll-exit-dropout 420ms steps(8, end) both;
+  animation: novel-staff-roll-exit-dropout var(--glitch-dropout-duration, 390ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing .novel-staff-roll-transition-noise {
-  animation: novel-staff-roll-exit-noise 420ms steps(9, end) both;
+  animation: novel-staff-roll-exit-noise var(--glitch-noise-duration, 420ms) steps(1, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing {
@@ -10044,7 +10046,7 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 /* No translation or scale: the logo comes into focus at the same center. */
 @keyframes novel-staff-roll-title-focus {
   0% { opacity: 0; filter: blur(18px); }
-  40%, 80% { opacity: 1; filter: blur(0); }
+  57.1429%, 85.7143% { opacity: 1; filter: blur(0); }
   100% { opacity: 0; filter: blur(0); }
 }
 
@@ -10070,10 +10072,15 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 
 @keyframes novel-staff-roll-depart {
   0% { opacity: 1; filter: contrast(1); transform: translateX(0); }
-  18% { opacity: 1; filter: contrast(1.5); transform: translateX(-16px) skewX(-0.7deg); }
-  34% { opacity: 0.82; filter: contrast(1.8); transform: translateX(24px) skewX(0.9deg); }
-  50% { opacity: 0.68; filter: contrast(1.4); transform: translateX(-10px) skewX(-0.4deg); }
-  68% { opacity: 0.42; filter: contrast(1.7); transform: translateX(18px) skewX(0.6deg); }
+  9% { opacity: 1; filter: contrast(1.4); transform: translateX(var(--glitch-stage-x1, -16px)); }
+  14%, 29% { opacity: .92; filter: contrast(1); transform: translateX(0); }
+  33% { opacity: .86; filter: contrast(1.7); transform: translateX(var(--glitch-stage-x2, 24px)) skewX(.7deg); }
+  38% { opacity: .8; transform: translateX(var(--glitch-stage-x3, 7px)); }
+  51%, 58% { opacity: .64; filter: contrast(1.1); transform: translateX(0); }
+  63% { opacity: .5; filter: contrast(1.5); transform: translateX(var(--glitch-stage-x4, -28px)); }
+  68% { opacity: .42; transform: translateX(var(--glitch-stage-x5, -10px)) skewX(-.6deg); }
+  79% { opacity: .2; transform: translateX(var(--glitch-stage-x6, 18px)); }
+  84% { opacity: .15; filter: contrast(1); transform: translateX(0); }
   100% { opacity: 0; filter: contrast(1); transform: translateX(0); }
 }
 
@@ -10083,30 +10090,44 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 }
 
 @keyframes novel-staff-roll-exit-bands {
-  0% { opacity: 0; transform: translate(0, 0); }
-  12% { opacity: 0.85; transform: translate(-4%, -9%); }
-  28% { opacity: 0.5; transform: translate(7%, 6%); }
-  44% { opacity: 0.92; transform: translate(-8%, 12%); }
-  62% { opacity: 0.65; transform: translate(4%, -4%); }
-  80% { opacity: 0.76; transform: translate(-3%, 8%); }
-  100% { opacity: 0; transform: translate(0, 0); }
+  0%, 7% { opacity: 0; transform: translateX(0); }
+  11% { opacity: var(--glitch-bands-strength, .8); transform: translateX(var(--glitch-bands-x1, -4%)); }
+  17%, 25% { opacity: 0; transform: translateX(0); }
+  29% { opacity: .46; transform: translateX(var(--glitch-bands-x2, 7%)); }
+  32% { opacity: var(--glitch-bands-strength, .8); transform: translateX(var(--glitch-bands-x3, -8%)); }
+  43% { opacity: 0; transform: translateX(0); }
+  52% { opacity: .58; transform: translateX(var(--glitch-bands-x4, 4%)); }
+  55% { opacity: .25; transform: translateX(var(--glitch-bands-x5, 1%)); }
+  68% { opacity: 0; transform: translateX(0); }
+  73% { opacity: var(--glitch-bands-strength, .8); transform: translateX(var(--glitch-bands-x6, -9%)); }
+  79%, 86% { opacity: .42; transform: translateX(var(--glitch-bands-x7, -3%)); }
+  100% { opacity: 0; transform: translateX(0); }
 }
 
 @keyframes novel-staff-roll-exit-dropout {
-  0% { opacity: 0; transform: translateY(-18%); }
-  20% { opacity: 0.62; transform: translateY(22%); }
-  45% { opacity: 0.28; transform: translateY(-7%); }
-  70% { opacity: 0.52; transform: translateY(16%); }
-  100% { opacity: 0; transform: translateY(0); }
+  0%, 16% { opacity: 0; transform: translateX(0); }
+  21% { opacity: .52; transform: translateX(var(--glitch-dropout-x1, 18%)); }
+  27% { opacity: .2; transform: translateX(var(--glitch-dropout-x2, -7%)); }
+  34%, 46% { opacity: 0; transform: translateX(0); }
+  50% { opacity: .48; transform: translateX(var(--glitch-dropout-x3, 11%)); }
+  56% { opacity: .28; transform: translateX(var(--glitch-dropout-x4, -16%)); }
+  71% { opacity: 0; transform: translateX(0); }
+  82% { opacity: .5; transform: translateX(var(--glitch-dropout-x5, -3%)); }
+  89%, 100% { opacity: 0; transform: translateX(0); }
 }
 
 @keyframes novel-staff-roll-exit-noise {
-  0% { opacity: 0; transform: translate(0, 0); }
-  18% { opacity: 0.46; transform: translate(19px, -13px); }
-  36% { opacity: 0.62; transform: translate(-23px, 17px); }
-  54% { opacity: 0.34; transform: translate(11px, 27px); }
-  76% { opacity: 0.5; transform: translate(-17px, -21px); }
-  100% { opacity: 0; transform: translate(0, 0); }
+  0%, 6% { opacity: 0; transform: translateX(0); }
+  13% { opacity: .28; transform: translateX(var(--glitch-noise-x1, 19px)); }
+  18% { opacity: var(--glitch-noise-strength, .5); transform: translateX(var(--glitch-noise-x2, -23px)); }
+  24% { opacity: .1; transform: translateX(var(--glitch-noise-x3, -7px)); }
+  37% { opacity: 0; transform: translateX(0); }
+  49% { opacity: var(--glitch-noise-strength, .5); transform: translateX(var(--glitch-noise-x4, 41px)); }
+  53% { opacity: .22; transform: translateX(var(--glitch-noise-x5, 11px)); }
+  61% { opacity: .06; transform: translateX(var(--glitch-noise-x6, -48px)); }
+  76% { opacity: .34; transform: translateX(var(--glitch-noise-x7, -17px)); }
+  81% { opacity: .16; transform: translateX(var(--glitch-noise-x8, 32px)); }
+  94%, 100% { opacity: 0; transform: translateX(0); }
 }
 
 @keyframes novel-staff-roll-exit-reveal {

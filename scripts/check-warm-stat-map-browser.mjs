@@ -48,11 +48,11 @@ try {
     const evidence = await page.evaluate(() => {
       const base = document.querySelector("#japan-overlay"), overlay = document.querySelector("#gaia-estat-canvas");
       const rect = base.getBoundingClientRect();
-      const scale = Math.max(rect.width / 360, rect.height / 180) * Number(base.dataset.earthZoom);
+      const scale = (rect.width >= 901 ? rect.width / 360 : Math.max(rect.width / 360, rect.height / 180)) * Number(base.dataset.earthZoom);
       const x0 = (rect.width - 360 * scale) / 2 + Number(base.dataset.earthOffsetX || 0);
       const y0 = (rect.height - 180 * scale) / 2 + Number(base.dataset.earthOffsetY || 0);
       const sample = (canvas, lon, lat) => {
-        const x = x0 + ((lon - 138 + 540) % 360) * scale, y = y0 + (90 - lat) * scale;
+        const x = x0 + ((lon - Number(base.dataset.earthCenterLongitude) + 540) % 360) * scale, y = y0 + (90 - lat) * scale;
         if (x < 0 || x >= rect.width || y < 0 || y >= rect.height) return null;
         return [...canvas.getContext("2d").getImageData(Math.floor(x * canvas.width / rect.width), Math.floor(y * canvas.height / rect.height), 1, 1).data];
       };

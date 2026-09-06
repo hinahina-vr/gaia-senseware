@@ -100,7 +100,9 @@ try {
     if (!viewport.reduced) assert(scan.beforeCallout, "M value must appear with the cross, before the detail card");
     assert(label.calloutAlpha > .99, "M value must remain while the card is visible");
     assert.equal(scan.labelMode, "below-marker"); assert.equal(scan.markerStyle, "red-heavy-cross");
-    assert(scan.count > 0); assert(label.top > scan.y + 12 && label.bottom < scan.y + 55);
+    assert(scan.count > 0);
+    assert(label.top > scan.y + 12 && label.bottom < scan.y + 55,
+      `Magnitude bounds beneath cross: ${JSON.stringify({ label, markerX: scan.x, markerY: scan.y })}`);
     assert(label.x - label.width / 2 > 0 && label.x + label.width / 2 < viewport.width && label.bottom < viewport.height);
     const overlapsCard = label.x - label.width / 2 < scan.card.x + scan.card.width && label.x + label.width / 2 > scan.card.x
       && label.top < scan.card.y + scan.card.height && label.bottom > scan.card.y;

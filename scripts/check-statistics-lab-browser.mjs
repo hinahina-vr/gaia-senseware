@@ -197,8 +197,8 @@ try {
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");
     assert.deepEqual(await page.locator("#gaia-statistics-lectures option").allTextContents(), METHOD_GROUPS.map(group => group.name));
     assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(0).textContent(), /この図が示すこと/u);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(1).textContent(), /データから見えたこと/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(0).textContent(), /この分析の根拠/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(1).textContent(), /分析結果の補足/u);
     assert.match(await page.locator(".gaia-statistics-insight").nth(2).textContent(), /ここからは言えないこと/u);
     assert.match(await page.locator(".gaia-statistics-insight").nth(3).textContent(), /次に確かめる/u);
     await page.locator(".gaia-statistics-insights-panel").evaluate((element) => { element.open = true; });

@@ -6,6 +6,67 @@
 
 #japan-layer .map-mode-groups.is-themed { gap: 14px; }
 
+/* Provider/renderer colors belong to the exhibit, not to selection controls.
+   Category headings identify the subject; one shared accent means selected. */
+#japan-layer {
+  --map-picker-text: #c5d5df;
+  --map-picker-border: #425c6b;
+  --map-picker-surface: #10232e;
+  --map-picker-hover: #203641;
+  --map-picker-selected: #164550;
+  --map-picker-accent: #83ded6;
+}
+
+#japan-layer .map-mode-bank .map-mode-button {
+  position: relative;
+  color: var(--map-picker-text);
+  border-color: var(--map-picker-border);
+  background: var(--map-picker-surface);
+  box-shadow: none;
+  text-shadow: none;
+  filter: none;
+  opacity: 1;
+  animation: none;
+  transform: none;
+}
+
+#japan-layer .map-mode-bank .map-mode-button:hover {
+  color: #f1f7fa;
+  border-color: #708997;
+  background: var(--map-picker-hover);
+}
+
+#japan-layer .map-mode-bank .map-mode-button[aria-current="true"] {
+  color: #f0fffd;
+  border-color: var(--map-picker-accent);
+  background: var(--map-picker-selected);
+  box-shadow: inset 0 0 0 1px var(--map-picker-accent);
+}
+
+/* The check is an additional shape cue, not another unexplained color. */
+#japan-layer .map-mode-bank .map-mode-button[aria-current="true"]::after {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 4px;
+  height: 7px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+  content: "";
+}
+
+#japan-layer .map-mode-bank .map-mode-button:focus-visible {
+  outline: 2px solid #eaf7ff;
+  outline-offset: 2px;
+}
+
+#japan-layer .map-mode-bank .map-mode-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+
 #japan-layer .map-mode-groups .map-category-group {
   display: grid;
   gap: 6px;
@@ -13,7 +74,7 @@
   border-top: 1px solid rgba(187, 213, 223, .13);
 }
 
-#japan-layer .map-category-group[data-map-category="climate"] {
+#japan-layer .map-category-group[data-map-category="planet"] {
   padding-top: 0;
   border-top: 0;
 }
@@ -63,19 +124,27 @@
 
 #japan-layer .has-map-category > p:not(.map-category-eyebrow) { display: none !important; }
 
-#japan-layer .gaia-live-deck-mode-group > p {
-  color: var(--map-category-color);
-  font: 550 12px/1.5 var(--font-ui-ja);
-  letter-spacing: .04em;
-}
-
 @media (min-width: 901px) {
-  body.map-grid-desktop #japan-layer .map-mode-groups.is-themed {
-    max-height: calc(100dvh - var(--map-command-dock-height) - 74px);
-    overflow: auto;
+  body.map-grid-desktop #japan-layer:is(.is-live-exhibit, .is-estat-exhibit, .is-firms-exhibit) .map-command-dock {
+    /* A hidden dock must not blur the replacement readout behind its popup. */
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  /* Identical menu geometry above every provider's dock. */
+  body.map-grid-desktop #japan-layer .map-dock-bank-popover {
+    bottom: calc(100% + var(--map-picker-lift, 18px));
+    max-height: var(--map-picker-available-height, calc(100dvh - var(--map-command-dock-height) - 24px));
+    box-sizing: border-box;
+    overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: #537383 transparent;
+  }
+  body.map-grid-desktop #japan-layer .map-mode-groups.is-themed {
+    max-height: none;
+    overflow: visible;
     padding-right: 4px;
   }
   body.map-grid-desktop #japan-layer .gaia-estat-chapter.has-map-category > div { padding-top: 14px; }
@@ -91,6 +160,13 @@
 }
 
 @media (max-width: 900px) {
+  .experience.japan-open #japan-layer:is(.is-estat-exhibit, .is-firms-exhibit).is-mobile-bank-expanded .map-mode-bank {
+    z-index: 100;
+    bottom: calc(var(--map-picker-readout-height, 218px) + 22px) !important;
+    max-height: min(58dvh, calc(100dvh - var(--map-picker-readout-height, 218px) - 100px)) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
   #japan-layer .has-map-category > .map-category-eyebrow { display: block; margin: 0 0 5px; }
   #japan-layer .map-category-group .map-mode-group-label strong { font-size: 12px; }
 }

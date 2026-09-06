@@ -111,17 +111,20 @@
 #japan-layer .gaia-map-actions > .gaia-map-action:disabled { opacity: .5; cursor: wait; filter: none; transform: none; }
 
 @media (min-width: 901px) {
-  :root { --map-exhibit-actions-width: calc(2 * var(--map-dock-action-width)); }
+  :root {
+    --map-exhibit-actions-width: calc(2 * var(--map-dock-action-width));
+    --map-prefecture-label-width: clamp(172px, 12vw, 264px);
+  }
   #japan-layer .gaia-map-actions { min-height: 0; }
   #japan-layer .gaia-map-actions > .gaia-map-action { min-height: 44px; }
   body.map-grid-desktop #japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
     grid-template-columns: var(--map-chapter-width) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .8fr) minmax(max-content, .9fr) minmax(0, 1.45fr) minmax(max-content, .7fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) var(--map-prefecture-label-width) minmax(max-content, .9fr) minmax(0, 1.45fr) minmax(max-content, .7fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .98fr) minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, .82fr) minmax(0, 1.3fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) minmax(max-content, .98fr) minmax(max-content, .8fr) minmax(160px, 1.4fr) minmax(max-content, .82fr) minmax(0, 1.3fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-planet-signals-readout {
     grid-template-columns: var(--map-chapter-width) minmax(0, .95fr) minmax(0, 1.15fr) minmax(0, 1.55fr) var(--map-exhibit-actions-width);
@@ -129,10 +132,16 @@
 }
 @media (min-width: 901px) and (max-width: 1500px) {
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .85fr) minmax(max-content, .9fr) minmax(0, 1.45fr) max-content var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) var(--map-prefecture-label-width) minmax(max-content, .9fr) minmax(0, 1.45fr) max-content var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .98fr) minmax(0, .8fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) minmax(max-content, .98fr) minmax(max-content, .8fr) minmax(160px, 1.4fr) var(--map-exhibit-actions-width);
+  }
+}
+@media (min-width: 1121px) {
+  /* Place names need more room than numeric weather summaries. */
+  body.map-grid-desktop #japan-layer .gaia-planet-signals-readout[data-planet-renderer="quake"] {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .85fr) minmax(0, 1.8fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
   }
 }
 @media (min-width: 901px) and (max-width: 1499px) {
@@ -153,7 +162,7 @@
 }
 @media (min-width: 901px) and (max-width: 1100px) {
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) minmax(0, .9fr) minmax(0, 1.1fr) minmax(0, 1.5fr) var(--map-exhibit-actions-width);
+    grid-template-columns: var(--map-chapter-width) var(--map-prefecture-label-width) minmax(0, 1.1fr) minmax(0, 1.5fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
     grid-template-columns: var(--map-chapter-width) minmax(0, .9fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);

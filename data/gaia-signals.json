@@ -297488,7 +297488,7 @@
           "period": "latest available by country",
           "unit": "%",
           "resolution": "31 country values",
-          "transformation": "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。スライダーは比率の低い国から高い国へ移動します。",
+          "transformation": "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。自動再生とスライダーは発電割合の高い国から低い国へ移動します。",
           "caveat": "COUNTRY VALUE。国によって最新年が異なります。",
           "preview": [
             {

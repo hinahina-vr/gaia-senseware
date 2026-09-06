@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { seedHeardSoundArchive } from "./sound-archive-fixture.mjs";
 
 const [playwrightRoot, chromePath, outputArg = "artifacts/sound-browser", routeUrl = "http://127.0.0.1:4173/#sound"] = process.argv.slice(2);
 if (!playwrightRoot || !chromePath) {
@@ -76,6 +77,7 @@ const assertControlDesign = (design, label) => {
 let context;
 try {
   context = await browser.newContext({ viewport: { width: 2048, height: 1114 } });
+  await seedHeardSoundArchive(context);
   const page = await context.newPage();
   page.setDefaultNavigationTimeout(90_000);
   attachDiagnostics(page);
@@ -222,7 +224,7 @@ try {
   assert(desktopVisualizer.characterSceneRect.left <= 0 && desktopVisualizer.characterSceneRect.top <= 0 && desktopVisualizer.characterSceneRect.right >= 2048 && desktopVisualizer.characterSceneRect.bottom >= 1114, `sound-mode background does not cover the viewport: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.closeRect.left <= 32 && desktopVisualizer.closeRect.top <= 32, `sound-mode return is not at the upper-left: ${JSON.stringify(desktopVisualizer)}`);
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
-  assert((await page.locator(".sound-track-heading strong").textContent())?.trim() === "12 TRACKS", "track count heading is stale");
+  assert((await page.locator(".sound-track-heading strong").textContent())?.trim() === "12 / 12 UNLOCKED", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
   assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
 
@@ -369,6 +371,7 @@ try {
   await context.close();
 
   context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await seedHeardSoundArchive(context);
   const mobile = await context.newPage();
   mobile.setDefaultNavigationTimeout(90_000);
   attachDiagnostics(mobile);

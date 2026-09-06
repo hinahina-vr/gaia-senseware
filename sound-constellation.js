@@ -413,6 +413,7 @@
     };
     const activate = (button) => {
       clearTimeout(hoverTimer);
+      if (button.disabled) { clear(); layout(); return; }
       if (!desktop.matches || active?.button===button) return;
       clear();
       active={ button, ...prepare(button) };
@@ -431,7 +432,12 @@
       });
       button.addEventListener("keydown",event=>{
         const step=event.key==="ArrowRight"?1:event.key==="ArrowLeft"?-1:0;
-        if(step){event.preventDefault();buttons[(i+step+buttons.length)%buttons.length].focus({preventScroll:true});}
+        if(step){
+          event.preventDefault();
+          const available=buttons.filter(b=>!b.disabled);
+          const index=available.indexOf(button);
+          if(available.length)available[(index+step+available.length)%available.length].focus({preventScroll:true});
+        }
       });
     });
     panel.addEventListener("pointerleave",()=>{
@@ -452,9 +458,9 @@
       if(!document.hidden&&active)frame=requestAnimationFrame(draw);
     });
     new MutationObserver(()=>{
-      if(layer.getAttribute("aria-hidden")==="true"){clear();layout();}
-    }).observe(layer,{attributes:true,attributeFilter:["aria-hidden"]});
-    const warm=()=>{ if(desktop.matches) for(const b of buttons) for(const c of b.querySelector(".sound-track-name").textContent.trim())sampleGlyph(c); };
+      if(layer.getAttribute("aria-hidden")==="true" || active?.button.disabled){clear();layout();}
+    }).observe(layer,{attributes:true,subtree:true,attributeFilter:["aria-hidden","disabled"]});
+    const warm=()=>{ if(desktop.matches) for(const b of buttons.filter(b=>!b.disabled)) for(const c of b.querySelector(".sound-track-name").textContent.trim())sampleGlyph(c); };
     if("requestIdleCallback" in window)requestIdleCallback(warm,{timeout:1500});else setTimeout(warm,400);
     layout();
     return { activate, clear };

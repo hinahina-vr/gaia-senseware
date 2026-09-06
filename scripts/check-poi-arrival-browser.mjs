@@ -76,11 +76,11 @@ try {
         const canvas = document.querySelector("#gaia-planet-signals-canvas");
         const r = document.querySelector("#japan-map").getBoundingClientRect();
         const d = document.querySelector("#japan-overlay").dataset;
-        const scale = Math.max(r.width / 360, r.height / 180) * (Number(d.earthZoom) || 1);
+        const scale = (r.width >= 901 ? r.width / 360 : Math.max(r.width / 360, r.height / 180)) * (Number(d.earthZoom) || 1);
         const indices = reduced ? points.map((_, i) => i) : (canvas.dataset.planetArrivalIndices || "").split(",").filter(Boolean).map(Number);
         for (const index of indices) {
           const p = points[index];
-          const x = r.left + (r.width - 360 * scale) / 2 + +d.earthOffsetX + ((p.lon - 138 + 540) % 360) * scale;
+          const x = r.left + (r.width - 360 * scale) / 2 + +d.earthOffsetX + ((p.lon - Number(d.earthCenterLongitude) + 540) % 360) * scale;
           const y = r.top + (r.height - 180 * scale) / 2 + +d.earthOffsetY + (90 - p.lat) * scale;
           const el = document.elementFromPoint(x, y);
           if (!(el?.tagName === "CANVAS" || el?.id === "japan-map") || y < 150 || y > innerHeight - 220) continue;

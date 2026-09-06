@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import vm from "node:vm";
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const runtime = read("novel-mode.js");
@@ -16,5 +17,31 @@ assert.match(read("assets/effects/ending-static-noise.svg"), /feTurbulence.*numO
 assert.match(runtime, /if \(!motionReduced\(\)\) \{\s*const noise = document\.createElement\("div"\);/u);
 assert.match(runtime, /launchTrueEnd\(\{ onReady: revealTrueEnd, deferInterfaceReveal: true \}\)/u);
 assert.doesNotMatch(css, /novel-staff-roll-exit-strobe/u);
-for (const effect of ["bands", "dropout", "noise"]) assert(css.includes(`@keyframes novel-staff-roll-exit-${effect}`));
-console.log("True-end transition passed: 2.97-second choreography, tiled noise, color tears and reduced-motion/ready guards.");
+for (const effect of ["depart", "exit-bands", "exit-dropout", "exit-noise"]) {
+  const start = css.indexOf(`@keyframes novel-staff-roll-${effect}`);
+  assert(start > 0, `Missing ${effect}`);
+  const frames = css.slice(start, css.indexOf("\n}", start));
+  assert.doesNotMatch(frames, /translateY|translate\(|translate3d/u, `${effect} must never move vertically`);
+  assert.match(frames, /translateX\(var\(--glitch-/u, `${effect} does not use per-burst randomness`);
+}
+const window = { matchMedia: () => ({ matches: false }) };
+vm.runInNewContext(read("ending-glitch.js"), { window });
+const samples = [];
+for (let run = 0; run < 30; run++) {
+  const properties = {};
+  window.GaiaEndingGlitch.randomize({ style: { setProperty: (key, value) => { properties[key] = value; } } });
+  samples.push(properties);
+  for (const [layer, amplitude, durationMin, durationMax] of [["stage", 32, 310, 360], ["bands", 12, 340, 420], ["dropout", 19, 280, 400], ["noise", 56, 310, 420]]) {
+    const duration = parseFloat(properties[`--glitch-${layer}-duration`]);
+    assert(duration >= durationMin && duration <= durationMax);
+    for (let index = 1; index <= 8; index++) assert(Math.abs(parseFloat(properties[`--glitch-${layer}-x${index}`])) <= amplitude);
+  }
+}
+assert.equal(new Set(samples.map(sample => JSON.stringify(sample))).size, 30, "Repeated bursts use an identical sequence");
+assert(new Set(samples.map(sample => sample["--glitch-noise-duration"])).size > 5, "Noise cadence never varies");
+window.matchMedia = () => ({ matches: true });
+window.GaiaEndingGlitch.randomize({ style: { setProperty: () => assert.fail("Reduced motion must not start a glitch") } });
+assert.match(runtime, /if \(!motionReduced\(\)\) window\.GaiaEndingGlitch\?\.randomize\(layer\)/u);
+assert.match(runtime, /window\.GaiaEndingGlitch\?\.randomize\(veil\)/u);
+assert.match(read("gaia-mode-loader.js"), /ending-glitch\.js[^\n]*\n\s*"\.\/novel-mode\.js/u);
+console.log("True-end transition passed: randomized horizontal-only bursts, bounded intensity/timing, 2.97-second choreography and reduced-motion/ready guards.");

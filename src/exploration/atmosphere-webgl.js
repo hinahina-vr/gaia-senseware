@@ -1,3 +1,5 @@
+import { EARTH_CENTER_LONGITUDE } from "./world-projection.js?v=gaia-japan-center-1";
+
 const VERTEX = `#version 300 es
 in vec2 position;
 void main() { gl_Position = vec4(position, 0., 1.); }`;
@@ -219,7 +221,7 @@ export function createAtmosphereRenderer(canvas) {
     for (let i = 0; i < textures.length; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(i === 2 ? gl.TEXTURE_3D : gl.TEXTURE_2D, textures[i]); }
     ["scalarField", "vectorField", "grainMap", "cloudReference"].forEach((name, i) => gl.uniform1i(uniforms[name], i));
     gl.uniform2f(uniforms.resolution, width, height);
-    gl.uniform3f(uniforms.geoView, (view.rect.width / 2 - view.originX) / view.scale - 42,
+    gl.uniform3f(uniforms.geoView, (view.rect.width / 2 - view.originX) / view.scale + EARTH_CENTER_LONGITUDE - 180,
       90 - (view.rect.height / 2 - view.originY) / view.scale, view.rect.height / (2 * view.scale));
     gl.uniform1f(uniforms.time, reducedMotion ? 0 : timestamp / 1000);
     gl.uniform1i(uniforms.mode, selectedMode);

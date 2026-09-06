@@ -192,13 +192,13 @@ const findClickableDataPoint = async (page, modeId) => page.evaluate(async (requ
   const zoom = Number(overlay.dataset.earthZoom);
   const offsetX = Number(overlay.dataset.earthOffsetX);
   const offsetY = Number(overlay.dataset.earthOffsetY);
-  const baseScale = Math.max(rect.width / 360, rect.height / 180);
+  const baseScale = (rect.width >= 901 ? rect.width / 360 : Math.max(rect.width / 360, rect.height / 180));
   const scale = baseScale * zoom;
   const width = 360 * scale;
   const height = 180 * scale;
   const originX = (rect.width - width) / 2 + offsetX;
   const originY = (rect.height - height) / 2 + offsetY;
-  const wrap = (longitude) => ((longitude - 138 + 540) % 360) - 180;
+  const wrap = (longitude) => ((longitude - Number(overlay.dataset.earthCenterLongitude) + 540) % 360) - 180;
   for (const [index, row] of (rows || []).entries()) {
     const x = originX + (wrap(row.lon) + 180) * scale;
     const y = originY + (90 - row.lat) * scale;
@@ -656,7 +656,7 @@ try {
       await page.screenshot({ path: modernScreenshot });
       scan.screenshots.push(modernScreenshot);
       scan.clicks.anthropocene = await clickDataPoint(page, "anthropocene-scar");
-      assert.match(scan.clicks.anthropocene.card.type, /人類世の傷跡 \/ 観測データ/u);
+      assert.match(scan.clicks.anthropocene.card.type, /人類世の傷跡 · 観測データ/u);
       assert.match(scan.clicks.anthropocene.card.meta, /2023年.*Mt CO₂.*化石燃料・セメント由来/u);
       scan.anthropoceneTimelineComparison = { historical, modern };
       report.scans.push(scan);
@@ -1500,12 +1500,12 @@ try {
         labelPrimary: overlay.dataset.renewableSelectionLabelPrimary,
         labelSecondary: overlay.dataset.renewableSelectionLabelSecondary,
       }));
-      assert.match(complete.labelPrimary || "", /再生可能電力 \d+\.\d%/u);
+      assert.match(complete.labelPrimary || "", /再生可能エネルギー発電割合 \d+\.\d%/u);
       assert.doesNotMatch(complete.labelPrimary || "", /RENEWABLE/u);
       assert.match(complete.labelSecondary || "", /^日射 .* kWh\/㎡\/日 · 風速 .* m\/s$/u);
       const localizedReadout = await page.locator("#japan-layer [data-signal-value]").innerText();
       assert.doesNotMatch(localizedReadout, /^(?:Bangladesh|Saudi Arabia|Argentina|Australia)\b/u);
-      assert.match(localizedReadout, /再生可能電力 \d+\.\d%/u);
+      assert.match(localizedReadout, /再生可能エネルギー発電割合 \d+\.\d%/u);
       const completeScreenshot = path.join(outputDir, `${viewport.name}-08-all-pois-then-bubble.png`);
       await page.screenshot({ path: completeScreenshot });
       scan.screenshots.push(completeScreenshot);
@@ -2311,7 +2311,7 @@ try {
     const renewableGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(renewableGuide, /暗い青.*明るい水色/u);
     const renewableReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-    assert.match(renewableReadout, /再生可能電力.*%/u);
+    assert.match(renewableReadout, /再生可能エネルギー発電割合.*%/u);
     const renewableScreenshot = path.join(outputDir, `${viewport.name}-08-renewable-country-choropleth.png`);
     await page.screenshot({ path: renewableScreenshot });
     scan.screenshots.push(renewableScreenshot);

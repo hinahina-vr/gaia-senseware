@@ -393,6 +393,10 @@
   const japanMap = document.querySelector("#japan-map");
   const japanTiles = document.querySelector("#japan-tiles");
   const japanOverlay = document.querySelector("#japan-overlay");
+  // Canvas annotations share the same typefaces as the surrounding map UI.
+  const mapRootStyle = getComputedStyle(document.documentElement);
+  const mapHeadingFont = mapRootStyle.getPropertyValue("--font-ja").trim() || '"Yu Mincho", serif';
+  const mapDetailFont = mapRootStyle.getPropertyValue("--font-ui-ja").trim() || '"Yu Gothic UI", sans-serif';
   const mapZoomControls = document.querySelector("#gaia-map-zoom-controls");
   const mapZoomIn = document.querySelector("#gaia-map-zoom-in");
   const mapZoomOut = document.querySelector("#gaia-map-zoom-out");
@@ -403,6 +407,7 @@
   const japanTitle = document.querySelector("#japan-title");
   const mapTitleTransition = document.querySelector("#map-title-transition");
   const mapTitleTransitionText = document.querySelector("#map-title-transition-text");
+  const mapTitleTransitionSubtitle = document.querySelector("#map-title-transition-subtitle");
   const japanDescription = document.querySelector("#japan-description");
   const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
@@ -444,6 +449,7 @@
   const japanPoiClose = document.querySelector("#japan-poi-close");
   const japanPoiType = document.querySelector("#japan-poi-type");
   const japanPoiMeta = document.querySelector("#japan-poi-meta");
+  const japanPoiHistory = document.querySelector("#japan-poi-history");
   const japanPoiSource = document.querySelector("#japan-poi-source");
   const japanPoiPreview = document.querySelector("#japan-poi-preview");
   const japanPoiPreviewKicker = document.querySelector("#japan-poi-preview-kicker");
@@ -478,7 +484,9 @@
   const JAPAN_MOBILE_ZOOM = 4;
   const EARTH_ZOOM = 2;
   const EARTH_MOBILE_ZOOM = 1;
-  const EARTH_INITIAL_CENTER_LONGITUDE = 138;
+  // Keep in sync with src/exploration/world-projection.js: Japan near the
+  // centre, with the Atlantic cut between South America and Africa.
+  const EARTH_INITIAL_CENTER_LONGITUDE = 150;
   const BLUE_CIRCULATION_FOCUS = Object.freeze({
     label: "tokyo",
     lon: 139.6503,
@@ -519,7 +527,7 @@
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-ecologies-reading-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-renewable-descending-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -571,10 +579,10 @@
       action: "地図の棒か国の選択欄で比較し、散布図の点からも選べます。国は自動では切り替わりません。自動で比べる場合は再生ボタンを押します。",
     },
     {
-      title: "再生可能電力は、どの国で多く使われているか？",
-      subject: "31か国の電力に占める再生可能エネルギー比率を、国土の青い濃淡で直接比べる地図です。",
+      title: "再生可能エネルギーの発電割合は、どの国で高いか？",
+      subject: "31か国の総発電量に占める再生可能エネルギーの割合を、国土の青い濃淡で直接比べる地図です。",
       reading: "暗い青ほど比率が低く、明るい水色ほど高い国です。黄色い輪と緑の矢印は選択国の代表地点の日射・風で、国の青色とは別の自然条件です。",
-      action: "スライダーで比率の低い国から高い国へ移動するか、青く塗られた国の代表点を押して現在値を読めます。二地点を結ぶ仮想線は廃止しました。",
+      action: "自動再生とスライダーは、発電割合の高い国から低い国へ進みます。青く塗られた国の代表点を押して現在値も読めます。二地点を結ぶ仮想線は廃止しました。",
     },
     {
       title: "人口の重心は、1960年からどこへ動いたのか？",
@@ -665,6 +673,7 @@
     INTRO_PATHS,
     INTRO_MODE_CHOICES,
     MAP_MODE_DESCRIPTIONS,
+    MAP_TITLE_SUBTITLES,
     SPACE_MODE_CHOICES,
     modes,
     modeConcepts,
@@ -1144,6 +1153,7 @@
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
   let selectedJapanPoi = null;
+  let japanPoiHistoryRequest = 0;
   let hoveredJapanPoi = null;
   let hoveredJapanPoiKey = "";
   let hoveredJapanPoiStartedAt = 0;
@@ -1194,6 +1204,7 @@
   let timelineDisplayTransitionKey = "";
   let japanPoiRevealTimer = 0;
   let japanDeepLinkHandled = false;
+  let mapHasOpened = false;
   let earthViewAnimationFrame = 0;
   let earthViewAnimationTimer = 0;
   let autoEnabled = false;
@@ -1501,8 +1512,8 @@
       exitOrderIndices: [...earthquakeYearTransition.exitOrderIndices],
     };
   };
-  const MAP_TITLE_SEPARATOR_DURATION_MS = 1500;
-  const MAP_TITLE_SEPARATOR_REDUCED_DURATION_MS = 460;
+  const MAP_TITLE_SEPARATOR_DURATION_MS = 2500;
+  const MAP_TITLE_SEPARATOR_REDUCED_DURATION_MS = 1460;
   const MAP_PLOT_REVEAL_LEAD_MS = 110;
   const MAP_PLOT_REVEAL_SPREAD_MS = 980;
   const MAP_PLOT_REVEAL_DURATION_MS = 520;
@@ -1646,6 +1657,8 @@
   const earthLongitudeToMapX = (longitude) =>
     wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
   const formatModeNumber = (index) => String(index + 1).padStart(2, "0");
+  // Public map chapters differ from the unchanged shader/story mode indices.
+  const formatMapModeNumber = (index) => modes[index].mapNumber;
   const formatObservationNumber = (value, maximumFractionDigits = 2) => {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return "—";
@@ -1752,18 +1765,24 @@
     };
   };
 
+  const earthBaseScale = ({ width, height }) =>
+    Math.max(0.1, width >= 901 ? width / 360 : Math.max(width / 360, height / 180));
+
+  const getEarthOverviewTarget = (rect) => {
+    const scale = earthBaseScale(rect);
+    return { focus: "global", zoom: 1,
+      offsetX: rect.width / 2 - ((rect.width - 360 * scale) / 2 + earthLongitudeToMapX(138) * scale),
+      offsetY: 0 };
+  };
+
   const getEarthProjection = (rect) => {
-    const baseScale = Math.max(
-      0.1,
-      Math.max(rect.width / 360, rect.height / 180),
-    );
+    const baseScale = earthBaseScale(rect);
     const zoom = clamp(japanView.earthZoom, 1, 8);
     const scale = baseScale * zoom;
     const width = 360 * scale;
     const height = 180 * scale;
-    // Use a cover scale so the 2:1 world projection always fills viewports
-    // with a different aspect ratio. The unavoidable excess is cropped and
-    // becomes the available drag range instead of appearing as letterboxing.
+    // Desktop overview fits the full world horizontally; portrait keeps the
+    // existing cover/pan behaviour. At higher zoom both can pan as usual.
     const maximumOffsetX = Math.abs(width - rect.width) / 2;
     const maximumOffsetY = Math.abs(height - rect.height) / 2;
     japanView.earthZoom = zoom;
@@ -1791,6 +1810,7 @@
     const tokyoY = projection.originY
       + (90 - BLUE_CIRCULATION_FOCUS.lat) * projection.scale;
     japanOverlay.dataset.earthZoom = zoom.toFixed(4);
+    japanOverlay.dataset.earthCenterLongitude = String(EARTH_INITIAL_CENTER_LONGITUDE);
     japanOverlay.dataset.earthOffsetX = japanView.earthOffsetX.toFixed(2);
     japanOverlay.dataset.earthOffsetY = japanView.earthOffsetY.toFixed(2);
     japanOverlay.dataset.japanScreenX = japanX.toFixed(2);
@@ -1801,12 +1821,15 @@
     mapZoomIn.disabled = zoom >= 7.995;
     mapZoomOut.disabled = zoom <= 1.005;
     mapZoomReset.disabled = zoom <= 1.005
-      && Math.abs(japanView.earthOffsetX) < 0.5
+      && Math.abs(japanView.earthOffsetX - clamp(getEarthOverviewTarget(rect).offsetX, -maximumOffsetX, maximumOffsetX)) < 0.5
       && Math.abs(japanView.earthOffsetY) < 0.5;
     return projection;
   };
 
-  const getEarthWorldCopies = (projection) => [-360, 0, 360].map((repeat) => ({
+  // Rotate the canonical textures into one bounded 360° frame. These two
+  // adjacent texture pieces meet without overlap; all vector paths are clipped
+  // to that frame, so no additional world can appear at either edge.
+  const getEarthWorldCopies = (projection) => [0, 360].map((repeat) => ({
     repeat,
     x: projection.originX + (repeat - EARTH_INITIAL_CENTER_LONGITUDE) * projection.scale,
     y: projection.originY,
@@ -1817,15 +1840,16 @@
   const getEarthViewTarget = (index, rect) => {
     if (modes[index]?.id === "three-ecologies" && rect.width < 680) {
       const zoom = 1.35;
-      const scale = Math.max(rect.width / 360, rect.height / 180) * zoom;
-      return { focus: "ecologies-japan", zoom, offsetX: 0,
+      const scale = earthBaseScale(rect) * zoom;
+      return { focus: "ecologies-japan", zoom,
+        offsetX: rect.width / 2 - ((rect.width - 360 * scale) / 2 + earthLongitudeToMapX(138) * scale),
         offsetY: rect.height * .18 - ((rect.height - 180 * scale) / 2 + (90 - 36) * scale) };
     }
     const focusJapan = modes[index]?.id === "blue-circulation";
     const zoom = focusJapan ? (rect.width <= 720 ? 3.35 : 4.15) : 1;
-    if (!focusJapan) return { focus: "global", zoom, offsetX: 0, offsetY: 0 };
+    if (!focusJapan) return getEarthOverviewTarget(rect);
 
-    const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
+    const baseScale = earthBaseScale(rect);
     const scale = baseScale * zoom;
     const width = 360 * scale;
     const height = 180 * scale;
@@ -1954,7 +1978,7 @@
     const rect = japanMap.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return false;
     const resolvedZoom = clamp(Number(zoom) || 3.65, 1, 8);
-    const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
+    const baseScale = earthBaseScale(rect);
     const scale = baseScale * resolvedZoom;
     const width = 360 * scale;
     const height = 180 * scale;
@@ -2116,10 +2140,7 @@
     const mapY = (anchorY - current.originY) / current.scale;
 
     japanView.earthZoom = clamp(nextZoom, 1, 8);
-    const baseScale = Math.max(
-      0.1,
-      Math.max(rect.width / 360, rect.height / 180),
-    );
+    const baseScale = earthBaseScale(rect);
     const nextScale = baseScale * japanView.earthZoom;
     const nextWidth = 360 * nextScale;
     const nextHeight = 180 * nextScale;
@@ -2151,7 +2172,7 @@
     const rect = japanMap.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return false;
     const nextZoom = clamp(japanView.earthZoom * multiplier, 1, 8);
-    const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
+    const baseScale = earthBaseScale(rect);
     const nextScale = baseScale * nextZoom;
     const nextWidth = 360 * nextScale;
     const nextHeight = 180 * nextScale;
@@ -2176,7 +2197,7 @@
     japanView.centerX = center.x;
     japanView.centerY = center.y;
     japanView.earthZoom = 1;
-    japanView.earthOffsetX = 0;
+    japanView.earthOffsetX = getEarthOverviewTarget(japanMap.getBoundingClientRect()).offsetX;
     japanView.earthOffsetY = 0;
     japanView.earthProjection = null;
     japanTilesDirty = true;
@@ -4046,17 +4067,17 @@
           countryJa: getCountryNameJa(current),
           potential: (signals.potential || []).find((row) => row.iso3 === current.iso3) || null,
         }))
-        .sort((a, b) => a.renewablePercent - b.renewablePercent);
+        .sort((a, b) => b.renewablePercent - a.renewablePercent);
       const index = getSequenceIndex(rows.length);
       const row = rows[index];
       if (!row) return null;
       return {
         kind: "energy",
-        phaseLabel: `再生可能電力 / ${String(rows.length)}か国中 ${String(index + 1)}`,
+        phaseLabel: `再生可能エネルギー発電割合 / ${String(rows.length)}か国中 ${String(index + 1)}`,
         yearLabel: `${row.renewablePercent.toFixed(1)}%`,
-        valueLabel: `${row.countryJa} · 再生可能電力 ${row.renewablePercent.toFixed(1)}%`,
-        methodLabel: "国別塗り分け / 現在の電力構成比",
-        timeLabel: `国 / 再生可能電力比率が低い → 高い ${String(index + 1).padStart(2, "0")}/${String(rows.length).padStart(2, "0")}`,
+        valueLabel: `${row.countryJa} · 再生可能エネルギー発電割合 ${row.renewablePercent.toFixed(1)}%`,
+        methodLabel: "国別塗り分け / 総発電量に占める割合",
+        timeLabel: `国 / 再生可能エネルギー発電割合が高い → 低い ${String(index + 1).padStart(2, "0")}/${String(rows.length).padStart(2, "0")}`,
         selectedIndex: index,
         selected: row,
         rows,
@@ -4421,7 +4442,7 @@
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        meta: `${row.year || "—"}年 / 再生可能電力 ${row.renewablePercent.toFixed(1)}%`,
+        meta: `${row.year || "—"}年 / 再生可能エネルギー発電割合 ${row.renewablePercent.toFixed(1)}%`,
       }));
     }
     if (signalMode.id === "population-tide") {
@@ -4597,6 +4618,7 @@
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "left";
       const prominent = motion.prominent === true;
+      const quiet = motion.tone === "quiet";
       const compactProminent = prominent && motion.compactProminent === true;
       const compact = rect.width < 600;
       const expansive = rect.width >= 2400;
@@ -4613,6 +4635,9 @@
         : (compact ? 12 : (expansive ? 20 : 13));
       const detail = motion.detail || "";
       const detailFontPx = compact ? 10 : expansive ? 16 : 12;
+      const primaryFont = quiet ? `400 ${primaryFontPx}px ${mapHeadingFont}` : `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      const secondaryFont = quiet ? `400 ${secondaryFontPx}px ${mapDetailFont}` : `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
+      const detailFont = quiet ? `400 ${detailFontPx}px ${mapDetailFont}` : `500 ${detailFontPx}px "Noto Sans JP", sans-serif`;
       const horizontalPadding = compactProminent
         ? (compact ? 14 : (expansive ? 24 : 19))
         : expansive ? (prominent ? 28 : 26) : (prominent ? 20 : 18);
@@ -4621,11 +4646,11 @@
         : prominent
         ? (compact ? 80 : (expansive ? 120 : 86))
         : (compact ? 68 : (expansive ? 106 : 72))) + (detail ? (compact ? 22 : expansive ? 30 : 26) : 0);
-      ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      ctx.font = primaryFont;
       const primaryWidth = ctx.measureText(primary).width;
-      ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
+      ctx.font = secondaryFont;
       const secondaryWidth = ctx.measureText(secondary).width;
-      ctx.font = `500 ${detailFontPx}px "Noto Sans JP", sans-serif`;
+      ctx.font = detailFont;
       const detailWidth = detail ? ctx.measureText(detail).width : 0;
       const maximumWidth = Math.min(
         compactProminent ? (expansive ? 760 : 600) : prominent ? (expansive ? 900 : 620) : (expansive ? 760 : 520),
@@ -4662,7 +4687,7 @@
       const anchorLocalY = (anchor.y - cardCenterY) / scale;
       const tailOnTop = preferBelow && anchorLocalY < drawY;
       const tailOnLeft = anchorLocalX <= 0;
-      const cornerRadius = compactProminent ? 8 : prominent ? 11 : 10;
+      const cornerRadius = quiet ? 4 : compactProminent ? 8 : prominent ? 11 : 10;
       const tailHalfHeight = compactProminent ? 5.5 : prominent ? 8 : 7;
       const tailBaseY = clamp(
         anchorLocalY,
@@ -4707,34 +4732,34 @@
       bubbleFill.addColorStop(0.72, prominent ? "rgba(3,18,24,.95)" : "rgba(3,19,25,.9)");
       bubbleFill.addColorStop(1, `rgba(${rgb}, ${prominent ? 0.13 : 0.1})`);
       traceSpeechBubble();
-      ctx.fillStyle = bubbleFill;
-      ctx.shadowColor = `rgba(${rgb}, ${prominent ? 0.22 : 0.16})`;
-      ctx.shadowBlur = compact ? 10 : prominent ? 19 : 15;
-      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = quiet ? "rgba(5,17,25,.96)" : bubbleFill;
+      ctx.shadowColor = quiet ? "transparent" : `rgba(${rgb}, ${prominent ? 0.22 : 0.16})`;
+      ctx.shadowBlur = quiet ? 0 : compact ? 10 : prominent ? 19 : 15;
+      ctx.shadowOffsetY = quiet ? 0 : 4;
       ctx.fill();
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
       traceSpeechBubble();
-      ctx.strokeStyle = color.replace(/,\s*(?:0?\.)?\d+\)$/u, ",.58)");
-      ctx.lineWidth = prominent ? 1.5 : 1;
+      ctx.strokeStyle = quiet ? "rgba(142,224,216,.3)" : color.replace(/,\s*(?:0?\.)?\d+\)$/u, ",.58)");
+      ctx.lineWidth = quiet ? 1 : prominent ? 1.5 : 1;
       ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(drawX + cornerRadius + 5, drawY + 1.5);
       ctx.lineTo(drawRight - cornerRadius - 5, drawY + 1.5);
-      ctx.strokeStyle = `rgba(${rgb}, ${prominent ? 0.2 : 0.14})`;
+      ctx.strokeStyle = quiet ? "rgba(170,242,231,.12)" : `rgba(${rgb}, ${prominent ? 0.2 : 0.14})`;
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillStyle = color;
-      ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      ctx.font = primaryFont;
       ctx.fillText(
         primary,
         drawX + horizontalPadding,
         drawY + (compactProminent ? (compact ? 25 : (expansive ? 38 : 32)) : prominent ? (compact ? 32 : (expansive ? 46 : 35)) : (compact ? 28 : (expansive ? 42 : 30))),
         textWidth - horizontalPadding * 2,
       );
-      ctx.fillStyle = "rgba(222,241,240,.76)";
-      ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
+      ctx.fillStyle = quiet ? "rgba(207,225,230,.9)" : "rgba(222,241,240,.76)";
+      ctx.font = secondaryFont;
       ctx.fillText(
         secondary,
         drawX + horizontalPadding,
@@ -4742,13 +4767,15 @@
         textWidth - horizontalPadding * 2,
       );
       if (detail) {
-        ctx.fillStyle = "rgba(194,218,222,.65)";
-        ctx.font = `500 ${detailFontPx}px "Noto Sans JP", sans-serif`;
+        ctx.fillStyle = quiet ? "rgba(177,203,211,.84)" : "rgba(194,218,222,.65)";
+        ctx.font = detailFont;
         ctx.fillText(detail, drawX + horizontalPadding, drawBottom - (compact ? 12 : 16), textWidth - horizontalPadding * 2);
       }
       ctx.restore();
       japanOverlay.dataset.selectionLabelWidthPx = textWidth.toFixed(1);
       japanOverlay.dataset.selectionLabelHeightPx = String(cardHeight);
+      japanOverlay.dataset.selectionLabelLeftPx = x.toFixed(1);
+      japanOverlay.dataset.selectionLabelTopPx = (y + offsetY).toFixed(1);
       japanOverlay.dataset.selectionLabelPrimaryFontPx = String(primaryFontPx);
       japanOverlay.dataset.selectionLabelSecondaryFontPx = String(secondaryFontPx);
       japanOverlay.dataset.selectionLabelShape = "speech-bubble";
@@ -4864,10 +4891,19 @@
       const alignWithLegend = rect.width > 900 && legendRect?.width > 0;
       const panelWidth = alignWithLegend ? legendRect.width : compact ? Math.min(216, rect.width - 28) : 330;
       const panelHeight = 102;
-      const panelX = alignWithLegend ? legendRect.left - rect.left : compact ? rect.width - panelWidth - 14 : rect.width - panelWidth - 30;
+      const storyMap = storyModeDetour?.kind === "map01";
+      let panelX = alignWithLegend ? legendRect.left - rect.left : compact ? (storyMap ? 14 : rect.width - panelWidth - 14) : rect.width - panelWidth - 30;
       // On narrow layouts the title and timeline cards occupy the first ~210px.
       // Keep this canvas legend below them while retaining the same top-right visual hierarchy.
-      const panelY = getLegendSafePanelY(panelX, panelWidth, defaultY ?? (compact ? 228 : 54), 8);
+      const compactPanelY = storyMap ? 76 : 228;
+      let panelY = getLegendSafePanelY(panelX, panelWidth, defaultY ?? (compact ? compactPanelY : 54), 8);
+      const draggedPanel = globalThis.GaiaMapLegendDrag?.placeMetric({
+        left: rect.left + panelX, top: rect.top + panelY, width: panelWidth, height: panelHeight,
+      });
+      if (draggedPanel) {
+        panelX = draggedPanel.left - rect.left;
+        panelY = draggedPanel.top - rect.top;
+      }
       const gradientX = panelX + 18;
       const gradientY = panelY + 65;
       const gradientWidth = panelWidth - 36;
@@ -5615,7 +5651,9 @@
       delete japanOverlay.dataset.emissionsRadiusSum;
       delete japanOverlay.dataset.emissionsMaximumRadius;
       const selected = sequence?.selected;
-      if (selected) {
+      // The open detail card owns the country's readout; keep the map clear
+      // of the duplicate canvas speech bubble until the card is closed.
+      if (selected && !selectedJapanPoi) {
         const point = pointFor(selected);
         if (visible(point)) {
           drawSelectionLabel(
@@ -5872,8 +5910,8 @@
             { x: point.x + 16, y: point.y },
             activeLabel,
             magnitudeLabel,
-            "rgba(255,203,126,.98)",
-            { prominent: true, compactProminent: true, anchor: point, allowDuringPlotReveal: true,
+            "rgba(232,243,242,.98)",
+            { tone: "quiet", prominent: true, compactProminent: true, anchor: point, allowDuringPlotReveal: true,
               detail: `震源 ${formatCoordinateJa(event.latitude, event.longitude)} · USGS · 日本時間`, preferBelow: true },
           );
           ctx.restore();
@@ -6053,7 +6091,7 @@
           );
           ctx.restore();
           japanOverlay.dataset.renewableSelectedPoiVisible = "true";
-          const selectionPrimary = `${selected.countryJa || selected.country} / 再生可能電力 ${selected.renewablePercent.toFixed(1)}%`;
+          const selectionPrimary = `${selected.countryJa || selected.country} / 再生可能エネルギー発電割合 ${selected.renewablePercent.toFixed(1)}%`;
           const selectionSecondary = `日射 ${potential.solarKwhM2Day.toFixed(2)} kWh/㎡/日 · 風速 ${potential.windSpeedMs.toFixed(2)} m/s`;
           japanOverlay.dataset.renewableSelectionLabelPrimary = selectionPrimary;
           japanOverlay.dataset.renewableSelectionLabelSecondary = selectionSecondary;
@@ -6071,7 +6109,7 @@
       if (state && now >= mapPlotRevealStartedAt) {
         const panel = drawQuantitativeLegendPanel({
           id: "renewable-electricity",
-          title: `再生可能電力比率 / ${selected?.countryJa || selected?.country || "国別"}`,
+          title: `再生可能エネルギー発電割合 / ${selected?.countryJa || selected?.country || "国別"}`,
           current: `${selected?.year || "—"}　${selected?.renewablePercent?.toFixed(1) ?? "—"}%`,
           value: selected?.renewablePercent,
           minimum: 0, maximum: 100, minimumLabel: "0%", maximumLabel: "100%",
@@ -6409,6 +6447,8 @@
           ? "firms-reference-map-only"
           : "standard-mode";
     if (referenceBackdropOnly) {
+      globalThis.GaiaMapLegendDrag?.beginFrame();
+      globalThis.GaiaMapLegendDrag?.endFrame();
       ctx.restore();
       return;
     }
@@ -6453,7 +6493,9 @@
       }
     }
 
+    globalThis.GaiaMapLegendDrag?.beginFrame();
     renderMapInstallationEffect(ctx, rect, nodePoints, now);
+    globalThis.GaiaMapLegendDrag?.endFrame();
 
     if (isTheme(5) && japanDataLayer === "history") {
       renderJapanHistoryReplay(ctx, rect, left, top, now);
@@ -6897,7 +6939,14 @@
       ? MAP_TITLE_SEPARATOR_REDUCED_DURATION_MS
       : MAP_TITLE_SEPARATOR_DURATION_MS;
     mapPlotRevealBlockedUntil = separatorStartedAt + separatorDuration;
-    mapTitleTransitionText.textContent = title;
+    // Keep the numbered identity for transition deduplication, but the
+    // separator itself presents only the exhibit name.
+    mapTitleTransitionText.textContent = japanTitle.textContent;
+    if (mapTitleTransitionSubtitle) {
+      mapTitleTransitionSubtitle.textContent = MAP_TITLE_SUBTITLES[japanTitle.dataset.exhibitNumber] || "";
+    }
+    // Keep the CSS stages and the plot-reveal gate on the same clock.
+    mapTitleTransition.style.setProperty("--map-title-duration", `${separatorDuration}ms`);
     void mapTitleTransition.offsetWidth;
     japanLayer.classList.add("is-map-title-transitioning");
     japanOverlay.dataset.titleSeparatorState = "running";
@@ -6951,7 +7000,7 @@
           "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公式値、破線は近隣5か国からの補完値。左右ボタンとスライダーで31の国・地域を切り替えます。"],
           "anthropocene-scar": ["1945—2023年 化石燃料由来CO₂ × 2016年固定夜間光", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
           "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、31か国の散布図、文化・記憶を順に切り替えて比較します。選択標本で基準年も異なるため、世界全体や因果関係の結論ではありません。"],
-          "earth-organ": ["再生可能電力 / 31か国の塗り分け", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
+          "earth-organ": ["再生可能エネルギー発電割合 / 31か国の塗り分け", "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。自動再生とスライダーは高い国から低い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
           "population-tide": ["1960—2025年 人口 / 世界の国・地域", "琥珀色の円は選択年の人口です。217の国・地域を対象に、円の面積が人口に比例する全年共通尺度で比較します。欠測年は非表示。点は代表位置で、都市の位置や人口密度ではありません。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
@@ -6995,7 +7044,7 @@
     mapScope = "earth";
     japanLayer.dataset.mapScope = mapScope;
     mapScopeKicker.textContent = "Planetary lens / Open map";
-    const mapHeadingNumber = formatModeNumber(mapModeIndex);
+    const mapHeadingNumber = formatMapModeNumber(mapModeIndex);
     const mapHeadingTitle = modes[modeToIndex]?.titleJa || "地球の一呼吸";
     japanTitle.dataset.exhibitNumber = mapHeadingNumber;
     japanTitle.textContent = mapHeadingTitle;
@@ -7060,7 +7109,7 @@
     if (poi.type === "data") {
       const record = poi.record || {};
       return {
-        kicker: `${formatModeNumber(modeToIndex)} / ${modes[modeToIndex].titleJa}`,
+        kicker: `${formatMapModeNumber(modeToIndex)} / ${modes[modeToIndex].titleJa}`,
         title: record.nameJa
           || record.countryJa
           || (record.iso2 || record.countryCode ? getCountryNameJa(record) : "")
@@ -7174,7 +7223,59 @@
     showJapanPoiPreview(poi, event.clientX, event.clientY);
   };
 
+  const resetJapanPoiHistory = () => {
+    japanPoiHistoryRequest += 1;
+    japanPoiHistory.hidden = true;
+    japanPoiHistory.replaceChildren();
+    japanPoiHistory.removeAttribute("aria-busy");
+    delete japanPoiHistory.dataset.state;
+    delete japanPoiHistory.dataset.country;
+    japanPoiCard.classList.remove("has-country-history");
+    japanPoiCard.style.removeProperty("max-height");
+  };
+
+  const loadJapanPoiHistory = (poi, signalMode, clientX, clientY) => {
+    const request = ++japanPoiHistoryRequest;
+    japanPoiCard.classList.add("has-country-history");
+    japanPoiHistory.hidden = false;
+    japanPoiHistory.dataset.state = "loading";
+    japanPoiHistory.dataset.country = poi.record.iso3;
+    japanPoiHistory.setAttribute("aria-busy", "true");
+    const status = document.createElement("p");
+    status.className = "country-emissions-status";
+    status.textContent = "年ごとの排出量を読み込んでいます…";
+    japanPoiHistory.replaceChildren(status);
+    const isCurrent = () => request === japanPoiHistoryRequest
+      && selectedJapanPoi === poi && japanIsOpen;
+    // Paint the country and selected-year value first. The chart module is
+    // fetched only on demand; the annual records reuse the loaded snapshot.
+    requestAnimationFrame(() => window.setTimeout(async () => {
+      if (!isCurrent()) return;
+      try {
+        const { renderCountryEmissionsHistory } = await import("./src/exploration/country-emissions-history.js?v=gaia-country-emissions-history-1");
+        if (!isCurrent()) return;
+        renderCountryEmissionsHistory(japanPoiHistory, {
+          rows: signalMode.signals.emissions,
+          iso3: poi.record.iso3,
+          country: getCountryNameJa(poi.record),
+          selectedYear: Number(poi.record.year),
+        });
+      } catch {
+        if (!isCurrent()) return;
+        status.textContent = "経年グラフを読み込めませんでした。下のリンクから元データを確認できます。";
+        japanPoiHistory.replaceChildren(status);
+        japanPoiHistory.dataset.state = "error";
+      } finally {
+        if (isCurrent()) {
+          japanPoiHistory.setAttribute("aria-busy", "false");
+          positionJapanPoiCard(clientX, clientY);
+        }
+      }
+    }, 0));
+  };
+
   const closeJapanPoi = ({ restoreFocus = false } = {}) => {
+    resetJapanPoiHistory();
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
     if (!selectedJapanPoi) {
@@ -7204,12 +7305,20 @@
   };
 
   const positionJapanPoiCard = (clientX, clientY) => {
-    if (window.innerWidth <= 720) {
+    const layerRect = japanLayer.getBoundingClientRect();
+    const countryHistory = japanPoiCard.classList.contains("has-country-history");
+    const mobileCard = window.innerWidth <= 720 || (countryHistory && window.innerWidth <= 900);
+    if (countryHistory) {
+      // The mobile map may be shorter than the viewport. Bound the chart to
+      // its actual layer, leaving the top toolbar and bottom controls free.
+      const reservedHeight = mobileCard ? 180 : 40;
+      japanPoiCard.style.maxHeight = `${Math.max(140, layerRect.height - reservedHeight)}px`;
+    }
+    if (mobileCard) {
       japanPoiCard.style.removeProperty("left");
       japanPoiCard.style.removeProperty("top");
       return;
     }
-    const layerRect = japanLayer.getBoundingClientRect();
     const cardWidth = Math.min(japanPoiCard.offsetWidth || 480, layerRect.width - 40);
     const cardHeight = Math.min(japanPoiCard.offsetHeight || 330, layerRect.height - 40);
     const localX = clientX - layerRect.left;
@@ -7279,6 +7388,7 @@
       }));
     }
     japanPoiCard.hidden = false;
+    japanPoiCard.scrollTop = 0;
     japanPoiCard.setAttribute("aria-hidden", "false");
     japanLayer.classList.add("japan-poi-open");
     requestAnimationFrame(() => {
@@ -7340,6 +7450,7 @@
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
     clearJapanPoiHover();
+    resetJapanPoiHistory();
     selectedJapanPoi = poi;
     japanPoiCard.hidden = true;
     japanPoiCard.setAttribute("aria-hidden", "true");
@@ -7380,11 +7491,16 @@
         }
         updateSignalInterface();
       }
-      japanPoiType.textContent = `${modes[modeToIndex].titleJa} / 観測データ`;
+      japanPoiType.textContent = activeSignalMode?.id === "anthropocene-scar"
+        ? `${getCountryNameJa(record)} / ${modes[modeToIndex].titleJa} · 観測データ`
+        : `${modes[modeToIndex].titleJa} / 観測データ`;
       japanPoiMeta.textContent = record.meta;
       setJapanPoiSource(poi);
       japanWaveReplay = null;
       showJapanPoiCard(clientX, clientY);
+      if (activeSignalMode?.id === "anthropocene-scar" && record.iso3) {
+        loadJapanPoiHistory(poi, activeSignalMode, clientX, clientY);
+      }
     } else if (poi.type === "history") {
       const event = poi.event;
       co2TimelineHeld = true;
@@ -7776,6 +7892,10 @@
               ? `${timeline.referencePpm.toFixed(1)} ppm / 予想の幅 ${timeline.lower95Ppm.toFixed(1)}–${timeline.upper95Ppm.toFixed(1)}`
               : `${timeline.referencePpm.toFixed(1)} ppm / 実測 ${timeline.observedCells || 0} + 補完 ${timeline.imputedCells || 0}`
             : "CO₂時系列を読み込み中",
+          primaryValue: timeline ? `${timeline.referencePpm.toFixed(1)} ppm` : null,
+          detailValues: timeline ? timeline.kind === "scenario"
+            ? ["予想の幅", `${timeline.lower95Ppm.toFixed(1)}–${timeline.upper95Ppm.toFixed(1)}`]
+            : [`実測 ${timeline.observedCells || 0}`, `+ 補完 ${timeline.imputedCells || 0}`] : null,
           note: timeline
             ? `${timeline.warning} 世界地図をタップすると${grid?.resolutionDegrees || 2.5}°セルの値を表示します。`
             : "1958〜2050の時系列を準備しています。",
@@ -7869,10 +7989,10 @@
       const state = getMapSequenceState(signalMode);
       const current = state?.selected;
       return {
-        output: state?.phaseLabel || "再生可能電力",
+        output: state?.phaseLabel || "再生可能エネルギー発電割合",
         location: current?.countryJa || current?.country || "—",
-        value: `再生可能電力 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
-        note: "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。黄色の日射と緑の風は選択国の補足で、現在の比率を決める因果表示ではありません。",
+        value: `再生可能エネルギー発電割合 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
+        note: "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。黄色の日射と緑の風は選択国の補足で、現在の比率を決める因果表示ではありません。",
         temporal: true,
       };
     }
@@ -8051,7 +8171,7 @@
       );
     } else if (signalMode.id === "earth-organ") {
       metrics.push(
-        observationMetric("renewable_percent", "再生可能電力", sequence?.selected?.renewablePercent, "%"),
+        observationMetric("renewable_percent", "再生可能エネルギー発電割合", sequence?.selected?.renewablePercent, "%"),
         observationMetric("solar_kwh_m2_day", "日射条件", sequence?.selected?.potential?.solarKwhM2Day, "kWh/m²/day"),
         observationMetric("wind_speed_ms", "風速条件", sequence?.selected?.potential?.windSpeedMs, "m/s"),
       );
@@ -8209,12 +8329,35 @@
         ? `ACT ${signalMode.act.number} / ${signalMode.act.title}`
         : "観測データ";
       const signalValue = consoleElement.querySelector("[data-signal-value]");
+      signalValue.classList.toggle("has-long-metric-label", signalMode?.id === "earth-organ");
       const signalLocation = isStoryTemperatureInteraction ? "" : readout.location || "";
-      signalValue.textContent = isStoryTemperatureInteraction
-        ? `${breathingState?.timeline?.referencePpm?.toFixed(1) || "—"} ppm / 気温偏差 ${breathingState?.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
-        : signalLocation
-          ? `${signalLocation}\n${readout.value}`
-          : readout.value;
+      const hasBreakdown = !isStoryTemperatureInteraction && consoleElement.classList.contains("signal-console-map")
+        && Boolean(readout.primaryValue && readout.detailValues?.length);
+      signalValue.classList.toggle("has-breakdown", hasBreakdown);
+      if (hasBreakdown) {
+        let primary = signalValue.querySelector(".signal-value-primary");
+        let details = signalValue.querySelector(".signal-value-details");
+        if (!primary || !details) {
+          primary = document.createElement("b");
+          primary.className = "signal-value-primary";
+          details = document.createElement("small");
+          details.className = "signal-value-details";
+          signalValue.replaceChildren(primary, details);
+        }
+        primary.textContent = readout.primaryValue;
+        if (details.children.length !== readout.detailValues.length) {
+          details.replaceChildren(...readout.detailValues.map(() => document.createElement("span")));
+        }
+        [...details.children].forEach((item, index) => { item.textContent = readout.detailValues[index]; });
+        signalValue.setAttribute("aria-label", readout.value);
+      } else {
+        signalValue.removeAttribute("aria-label");
+        signalValue.textContent = isStoryTemperatureInteraction
+          ? `${breathingState?.timeline?.referencePpm?.toFixed(1) || "—"} ppm / 気温偏差 ${breathingState?.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
+          : signalLocation
+            ? `${signalLocation}\n${readout.value}`
+            : readout.value;
+      }
       signalValue.classList.toggle("has-location", Boolean(signalLocation));
       consoleElement.querySelector("[data-signal-time-output]").textContent = readout.output;
       consoleElement.querySelector("[data-signal-time-label]").textContent = showTimeline
@@ -8238,6 +8381,20 @@
         input.value = String(signalTimePosition);
       }
       input.disabled = !readout.temporal;
+      const stepCount = signalMode?.id === "forest-cloud-engine"
+        ? signalMode.signals.precipitation?.length
+        : isWasteCountrySelector
+          ? signalMode.signals.countryWaste?.length
+          : signalMode?.id === "earth-organ"
+            ? sequenceState?.rows?.length
+            : 0;
+      if (stepCount && Number.isInteger(sequenceState?.selectedIndex)) {
+        input.dataset.mapStepCount = String(stepCount);
+        input.dataset.mapStepIndex = String(sequenceState.selectedIndex);
+      } else {
+        delete input.dataset.mapStepCount;
+        delete input.dataset.mapStepIndex;
+      }
       if (isWasteCountrySelector) {
         input.setAttribute("aria-label", "表示する国・地域を選ぶ");
         input.setAttribute("aria-valuetext", `${sequenceState.selectedIndex + 1}番目、${getCountryNameJa(sequenceState.selected)}、再資源化率 ${sequenceState.sourceRecycle.toFixed(1)}%、${sequenceState.selected.valueStatus === "IMPUTED" ? "補完値" : "国連公式値"}`);
@@ -8602,7 +8759,7 @@ if (view === "culture") drawMemoryContext(unescoGlobalSample); // separate view,
 // COUNTRY VALUES with different latest years. Correlation is not causation.`,
     "earth-organ": `const countries = joinByIso3(countryRenewableShare, naturalEarthCountries);
 drawCountryChoropleth(countries, { scale: "dark-blue 0% → cyan 100%" });
-const selected = countries.sort(byRenewableShare)[sequenceIndex];
+const selected = countries.slice().sort((a, b) => b.renewablePercent - a.renewablePercent)[sequenceIndex];
 drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 // Solar and wind are context, not a causal model of the current electricity share.`,
     "population-tide": `const year = mix(1960, 2025, timelinePosition);
@@ -9143,25 +9300,30 @@ for (const country of countryValues) {
   const updateModeInterface = () => {
     const mode = modes[modeToIndex];
     const selectedMapMode = modes[mapModeIndex];
+    const extensionOwnsMap = japanLayer.matches(".is-live-exhibit, .is-estat-exhibit, .is-firms-exhibit");
     modeNumber.textContent = formatModeNumber(modeToIndex);
     modeTitle.textContent = mode.title;
     modeTitleJa.textContent = mode.titleJa;
     modeDescription.textContent = mode.description;
     experience.style.setProperty("--accent", mode.accent);
     experience.style.setProperty("--accent-rgb", mode.rgb);
-    japanLayer.style.setProperty("--map-accent", mode.accent);
-    japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
-    japanLayer.classList.toggle("is-earthquake-mode", isTheme(5));
-    japanModeNumber.textContent = formatModeNumber(mapModeIndex);
-    japanModeTitle.textContent = selectedMapMode.titleJa;
-    japanModeBank.dataset.activeMode = formatModeNumber(mapModeIndex);
-    const mapHeadingNumber = formatModeNumber(mapModeIndex);
-    const mapTitleChanged = japanTitle.textContent !== selectedMapMode.titleJa
-      || japanTitle.dataset.exhibitNumber !== mapHeadingNumber;
-    japanTitle.dataset.exhibitNumber = mapHeadingNumber;
-    japanTitle.textContent = selectedMapMode.titleJa;
-    japanTitle.setAttribute("aria-label", `${mapHeadingNumber} ${selectedMapMode.titleJa}`);
-    if (mapTitleChanged) animateMapTitleTransition(`${mapHeadingNumber}　${selectedMapMode.titleJa}`);
+    // The original snapshot may finish loading after the featured entry opens.
+    // Refresh its background state without replacing the active provider's UI.
+    if (!extensionOwnsMap) {
+      japanLayer.style.setProperty("--map-accent", mode.accent);
+      japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
+      japanLayer.classList.toggle("is-earthquake-mode", isTheme(5));
+      japanModeNumber.textContent = formatMapModeNumber(mapModeIndex);
+      japanModeTitle.textContent = selectedMapMode.titleJa;
+      japanModeBank.dataset.activeMode = formatMapModeNumber(mapModeIndex);
+      const mapHeadingNumber = formatMapModeNumber(mapModeIndex);
+      const mapTitleChanged = japanTitle.textContent !== selectedMapMode.titleJa
+        || japanTitle.dataset.exhibitNumber !== mapHeadingNumber;
+      japanTitle.dataset.exhibitNumber = mapHeadingNumber;
+      japanTitle.textContent = selectedMapMode.titleJa;
+      japanTitle.setAttribute("aria-label", `${mapHeadingNumber} ${selectedMapMode.titleJa}`);
+      if (mapTitleChanged) animateMapTitleTransition(`${mapHeadingNumber}　${selectedMapMode.titleJa}`);
+    }
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
     modeButtons.forEach((button, index) => {
@@ -9171,12 +9333,13 @@ for (const country of countryValues) {
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     });
     japanModeButtons.forEach((button, index) => {
-      button.setAttribute("aria-current", index === mapModeIndex ? "true" : "false");
+      button.setAttribute("aria-current", !extensionOwnsMap && index === mapModeIndex ? "true" : "false");
     });
     updateIntroSelection();
 
     renderSource();
     renderConcept();
+    if (extensionOwnsMap) return;
     updateSignalInterface();
     const signalMode = getActiveSignalMode();
     if (
@@ -9190,7 +9353,7 @@ for (const country of countryValues) {
       updateMapObservationNarrative();
       dataLedger.updateMode(
         { ...signalMode, titleJa: mode.titleJa },
-        modeToIndex + 1,
+        formatMapModeNumber(modeToIndex),
         gaiaSnapshot.generatedAt,
       );
     }
@@ -9329,6 +9492,11 @@ for (const country of countryValues) {
   });
 
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
+    delete japanLayer.dataset.mapEntryExhibit;
+    globalThis.GaiaLiveExhibits?.deactivate?.();
+    globalThis.GaiaEstatExhibits?.deactivate?.();
+    globalThis.GaiaFirmsExhibit?.deactivate?.();
+    globalThis.GaiaPlanetSignals?.deactivate?.();
     const normalizedIndex = (index + MODE_COUNT) % MODE_COUNT;
     if (japanIsOpen) clearJapanPoiHover();
     if (normalizedIndex === modeToIndex) {
@@ -9515,7 +9683,7 @@ for (const country of countryValues) {
     const mode = modes[index];
     if (!choice || !mode) return null;
     return {
-      number: `${formatModeNumber(index)} / ${choice.code}`,
+      number: `${formatMapModeNumber(index)} / ${choice.code}`,
       label: mode.titleJa,
       copy: MAP_MODE_DESCRIPTIONS[mode.id] || choice.copy,
     };
@@ -9767,10 +9935,10 @@ for (const country of countryValues) {
     const japanModeButton = document.createElement("button");
     japanModeButton.className = "map-mode-button";
     japanModeButton.type = "button";
-    japanModeButton.textContent = formatModeNumber(index);
+    japanModeButton.textContent = formatMapModeNumber(index);
     japanModeButton.setAttribute(
       "aria-label",
-      `${formatModeNumber(index)} ${mode.titleJa}の地図演出へ切り替える`,
+      `${formatMapModeNumber(index)} ${mode.titleJa}の地図演出へ切り替える`,
     );
     japanModeButton.dataset.mapPreviewSurface = "map";
     japanModeButton.setAttribute("aria-describedby", "map-mode-preview");
@@ -9810,9 +9978,8 @@ for (const country of countryValues) {
       }
       if (path === "map") {
         runSceneTransition(() => {
-          japanModeButtons[0]?.click();
           closeIntro({ restoreFocus: false });
-          openJapan({ respectUrlMode: false, focusModeBank: true });
+          openJapan({ respectUrlMode: false, focusModeBank: true, entryExhibit: 1 });
         }, path, event);
         return;
       }
@@ -10313,7 +10480,7 @@ for (const country of countryValues) {
       if (signalMode && gaiaSnapshot) {
         dataLedger.updateMode(
           { ...signalMode, titleJa: modes[modeToIndex].titleJa },
-          modeToIndex + 1,
+          formatMapModeNumber(modeToIndex),
           gaiaSnapshot.generatedAt,
         );
       }
@@ -10358,10 +10525,12 @@ for (const country of countryValues) {
     restoreFocusOnClose = true,
     respectUrlMode = true,
     focusModeBank = false,
+    entryExhibit = null,
   } = {}) => {
     if (japanIsOpen) {
       return;
     }
+    const previousExhibit = Number(japanModeNumber.textContent);
     const usesExplorationSoundtrack = !document.body.classList.contains("novel-open")
       && !experience.classList.contains("gx-story-open");
     if (usesExplorationSoundtrack) {
@@ -10427,6 +10596,15 @@ for (const country of countryValues) {
       updateJapanHash(true);
     }
 
+    // Keep old ?mode= links tied to their stable 1–9 renderer IDs. The public
+    // ?exhibit= parameter follows the new 01–30 route, including lazy providers.
+    const publicExhibit = Number(mapParameters.get("exhibit"));
+    const legacyMode = respectUrlMode && Number.isInteger(requestedMode) && requestedMode >= 1 && requestedMode <= MODE_COUNT;
+    const requestedEntry = Number(entryExhibit) || (respectUrlMode && Number.isInteger(publicExhibit) && publicExhibit >= 1 && publicExhibit <= 30
+      ? publicExhibit : legacyMode ? Number(formatMapModeNumber(mapModeIndex)) : mapHasOpened ? previousExhibit : 1);
+    if (!storyModeDetour) japanLayer.dataset.mapEntryExhibit = String(requestedEntry);
+    else delete japanLayer.dataset.mapEntryExhibit;
+    mapHasOpened = true;
     window.dispatchEvent(new CustomEvent("gaia:japan-open"));
     requestAnimationFrame(() => {
       renderJapanTiles();
@@ -10435,7 +10613,7 @@ for (const country of countryValues) {
       if (new URLSearchParams(window.location.search).get("panel") === "data") {
         openJapanData();
       } else if (focusModeBank) {
-        japanModeButtons[0]?.focus({ preventScroll: true });
+        globalThis.GaiaMapCategories.buttons().find(button => Number(button.textContent.trim()) === requestedEntry)?.focus({ preventScroll: true });
       } else {
         japanClose.focus({ preventScroll: true });
       }
@@ -10507,7 +10685,7 @@ for (const country of countryValues) {
       {
         target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),
         title: "展示を選ぶ",
-        copy: "左右の切替か展示一覧から、6つのテーマに分かれた全30展示を選べます。下の帯には、今見ているテーマと展示名が表示されます。",
+        copy: "左右の切替か展示一覧から、全30展示を選べます。先頭の5展示は「惑星のいま」、続いてテーマ別に並びます。下の帯には、今見ているテーマと展示名が表示されます。",
       },
       {
         target: "[data-signal-time]",
@@ -10981,7 +11159,7 @@ for (const country of countryValues) {
     zoomEarthBy,
     zoomEarthAtLocation,
     openMap: () => {
-      if (!japanIsOpen) openJapan({ updateHash: false, restoreFocusOnClose: false, respectUrlMode: false });
+      if (!japanIsOpen) openJapan({ updateHash: false, restoreFocusOnClose: false, respectUrlMode: false, entryExhibit: Number(formatMapModeNumber(mapModeIndex)) });
     },
     closeMap: () => {
       if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
@@ -11016,7 +11194,7 @@ for (const country of countryValues) {
     const rect = japanMap.getBoundingClientRect();
     const targetX = rect.width < 680 ? .48 : .38, targetY = rect.width < 680 ? .2 : .44;
     const mapX = earthLongitudeToMapX(row.lon), mapY = 90 - row.lat;
-    const baseScale = Math.max(rect.width / 360, rect.height / 180);
+    const baseScale = earthBaseScale(rect);
     // The map clamps pan to its edges. Zoom enough to put western/eastern
     // sites in the open reading area, not underneath the inspector.
     const requiredScale = Math.max(rect.width * targetX / Math.max(1, mapX),

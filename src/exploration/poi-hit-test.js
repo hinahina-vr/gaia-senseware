@@ -1,3 +1,5 @@
+import { earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
+
 // Pick in CSS pixels using the same projection as the exhibit's renderer.
 // The transparent canvas stays pointer-events:none; the map owns pan/pinch/tap.
 export const pickProjectedPoi = (points, view, clientX, clientY, pointerType = "", isVisible = () => true) => {
@@ -10,7 +12,7 @@ export const pickProjectedPoi = (points, view, clientX, clientY, pointerType = "
   let distanceSquared = radius * radius;
   points.forEach((point, index) => {
     if (!isVisible(point, index)) return;
-    const mapX = ((point.lon - 138 + 540) % 360);
+    const mapX = earthLongitudeToMapX(point.lon);
     const px = view.originX + mapX * view.scale;
     const py = view.originY + (90 - point.lat) * view.scale;
     if (px < 0 || py < 0 || px > view.rect.width || py > view.rect.height) return;

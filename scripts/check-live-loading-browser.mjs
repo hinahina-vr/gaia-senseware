@@ -58,7 +58,7 @@ try {
       await page.waitForFunction(number => document.querySelector("#japan-mode-number").textContent === String(number).padStart(2, "0"), number);
     };
     const selectCity = async city => {
-      await page.locator(".gaia-live-city-picker select").selectOption(city);
+      await page.locator(".gaia-live-prefecture-picker select").selectOption(city);
       await page.waitForFunction(city => globalThis.GaiaLiveData.getCity() === city, city);
       await page.evaluate(() => globalThis.GaiaLiveExhibits.pausePoiAutoplay());
     };
@@ -120,7 +120,7 @@ try {
     const cached = await state();
     assert.equal(cached.value, "7.2 m/s");
     assert.match(cached.kicker, /UPDATING/);
-    assert.match(cached.location, /札幌/);
+    assert.equal(cached.location, "01 北海道");
     await page.screenshot({ path: path.join(output, `${width}-cached-updating.jpg`), type: "jpeg", quality: 85 });
     await respond("sapporo", 8.4);
     await settle("sapporo");

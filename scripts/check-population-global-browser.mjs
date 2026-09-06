@@ -51,7 +51,7 @@ try {
         return { year: Number(d.populationSelectedYear), count: Number(d.populationCircleCount), missing: Number(d.populationMissingCount),
           reference: Number(d.populationAreaReference), referenceRadius: Number(d.populationReferenceRadius),
           selected: d.populationSelectedIso3, radius: Number(d.populationSelectedRadius), selectedX: Number(d.populationSelectedScreenX), selectedY: Number(d.populationSelectedScreenY),
-          width: r.width, height: r.height, rect: { x: r.x, y: r.y }, zoom: Number(d.earthZoom), offsetX: Number(d.earthOffsetX), offsetY: Number(d.earthOffsetY), draws: window.__populationDraws,
+          centerLongitude: Number(d.earthCenterLongitude), width: r.width, height: r.height, rect: { x: r.x, y: r.y }, zoom: Number(d.earthZoom), offsetX: Number(d.earthOffsetX), offsetY: Number(d.earthOffsetY), draws: window.__populationDraws,
           card: { x: Number(d.selectionLabelLeftPx), y: Number(d.selectionLabelTopPx), width: Number(d.selectionLabelWidthPx), height: Number(d.selectionLabelHeightPx) } };
       });
       report.latestScan = { viewport: name, ...scan };
@@ -67,10 +67,10 @@ try {
         assert(scan.card.x + scan.card.width <= scan.width - 88, `${name}: compact readout must avoid zoom controls`);
       }
       if (viewport.width >= 1440) {
-        const scale = Math.max(scan.width / 360, scan.height / 180) * scan.zoom;
+        const scale = (scan.width >= 901 ? scan.width / 360 : Math.max(scan.width / 360, scan.height / 180)) * scan.zoom;
         for (const iso3 of ["FRA", "DEU", "ITA", "POL", "UKR", "RUS", "USA", "IND", "CHN", "BRA", "ZAF"]) {
           const row = signals.population.find(row => row.year === year && row.iso3 === iso3);
-          const x = (scan.width - 360 * scale) / 2 + scan.offsetX + ((((row.lon - 138 + 540) % 360) - 180) + 180) * scale;
+          const x = (scan.width - 360 * scale) / 2 + scan.offsetX + ((((row.lon - Number(scan.centerLongitude) + 540) % 360) - 180) + 180) * scale;
           const y = (scan.height - 180 * scale) / 2 + scan.offsetY + (90 - row.lat) * scale;
           const radius = scan.referenceRadius * Math.sqrt(row.population / scan.reference);
           if (x < -radius - 12 || x > scan.width + radius + 12 || y < -radius - 12 || y > scan.height + radius + 12) continue;
@@ -92,8 +92,8 @@ try {
       }
       const scan = await page.evaluate(() => { const overlay = document.querySelector("#japan-overlay"), d = overlay.dataset, r = overlay.getBoundingClientRect();
         return { width: r.width, height: r.height, rect: { x: r.x, y: r.y }, zoom: Number(d.earthZoom), offsetX: Number(d.earthOffsetX), offsetY: Number(d.earthOffsetY) }; });
-      const scale = Math.max(scan.width / 360, scan.height / 180) * scan.zoom;
-      const x = scan.rect.x + (scan.width - 360 * scale) / 2 + scan.offsetX + ((((row.lon - 138 + 540) % 360) - 180) + 180) * scale;
+      const scale = (scan.width >= 901 ? scan.width / 360 : Math.max(scan.width / 360, scan.height / 180)) * scan.zoom;
+      const x = scan.rect.x + (scan.width - 360 * scale) / 2 + scan.offsetX + ((((row.lon - Number(scan.centerLongitude) + 540) % 360) - 180) + 180) * scale;
       const y = scan.rect.y + (scan.height - 180 * scale) / 2 + scan.offsetY + (90 - row.lat) * scale;
       await page.mouse.click(x, y);
       await page.waitForFunction(() => document.querySelector("#japan-overlay").dataset.populationSelectedIso3 === "FRA");

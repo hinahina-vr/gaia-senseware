@@ -85,7 +85,7 @@ try {
   assert.equal(advancing.engine, "webgl-fire-particles");
   assert(advancing.points > 100 && advancing.points <= 1_600);
   assert.equal(advancing.sequence, "acquisition-time");
-  assert.equal(advancing.projection, "japan-centered-equirectangular-138");
+  assert.equal(advancing.projection, "japan-pacific-equirectangular-150");
   assert.equal(advancing.encoding, "frp-size-confidence-alpha-daynight-color");
   assert.equal(advancing.flashCadence, "none");
   assert.equal(advancing.motion, "spatial-continuous-non-pulsing");
