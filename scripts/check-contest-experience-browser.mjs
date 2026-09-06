@@ -466,24 +466,23 @@ try {
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
   await directPage.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-live-exhibit]").length === 6 && globalThis.GaiaMapCategories?.buttons().length === 30, null, { timeout: 15_000 });
   const standardExhibitNumbers = await directPage.evaluate(() => GaiaMapCategories.standardButtons().map(button => button.textContent.trim()));
-  assert.deepEqual(standardExhibitNumbers, ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
+  assert.deepEqual(standardExhibitNumbers, ["06", "07", "08", "09", "10", "11", "12", "13", "14"]);
   assert.equal(await directPage.getByText(/ミツバチ/u).count(), 0, "retired bee exhibit remains visible");
   const bankScreenshot = path.join(outputDir, "map-bank-without-bee.png");
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["10", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: /^Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["11", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: /^CAMSの.+格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。$/u, anchor: /CAMSモデル/u }],
-    ["12", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: /^Open-Meteoの.+降水モデル値を、雨線と水面の波紋密度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["13", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: /^Open-Meteoの.+気温モデル値を、暖気の等温線と光の色温度へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["14", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: /^Open-Meteoの.+総雲量を、地図を流れる雲粒と透過する光の量へ変換します。$/u, anchor: /Open-Meteo/u }],
-    ["15", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: /^CAMSの.+格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。$/u, anchor: /CAMSモデル/u }],
+    ["15", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: /^Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["16", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: /^CAMSの.+格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。$/u, anchor: /CAMSモデル/u }],
+    ["17", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: /^Open-Meteoの.+降水モデル値を、雨線と水面の波紋密度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["18", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: /^Open-Meteoの.+気温モデル値を、暖気の等温線と光の色温度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["19", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: /^Open-Meteoの.+総雲量を、地図を流れる雲粒と透過する光の量へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["20", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: /^CAMSの.+格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。$/u, anchor: /CAMSモデル/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
     if (liveExhibitIndex === 0) {
-      await directPage.locator(".map-dock-bank-trigger").click();
-      await directPage.waitForFunction(() => document.querySelector(".map-dock-bank-trigger")?.getAttribute("aria-expanded") === "true");
+      await directPage.locator(".map-dock-bank-trigger:visible, [data-map-bank-toggle]:visible").first().click();
       await directPage.locator(`.map-mode-bank [data-live-exhibit]`, { hasText: number }).click();
     } else {
       await directPage.locator(".gaia-live-deck-chapter [data-live-deck-step='1']").click();
@@ -540,12 +539,12 @@ try {
     assert(liveGeography.signalStrength >= 0 && liveGeography.signalStrength <= 1, `${number}: normalized signal strength is invalid`);
     assert.equal(liveGeography.signalKey, contract.key, `${number}: visual field is not bound to its measurement key`);
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
-    if (number === "10") {
+    if (number === "15") {
       const openData = directPage.locator("[data-live-deck-source]");
       assert.equal(await openData.isVisible(), true, "10: live SOURCE action is not visible");
       await openData.click();
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
-      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^10 風脈/u, "10: live source panel shows a standard exhibit ledger");
+      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^15 風脈/u, "10: live source panel shows a standard exhibit ledger");
       assert.match(await directPage.locator("#data-ledger-updated").textContent(), /(?:JST|取得日時：—)$/u, "10: source retrieval time or missing-time state is ambiguous");
       assert.match(await directPage.locator("#data-ledger-sources").textContent(), /Open-Meteo/u, "10: source provider is absent from the ledger");
       assert.match(
@@ -641,9 +640,8 @@ try {
   monitor(live4kPage, "live-4k");
   await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await live4kPage.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
-  await live4kPage.locator(".map-dock-bank-trigger").click();
-  await live4kPage.waitForFunction(() => document.querySelector(".map-dock-bank-trigger")?.getAttribute("aria-expanded") === "true");
-  await live4kPage.locator(".map-mode-bank [data-live-exhibit]", { hasText: "10" }).click();
+  await live4kPage.locator(".map-dock-bank-trigger:visible, [data-map-bank-toggle]:visible").first().click();
+  await live4kPage.locator('.map-mode-bank [data-live-exhibit="wind-field"]').click();
   await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   await live4kPage.evaluate(() => { GaiaLiveExhibits.selectObservationPoint("tokyo"); GaiaLiveExhibits.pausePoiAutoplay(); });
   await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "tokyo"
@@ -706,7 +704,7 @@ try {
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
   assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光"]);
   assert(live4kVisualContract.stageCues.every((value) => value.length >= 2), "visual transformation cues are incomplete");
-  const live4kScreenshot = path.join(outputDir, "live-exhibit-10-4k.png");
+  const live4kScreenshot = path.join(outputDir, "live-exhibit-15-4k.png");
   await live4kPage.screenshot({ path: live4kScreenshot, animations: "disabled" });
   report.entry.liveExhibit4k = { screenshot: live4kScreenshot, ...live4kVisualContract };
   await live4kContext.close();
@@ -717,31 +715,32 @@ try {
   monitor(liveMobilePage, "live-mobile");
   await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await liveMobilePage.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
-  await liveMobilePage.locator("#map-mobile-bank-toggle").click();
-  await liveMobilePage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
-  await liveMobilePage.locator(".map-mode-bank [data-live-exhibit]", { hasText: "10" }).click();
+  await liveMobilePage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-map-shell"));
+  await liveMobilePage.locator('[data-mobile-sheet="exhibits"]').click();
+  assert.equal(await liveMobilePage.locator("#map-mobile-sheet [data-mobile-exhibit]").count(), 30);
+  await liveMobilePage.locator('#map-mobile-sheet [data-mobile-exhibit="15"]').click();
   await liveMobilePage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const mobileReadout = await liveMobilePage.locator(".gaia-live-exhibit-readout").boundingBox();
   const mobileVisualContract = await liveMobilePage.evaluate(() => {
-    const readoutRect = document.querySelector(".gaia-live-exhibit-readout").getBoundingClientRect();
-    const titleRect = document.querySelector("[data-live-exhibit-title]").getBoundingClientRect();
+    const titleRect = document.querySelector(".japan-heading h2").getBoundingClientRect();
     const descriptionRect = document.querySelector("#japan-description").getBoundingClientRect();
     const headingRect = document.querySelector(".japan-heading").getBoundingClientRect();
     return {
-      titleContained: titleRect.left >= readoutRect.left && titleRect.right <= readoutRect.right,
+      titleContained: titleRect.left >= 0 && titleRect.right <= innerWidth,
       descriptionHidden: descriptionRect.width <= 1 && descriptionRect.height <= 1,
       englishTitleHidden: getComputedStyle(document.querySelector("[data-live-exhibit-title-en]")).display === "none",
       compactHeader: headingRect.height <= 130,
-      bankCollapsed: !document.querySelector("#japan-layer").classList.contains("is-mobile-bank-expanded"),
-      detailsToggleVisible: document.querySelector("#gaia-live-mobile-toggle").getBoundingClientRect().height >= 44,
-      detailsExpanded: document.querySelector("#gaia-live-mobile-toggle").getAttribute("aria-expanded") === "true",
+      bankCollapsed: !document.querySelector("#map-mobile-sheet").open,
+      toolbar: [...document.querySelectorAll("#map-mobile-toolbar button")].map(node => ({ text: node.textContent.trim(), height: node.getBoundingClientRect().height })),
+      detailsToggleVisible: document.querySelector('[data-mobile-sheet="reading"]').getBoundingClientRect().height >= 44,
+      detailsExpanded: document.querySelector('[data-mobile-sheet="reading"]').getAttribute("aria-expanded") === "true",
       explanationHidden: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height <= 1,
       valueFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-primary > strong")).fontSize),
     };
   });
   assert(mobileReadout && mobileReadout.x >= 0 && mobileReadout.x + mobileReadout.width <= 390, "mobile live readout overflows horizontally");
   assert(mobileReadout.y >= 80 && mobileReadout.y + mobileReadout.height <= 844, "mobile live readout does not preserve a visible map area");
-  assert(mobileReadout.height <= 196, `mobile question-and-actions deck is not compact: ${mobileReadout.height}px`);
+  assert(mobileReadout.height <= 210, `mobile observation dock is not compact: ${mobileReadout.height}px`);
   assert.equal(mobileVisualContract.titleContained, true, "mobile exhibit title clips outside its readout");
   assert.equal(mobileVisualContract.descriptionHidden, true, "mobile live exhibit still displays instructional prose");
   assert.equal(mobileVisualContract.englishTitleHidden, true, "mobile exhibit title retains a space-consuming English subtitle");
@@ -750,20 +749,28 @@ try {
   assert.equal(mobileVisualContract.detailsToggleVisible, true, "mobile exhibit details control is not touchable");
   assert.equal(mobileVisualContract.detailsExpanded, false, "mobile exhibit details must start collapsed");
   assert.equal(mobileVisualContract.explanationHidden, true, "mobile exhibit explanation still hides the map when collapsed");
-  assert(mobileVisualContract.valueFont >= 24, "mobile live value is too small");
-  const liveMobileScreenshot = path.join(outputDir, "live-exhibit-10-mobile.png");
+  assert(mobileVisualContract.valueFont >= 20, "mobile live value is too small");
+  assert.deepEqual(mobileVisualContract.toolbar.map(button => button.text), ["展示一覧", "読み方・凡例", "操作"]);
+  assert(mobileVisualContract.toolbar.every(button => button.height >= 44), "mobile toolbar controls are not touchable");
+  const liveMobileScreenshot = path.join(outputDir, "live-exhibit-15-mobile.png");
   await liveMobilePage.screenshot({ path: liveMobileScreenshot, animations: "disabled" });
-  await liveMobilePage.locator("#gaia-live-mobile-toggle").click();
-  await liveMobilePage.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-mobile-expanded"));
+  await liveMobilePage.locator('[data-mobile-sheet="reading"]').click();
+  await liveMobilePage.waitForFunction(() => document.querySelector("#map-mobile-sheet")?.open && document.querySelector("#map-mobile-sheet")?.dataset.panel === "reading");
   const mobileExpandedContract = await liveMobilePage.evaluate(() => ({
-    explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 70,
-    explanationFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-summary")).fontSize),
+    explanationVisible: document.querySelector("#map-mobile-sheet .map-mobile-sheet-body").getBoundingClientRect().height > 70,
+    explanationFont: Number.parseFloat(getComputedStyle(document.querySelector("#map-mobile-sheet .map-mobile-sheet-body")).fontSize),
+    readingText: document.querySelector("#map-mobile-sheet .map-mobile-sheet-body").textContent,
+    legacyToggleHidden: document.querySelector("#gaia-live-mobile-toggle").getBoundingClientRect().height === 0,
   }));
   assert(mobileExpandedContract.explanationVisible && mobileExpandedContract.explanationFont >= 13, "mobile exhibit explanation is missing or too small when expanded");
-  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 3, "mobile transformation path is incomplete");
-  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 3, "mobile visual transformation symbols are incomplete");
-  const liveMobileExpandedScreenshot = path.join(outputDir, "live-exhibit-10-mobile-expanded.png");
+  assert.match(mobileExpandedContract.readingText, /このパネルを開いた時点/u, "reading panel must identify its snapshot timing");
+  assert.match(mobileExpandedContract.readingText, /単位|m\/s|風速/u, "reading panel lost the observation legend");
+  assert.equal(mobileExpandedContract.legacyToggleHidden, true, "legacy details toggle duplicates the shared reading action");
+  const liveMobileExpandedScreenshot = path.join(outputDir, "live-exhibit-15-mobile-expanded.png");
   await liveMobilePage.screenshot({ path: liveMobileExpandedScreenshot, animations: "disabled" });
+  await liveMobilePage.keyboard.press("Escape");
+  assert.equal(await liveMobilePage.locator("#map-mobile-sheet").evaluate(node => node.open), false);
+  assert.equal(await liveMobilePage.locator('[data-mobile-sheet="reading"]').evaluate(node => node === document.activeElement), true);
   report.entry.liveExhibitMobile = {
     screenshot: liveMobileScreenshot,
     expandedScreenshot: liveMobileExpandedScreenshot,
