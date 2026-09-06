@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import "./check-prefecture-field.mjs";
 
 const sensorRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = path.resolve(sensorRoot, "..");

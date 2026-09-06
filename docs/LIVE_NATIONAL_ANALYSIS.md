@@ -22,6 +22,7 @@
 - ブラウザでも同時更新の一本化、46/47地点・利用率97.9%、通信失敗後の前回値保持、未取得状態からの再試行で47件へ復帰を確認。
 - `node scripts/check-map-action-statistics.mjs`
 - `node scripts/check-live-national-analysis-browser.mjs`
+- 全国データ整形は画面側の静的検査で確認。プロバイダー取得・キャッシュの検査は `sensor-platform/test/check-prefecture-field.mjs` に分離し、`npm --prefix sensor-platform run test:pages` から実行する（画面側のCIにTypeScript依存を持ち込まない）。
 - `node scripts/check-statistics-discovery.mjs`
 - `node scripts/check-statistics-data-insights.mjs`
 - `node scripts/check-statistics-methods.mjs`
