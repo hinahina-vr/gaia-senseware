@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+const runtime = read("novel-mode.js");
+const css = read("novel-mode.css");
+const focusFrames = css.match(/@keyframes novel-staff-roll-title-focus\s*\{([\s\S]*?)\r?\n\}/u)?.[1];
+assert(focusFrames, "Ending title focus keyframes are missing");
+assert.match(focusFrames, /0%\s*\{\s*opacity: 0; filter: blur\(18px\)/u);
+assert.match(focusFrames, /40%, 80%\s*\{\s*opacity: 1; filter: blur\(0\)/u);
+assert.match(focusFrames, /100%\s*\{\s*opacity: 0; filter: blur\(0\)/u);
+assert.doesNotMatch(focusFrames, /transform|translate|scale|rotate/u);
+assert.match(css, /--novel-staff-roll-start-offset: 11\.2s/u);
+assert.match(css, /novel-staff-roll-title-focus 8s 3\.2s ease-in-out both/u);
+assert.match(runtime, /if \(!motionReduced\(\)\) stage\.append\(heading\)/u);
+assert.match(runtime, /if \(motionReduced\(\)\) track\.append\(heading\)/u);
+assert.doesNotMatch(runtime, /track\.append\(heading, creditsHeading/u);
+assert.match(css, /\.novel-staff-roll\.is-reduced-motion \.novel-staff-roll-title\s*\{\s*position: relative;\s*inset: auto;\s*opacity: 1;\s*filter: none;\s*animation: none;/u);
+assert(read("gaia-mode-loader.js").includes("novel-mode.css?v=gaia-true-end-glitch-1"));
+assert(read("gaia-mode-loader.js").includes("novel-mode.js?v=gaia-true-end-glitch-1"));
+assert(read("index.html").includes("gaia-mode-loader.js?v=gaia-true-end-separator-1"));
+console.log("Ending logo passed: stationary blur/fade, separate credits, reduced-motion document and cache keys.");

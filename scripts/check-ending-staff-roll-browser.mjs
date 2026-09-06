@@ -48,6 +48,7 @@ const bootAtEnding = async (page, reducedMotion = false) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaModeLoader), null, { timeout: 30_000 });
   await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY), null, { timeout: 90_000 });
+  await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.evaluate(({ storageKey, configKey, reduced }) => {
     localStorage.clear();
     const state = {
@@ -80,6 +81,7 @@ const bootAtEnding = async (page, reducedMotion = false) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"), null, { timeout: 30_000 });
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.entryTransition === "visible");
   await page.evaluate(() => document.fonts.ready);
 };
 
@@ -241,6 +243,12 @@ const scanEnding = (page) => page.evaluate(() => {
       : null,
     closingMarkText: closingMark?.textContent?.trim() || "",
     closingMarkAnimation: closingMark ? getComputedStyle(closingMark).animationName : "",
+    closingWords: [...document.querySelectorAll(".novel-staff-roll-closing-word")].map((word) => ({
+      text: word.textContent,
+      animation: getComputedStyle(word).animationName,
+      delay: getComputedStyle(word).animationDelay,
+      opacity: Number(getComputedStyle(word).opacity),
+    })),
     closingActionFlashAnimation: closingAction ? getComputedStyle(closingAction, "::before").animationName : "",
     closingActionFlashDuration: closingAction ? getComputedStyle(closingAction, "::before").animationDuration : "",
     transitionPhase: layer?.dataset.trueEndTransitionPhase || "",
@@ -324,8 +332,8 @@ try {
     assert.equal(initial.phase, "whiteout", `${viewport.name}: ending did not begin with whiteout`);
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
-    assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
-    assert.equal(initial.trackDelay, "-1.65s", `${viewport.name}: staff-roll logo was not delayed by one second`);
+    assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "54s" : "60s");
+    assert.equal(initial.trackDelay, "11.2s", `${viewport.name}: credits did not wait for the centered title`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
     assert(initial.copyrightGap >= 0 && initial.copyrightGap <= 20, `${viewport.name}: copyright group geometry is invalid (${initial.copyrightGap}px)`);
     assert.equal(initial.copyrightParentClass, "novel-staff-roll-closing-action", `${viewport.name}: copyright is outside the thank-you group`);
@@ -369,33 +377,22 @@ try {
     assert(loadedTitle.titleLogoRect?.width > 0 && loadedTitle.titleLogoRect?.height > 0, `${viewport.name}: staff-roll title logo has no visible size`);
     assert(loadedTitle.titleLogoRect.left >= 0 && loadedTitle.titleLogoRect.right <= viewport.width, `${viewport.name}: staff-roll title logo overflows the viewport`);
     const titleToCreditTiming = await page.locator(".novel-staff-roll-track").evaluate((node) => {
-      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
-      const logo = node.querySelector(".novel-staff-roll-title-logo");
+      const title = node.closest(".novel-staff-roll-stage").querySelector(".novel-staff-roll-title");
+      const titleAnimation = title.getAnimations()[0];
       const firstCredit = node.querySelector(".novel-staff-roll-credit");
-      if (!animation || !logo || !firstCredit) throw new Error("staff-roll timing targets were not found");
-      const originalTime = animation.currentTime;
-      animation.pause();
-      const duration = Number.parseFloat(getComputedStyle(node).animationDuration) * 1_000;
-      let entry = null;
-      for (let time = 0; time <= duration; time += 50) {
-        animation.currentTime = time;
-        const creditRect = firstCredit.getBoundingClientRect();
-        if (creditRect.top < innerHeight && creditRect.bottom > 0) {
-          const logoRect = logo.getBoundingClientRect();
-          entry = { time, logoBottom: logoRect.bottom, creditTop: creditRect.top };
-          break;
-        }
-      }
-      animation.currentTime = originalTime;
-      animation.play();
-      return entry;
+      if (!titleAnimation || !firstCredit) throw new Error("staff-roll timing targets were not found");
+      // Linear roll: distance to the first credit divided by total track height.
+      // Do not seek backwards across the intro delay: CSS emits reverse events.
+      const style = getComputedStyle(node);
+      const duration = Number.parseFloat(style.animationDuration) * 1_000;
+      const delay = Number.parseFloat(style.animationDelay) * 1_000;
+      const trackRect = node.getBoundingClientRect();
+      const creditOffset = firstCredit.getBoundingClientRect().top - trackRect.top;
+      return { time: delay + duration * creditOffset / trackRect.height, logoEndTime: titleAnimation.effect.getComputedTiming().endTime };
     });
     assert(titleToCreditTiming, `${viewport.name}: first staff name never entered the viewport`);
-    assert(titleToCreditTiming.logoBottom <= 0, `${viewport.name}: staff names began before the logo disappeared (${JSON.stringify(titleToCreditTiming)})`);
-    assert(
-      titleToCreditTiming.logoBottom >= -(viewport.height * 0.06),
-      `${viewport.name}: staff names began too long after the logo disappeared (${JSON.stringify(titleToCreditTiming)})`,
-    );
+    assert(titleToCreditTiming.time >= titleToCreditTiming.logoEndTime, `${viewport.name}: staff names began before the logo faded out`);
+    assert(titleToCreditTiming.time >= 11_200 && titleToCreditTiming.time < 15_000, `${viewport.name}: unexpected title-to-credit gap`);
     initial.titleToCreditTiming = titleToCreditTiming;
     [
       "企画・原案",
@@ -470,6 +467,12 @@ try {
       assert.equal(track.titleOverflow, false, `${viewport.name}: ${track.title} does not fit the credit width`);
     });
     const academicCredit = initial.creditRows.find((row) => row.role === "ACADEMIC INSPIRATION");
+    assert.deepEqual(academicCredit?.names, [
+      "ZEN大学『共創地球論』",
+      "ZEN大学『人新世の人類学』",
+      "ZEN大学『リテラシーと応用のための物語理論』",
+      "ZEN大学『統計学入門』",
+    ], `${viewport.name}: statistics must be the last academic credit`);
     assert.deepEqual(academicCredit?.nameLines, [1, 1, 1, 1], `${viewport.name}: a reference lecture wrapped onto multiple lines`);
     assert.equal(academicCredit?.nameOverflow, false, `${viewport.name}: reference lecture text overflows the credit width`);
     assert.equal(initial.overflowX, 0);
@@ -507,7 +510,7 @@ try {
     }, null, { timeout: 10_000 });
     const endingPlayback = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
     const endingTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
-    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "rolling", null, { timeout: 6_000 });
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "rolling", null, { timeout: 12_000 });
     const beforeY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     await page.waitForTimeout(650);
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
@@ -565,7 +568,7 @@ try {
       const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
       if (!animation) throw new Error("staff roll animation was not found at completion");
       animation.pause();
-      animation.currentTime = Number.parseFloat(getComputedStyle(node).animationDuration) * 1_000;
+      animation.currentTime = (Number.parseFloat(getComputedStyle(node).animationDuration) + Number.parseFloat(getComputedStyle(node).animationDelay)) * 1_000;
       node.dispatchEvent(new AnimationEvent("animationend", { animationName: "novel-staff-roll-rise" }));
     });
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "end-hold");
@@ -574,24 +577,25 @@ try {
     assert.equal(endHold.buttonHidden, true, `${viewport.name}: final action appeared before the thank-you hold`);
     assert.equal(endHold.closingMarkAnimation, "none", `${viewport.name}: thank-you appeared before the pause`);
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "thank-you");
-    await page.waitForTimeout(950);
+    await page.waitForTimeout(1800);
     const thankYou = await scanEnding(page);
     assert.equal(thankYou.buttonHidden, true, `${viewport.name}: final action appeared with the thank-you reveal`);
-    assert.equal(thankYou.closingMarkAnimation, "novel-staff-roll-thank-you-arrival");
+    assert.deepEqual(thankYou.closingWords.map((word) => word.text), ["Thank", "you", "for", "playing"]);
+    assert(thankYou.closingWords.every((word) => word.animation === "novel-staff-roll-thank-you-word" && word.opacity === 1));
     assert(thankYou.copyrightGap >= 8 && thankYou.copyrightGap <= 20, `${viewport.name}: copyright is not directly below the revealed Thank you for playing (${thankYou.copyrightGap}px)`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-thank-you.png`) });
-    await page.waitForTimeout(Math.max(0, 3_450 - (Date.now() - holdObservedAt)));
+    await page.waitForTimeout(Math.max(0, 4_650 - (Date.now() - holdObservedAt)));
     const beforeFinale = await scanEnding(page);
     assert.equal(beforeFinale.phase, "thank-you", `${viewport.name}: thank-you hold was shorter than intended`);
     assert.equal(beforeFinale.buttonHidden, true, `${viewport.name}: final action appeared during the thank-you hold`);
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "finalizing", null, { timeout: 750 });
     const finalizing = await scanEnding(page);
-    assert.equal(finalizing.buttonHidden, true, `${viewport.name}: final action appeared before the flash finished`);
-    assert.equal(finalizing.closingMarkAnimation, "novel-staff-roll-mark-flicker");
-    assert.equal(finalizing.closingActionFlashAnimation, "novel-staff-roll-action-flash");
-    assert.equal(finalizing.closingActionFlashDuration, "0.36s");
+    assert.equal(finalizing.buttonHidden, true, `${viewport.name}: final action appeared before the dissolve finished`);
+    assert.equal(finalizing.closingMarkAnimation, "novel-staff-roll-mark-dissolve");
+    assert.equal(finalizing.closingActionFlashAnimation, "novel-staff-roll-thank-you-line-out");
+    assert.equal(finalizing.closingActionFlashDuration, "0.64s");
     await page.waitForTimeout(110);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-flash.png`) });
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-dissolve.png`) });
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 1_000 });
     await page.waitForTimeout(480);
     const completed = await scanEnding(page);
@@ -604,6 +608,45 @@ try {
     assert.equal(completed.overflowX, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-complete.png`), animations: "disabled" });
 
+    await page.evaluate(() => {
+      const layer = document.querySelector("#novel-layer");
+      const trace = { phases: [], noise: [] };
+      globalThis.__endingTransitionTrace = trace;
+      const nativeSetTimeout = window.setTimeout;
+      window.setTimeout = function (callback, delay, ...args) {
+        if (typeof callback === "function" && callback.name === "switchToTrueEnd") {
+          return nativeSetTimeout.call(this, function (...parameters) {
+            // MutationObserver runs after synchronous scene construction. Capture
+            // the actual timer callback entry to separate readiness work from FX.
+            trace.switchStartedAt = performance.now();
+            return callback.apply(this, parameters);
+          }, delay, ...args);
+        }
+        return nativeSetTimeout.call(this, callback, delay, ...args);
+      };
+      const observer = new MutationObserver(() => {
+        const phase = layer.dataset.trueEndTransitionPhase;
+        if (phase && trace.phases.at(-1)?.phase !== phase) trace.phases.push({ phase, time: performance.now() });
+        if (phase === "complete") {
+          observer.disconnect();
+          window.setTimeout = nativeSetTimeout;
+        }
+      });
+      observer.observe(layer, { attributes: true, attributeFilter: ["data-true-end-transition-phase"] });
+      const sample = () => {
+        const veil = layer.querySelector(".novel-staff-roll-transition-veil");
+        const noise = veil?.querySelector(".novel-staff-roll-transition-noise");
+        if (noise) trace.noise.push({
+          phase: layer.dataset.trueEndTransitionPhase,
+          opacity: Number(getComputedStyle(noise).opacity),
+          transform: getComputedStyle(noise).transform,
+          bandOpacity: Number(getComputedStyle(veil, "::before").opacity),
+          veilOpacity: Number(getComputedStyle(veil).opacity),
+        });
+        if (layer.dataset.trueEndTransitionPhase !== "complete") requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
     await page.locator(".novel-staff-roll-finale button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "covering");
     const transitionStartedAt = Date.now();
@@ -625,14 +668,29 @@ try {
     assert.equal(backgroundOnly.sectionTransitionPhase, "idle", `${viewport.name}: hidden APEIRONCENE scene card delayed the background reveal`);
     assert.equal(backgroundOnly.message, "", `${viewport.name}: first message started behind the black veil`);
     assert.equal(backgroundOnly.dialogueVisibility, "hidden", `${viewport.name}: message window was visible after the background finished revealing`);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-background-only.png`) });
+    // The 240ms background-only beat is verified above. Encoding a full-device
+    // PNG during that beat can stall the renderer and delay the timer under test.
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
     const transitionCompletedAt = Date.now();
-    assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: APEIRONCENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
-    assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black APEIRONCENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
-    assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: APEIRONCENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
-    assert(backgroundFullyVisibleAt - revealObservedAt >= 3_450, `${viewport.name}: APEIRONCENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
-    assert(transitionCompletedAt - backgroundFullyVisibleAt >= 350, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
+    assert(transitionHoldObservedAt - transitionStartedAt >= 300, `${viewport.name}: APEIRONCENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
+    assert(switchObservedAt - transitionHoldObservedAt >= 400, `${viewport.name}: full-black APEIRONCENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
+    assert(switchObservedAt - transitionStartedAt >= 725, `${viewport.name}: APEIRONCENE entry was shorter than its half-speed-duration target`);
+    assert(backgroundFullyVisibleAt - revealObservedAt >= 1_725, `${viewport.name}: APEIRONCENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
+    assert(transitionCompletedAt - backgroundFullyVisibleAt >= 175, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
+    const transitionTrace = await page.evaluate(() => globalThis.__endingTransitionTrace);
+    const phaseTime = (phase) => transitionTrace.phases.find((entry) => entry.phase === phase)?.time;
+    assert(Number.isFinite(transitionTrace.switchStartedAt), "Scene-switch timer entry was not observed");
+    const choreographyMs = (transitionTrace.switchStartedAt - phaseTime("covering")) + (phaseTime("complete") - phaseTime("revealing"));
+    (report.transitionTraces ||= []).push({ viewport: viewport.name, ...transitionTrace, choreographyMs });
+    assert(choreographyMs >= 2900 && choreographyMs < 3400, `${viewport.name}: transition is not approximately twice as fast (${choreographyMs}ms excluding asset readiness)`);
+    for (const phase of ["covering", "revealing"]) {
+      const noisyFrames = transitionTrace.noise.filter((frame) => frame.phase === phase && frame.opacity > 0.1);
+      assert(noisyFrames.length >= 2, `${viewport.name}: missing noise burst during ${phase}`);
+      assert(new Set(noisyFrames.map((frame) => frame.transform)).size >= 2, `${viewport.name}: noise tile did not move during ${phase}`);
+      assert(noisyFrames.some((frame) => frame.bandOpacity > 0.2), `${viewport.name}: missing colored tear bands`);
+    }
+    assert(transitionTrace.noise.filter((frame) => frame.phase === "holding").every((frame) => frame.opacity === 0 && frame.bandOpacity === 0), `${viewport.name}: the black hold did not settle`);
+    initial.transitionTrace = { ...transitionTrace, choreographyMs };
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
     await page.waitForFunction(() => {
       const shell = document.querySelector(".true-end-shell");

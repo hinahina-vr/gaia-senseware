@@ -115,12 +115,12 @@
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
   const STAFF_ROLL_THANK_YOU_DELAY_MS = 920;
-  const STAFF_ROLL_THANK_YOU_HOLD_MS = 2_900;
-  const STAFF_ROLL_FINALIZE_MS = 520;
-  const STAFF_ROLL_EXIT_COVER_MS = 860;
-  const STAFF_ROLL_EXIT_HOLD_MS = 1_000;
-  const STAFF_ROLL_EXIT_REVEAL_MS = 3600;
-  const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 480;
+  const STAFF_ROLL_THANK_YOU_HOLD_MS = 4_200;
+  const STAFF_ROLL_FINALIZE_MS = 640;
+  const STAFF_ROLL_EXIT_COVER_MS = 430;
+  const STAFF_ROLL_EXIT_HOLD_MS = 500;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 1800;
+  const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 240;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
     BASIL: {
@@ -2136,12 +2136,14 @@
 
   const DIALOGUE_PARTICLES = new Set(["は", "が", "を", "に", "へ", "と", "で", "の", "も", "や", "か", "ね", "よ"]);
   const DIALOGUE_INFLECTION_SUFFIXES = new Set([
-    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "し", "たり", "したり", "え", "てい", "わ", "ない", "たい", "ます", "です", "ました", "ません", "れる", "られる",
+    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "し", "たり", "したり", "え", "てい", "わ", "ない", "なく", "たい", "ます", "です", "ました", "ません", "れる", "られる", "たち",
   ]);
   const DIALOGUE_OPENING = /^[「『（【［〈《〔“‘]/u;
   const DIALOGUE_CLOSING = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉゃゅょっァィゥェォャュョッー]/u;
   const DIALOGUE_KANJI_END = /[一-龠々〆ヵヶ]$/u;
-  const DIALOGUE_PROTECTED = ["GAIA SENSEWARE", "リアルタイム", "ものづくり", "そのもの"];
+  const DIALOGUE_PROTECTED = ["GAIA SENSEWARE", "GAIA Transformation", "リアルタイム", "ものづくり", "そのもの"];
+  const DIALOGUE_NUMERAL = /^[0-9０-９一二三四五六七八九十百千万億兆数.．]+$/u;
+  const DIALOGUE_UNITS = new Set(["年", "月", "日", "秒", "分", "時", "時間", "人", "台", "個", "回", "度", "%", "％", "℃", "km", "mm", "ppm"]);
 
   const fallbackDialogueSegments = (source) => {
     const protectedPattern = DIALOGUE_PROTECTED.map((value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("|");
@@ -2191,7 +2193,10 @@
       if (previous && !/^\s+$/u.test(previous) && (
         DIALOGUE_CLOSING.test(value)
         || DIALOGUE_PARTICLES.has(value)
-        || (DIALOGUE_KANJI_END.test(previous) && /^[ぁ-んァ-ヶー]/u.test(inflectionCore))
+        || (DIALOGUE_KANJI_END.test(previous) && /^[ぁ-んァ-ヶー]/u.test(inflectionCore)
+          && !["だけ", "ほど", "など"].includes(inflectionCore))
+        || (/[ァ-ヶー]$/u.test(previous) && /^[ァ-ヶー]/u.test(inflectionCore))
+        || (DIALOGUE_NUMERAL.test(previous) && (DIALOGUE_NUMERAL.test(inflectionCore) || DIALOGUE_UNITS.has(inflectionCore)))
         || (DIALOGUE_INFLECTION_SUFFIXES.has(inflectionCore) && /[ぁ-んァ-ヶー一-龠々〆ヵヶ]$/u.test(previous))
       )) {
         tokens[tokens.length - 1] += token;
@@ -2210,7 +2215,9 @@
     let offset = 0;
     segmentDialoguePhrases(text, options).forEach((token) => {
       if (/^\r?\n$/u.test(token)) {
-        root.append(document.createElement("br"));
+        const lineBreak = document.createElement("br");
+        lineBreak.dataset.sourceBreak = token;
+        root.append(lineBreak);
       } else {
         const span = document.createElement("span");
         span.className = /^\s+$/u.test(token) ? "novel-space-token" : "novel-phrase-token";
@@ -2225,9 +2232,68 @@
     return root;
   };
 
+  // Choose readable lines within the SAME minimum line count. Punctuation is
+  // preferable to splitting a clause; an isolated ending such as 「いた。」 is
+  // preferable on the preceding line. No source characters are added or lost.
+  const chooseDialogueLineBreaks = (tokens, width) => {
+    const best = Array(tokens.length + 1).fill(null);
+    best[tokens.length] = { lines: 0, cost: 0, next: tokens.length };
+    for (let start = tokens.length - 1; start >= 0; start -= 1) {
+      let occupied = 0;
+      let characters = 0;
+      for (let end = start + 1; end <= tokens.length; end += 1) {
+        occupied += tokens[end - 1].width;
+        characters += Array.from(tokens[end - 1].text).length;
+        if (occupied > width + 0.5) break;
+        if (!best[end]) continue;
+        const tail = tokens[end - 1].text.trimEnd();
+        const next = tokens[end]?.text || "";
+        let boundaryCost = 0;
+        if (end < tokens.length) {
+          boundaryCost = /[。！？!?][」』）】］〉》〕]*$/u.test(tail) ? 0
+            : /[、，,：:；;][」』）】］〉》〕]*$/u.test(tail) ? 12 : 130;
+          if (/[てで]$/u.test(tail) && /^(?:い[たる]|いる|おり|しま|ください)/u.test(next)) boundaryCost += 220;
+          if (/^(?:なく|ない|ません)/u.test(next)) boundaryCost += 220;
+        }
+        const slack = Math.max(0, 1 - occupied / width);
+        const orphanCost = end === tokens.length && start > 0 && characters <= 3 ? 180 : 0;
+        const candidate = { lines: best[end].lines + 1, cost: best[end].cost + boundaryCost + slack * slack * 60 + orphanCost, next: end };
+        if (!best[start] || candidate.lines < best[start].lines
+          || (candidate.lines === best[start].lines && candidate.cost < best[start].cost)) best[start] = candidate;
+      }
+    }
+    const breaks = [];
+    for (let index = 0; best[index] && best[index].next < tokens.length; index = best[index].next) breaks.push(best[index].next);
+    return breaks;
+  };
+
   const measureNativeLines = (text, preparedLayout = null) => {
     const layout = preparedLayout || buildDialogueTokenLayout(text);
+    layout.querySelectorAll("[data-dialogue-wrap]").forEach((node) => node.remove());
     elements.text.replaceChildren(layout);
+    // Keep ordinary Japanese phrase tokens intact. Only a token wider than
+    // the entire column (including the no-Segmenter fallback) may wrap inside.
+    const availableWidth = elements.text.getBoundingClientRect().width;
+    layout.querySelectorAll(".novel-phrase-token").forEach((token) => {
+      token.classList.remove("is-breakable");
+      if (token.getBoundingClientRect().width > availableWidth + 0.5) token.classList.add("is-breakable");
+    });
+    let paragraph = [];
+    const wrapParagraph = () => {
+      if (paragraph.length > 1 && paragraph.every((token) => !token.node.classList.contains("is-breakable"))) {
+        for (const offset of chooseDialogueLineBreaks(paragraph, availableWidth)) {
+          const lineBreak = document.createElement("br");
+          lineBreak.dataset.dialogueWrap = "";
+          paragraph[offset].node.before(lineBreak);
+        }
+      }
+      paragraph = [];
+    };
+    for (const node of [...layout.childNodes]) {
+      if (node instanceof HTMLBRElement) wrapParagraph();
+      else if (node instanceof HTMLElement) paragraph.push({ node, text: node.textContent || "", width: node.getBoundingClientRect().width });
+    }
+    wrapParagraph();
     const lines = [];
     let current = [];
     let lineTop = null;
@@ -2284,17 +2350,27 @@
     const characterBudget = Math.max(16, estimatedCharactersPerLine * maxLines);
     const characterCount = Array.from(normalized.replace(/\s/gu, "")).length;
     const renderedHeight = Math.max(elements.text.scrollHeight, measuredLines.length * lineHeight);
-    const indicatorSafety = elements.continueMark.getBoundingClientRect().top - elements.text.getBoundingClientRect().bottom;
+    const textRect = elements.text.getBoundingClientRect();
+    const indicatorRect = elements.continueMark.getBoundingClientRect();
+    const indicatorSafety = indicatorRect.top - textRect.bottom;
+    // The desktop marker sits to the RIGHT of the text column. Requiring a
+    // vertical gap there needlessly rejected a third line that never touches it.
+    const indicatorClearance = Math.max(indicatorSafety, indicatorRect.left - textRect.right);
+    const layoutRect = elements.text.firstElementChild?.getBoundingClientRect() || textRect;
+    const horizontalOverflow = Math.max(0, layoutRect.right - textRect.right);
     return {
       measuredLines,
       maxLines,
       characterCount,
       characterBudget,
       indicatorSafety,
+      indicatorClearance,
+      horizontalOverflow,
       fits: characterCount <= characterBudget
         && measuredLines.length <= maxLines
         && renderedHeight <= dialogueTextCapacity()
-        && indicatorSafety >= TEXT_PAGE_INDICATOR_SAFETY_PX,
+        && horizontalOverflow <= 1
+        && indicatorClearance >= TEXT_PAGE_INDICATOR_SAFETY_PX,
     };
   };
 
@@ -2499,7 +2575,10 @@
       const afterMetrics = dialoguePageMetrics(after);
       if (!beforeMetrics.fits || !afterMetrics.fits) continue;
       if (beforeMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES || afterMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES) continue;
-      if (requireRightTwoLines && afterMetrics.measuredLines.length < 2) continue;
+      // A complete closing sentence can naturally occupy one line. Do not
+      // turn a 3+1 sentence split into a sparse 1+3 split just to pad the end.
+      const independentClosingSentence = sentenceBoundary.test(before.trimEnd()) && afterMetrics.characterCount >= 8;
+      if (requireRightTwoLines && afterMetrics.measuredLines.length < 2 && !independentClosingSentence) continue;
       const beforeLines = beforeMetrics.measuredLines.length;
       const afterLines = afterMetrics.measuredLines.length;
       const boundaryOffset = Array.from(before).length;
@@ -4292,8 +4371,8 @@
         names: [
           "ZEN大学『共創地球論』",
           "ZEN大学『人新世の人類学』",
-          "ZEN大学『統計学入門』",
           "ZEN大学『リテラシーと応用のための物語理論』",
+          "ZEN大学『統計学入門』",
         ],
       },
       { role: "観測データ", department: "DATA SOURCES", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
@@ -4352,7 +4431,14 @@
     closingLead.textContent = "その選択の中に、今日から私たちもいる。";
     closingLine.textContent = "物語は、ここからも続いていく。";
     closingCopyright.textContent = "© 2026 惑星の放課後 / GAIA SENSATION";
-    closingMark.textContent = "Thank you for playing";
+    "Thank you for playing".split(" ").forEach((word, index) => {
+      if (index) closingMark.append(" ");
+      const part = document.createElement("span");
+      part.className = "novel-staff-roll-closing-word";
+      part.style.setProperty("--thank-you-word-delay", `${150 + index * 110}ms`);
+      part.textContent = word;
+      closingMark.append(part);
+    });
     closingAction.append(closingMark, closingCopyright);
     closing.append(closingLead, closingLine, closingAction);
 
@@ -4377,6 +4463,11 @@
       const veil = document.createElement("div");
       veil.className = "novel-staff-roll-transition-veil";
       veil.setAttribute("aria-hidden", "true");
+      if (!motionReduced()) {
+        const noise = document.createElement("div");
+        noise.className = "novel-staff-roll-transition-noise";
+        veil.append(noise);
+      }
       layer.append(veil);
 
       const finishTransition = () => {
@@ -4403,7 +4494,7 @@
           completeTrueEndEntry();
           return;
         }
-        veil.classList.remove("is-covering");
+        veil.classList.remove("is-covering", "is-holding");
         veil.classList.add("is-revealing");
         staffRollFinaleTimer = window.setTimeout(() => {
           staffRollFinaleTimer = 0;
@@ -4423,6 +4514,7 @@
       const holdBeforeTrueEnd = () => {
         staffRollFinaleTimer = 0;
         layer.dataset.trueEndTransitionPhase = "holding";
+        veil.classList.add("is-holding");
         staffRollFinaleTimer = window.setTimeout(switchToTrueEnd, STAFF_ROLL_EXIT_HOLD_MS);
       };
 
@@ -4441,9 +4533,13 @@
     finale.append(next);
     closingAction.append(finale);
 
-    track.append(heading, creditsHeading, credits, closing);
+    // The title is a stationary introduction, not part of the moving credits.
+    // Reduced motion keeps one readable, manually scrollable document instead.
+    if (motionReduced()) track.append(heading);
+    track.append(creditsHeading, credits, closing);
     viewport.append(track);
     stage.append(viewport);
+    if (!motionReduced()) stage.append(heading);
     shell.append(whiteout, stage, dataSkip);
     elements.resultSurface.append(shell);
 
@@ -4494,7 +4590,10 @@
       if (event.animationName === "novel-staff-roll-rise") holdOnEnd();
     });
     whiteout.addEventListener("animationend", (event) => {
-      if (event.animationName === "novel-staff-roll-whiteout" && !completed) shell.dataset.phase = "rolling";
+      if (event.animationName === "novel-staff-roll-whiteout" && !endingReached && shell.dataset.phase === "whiteout") shell.dataset.phase = "title";
+    });
+    heading.addEventListener("animationend", (event) => {
+      if (event.animationName === "novel-staff-roll-title-focus" && !endingReached && shell.dataset.phase !== "departing") shell.dataset.phase = "rolling";
     });
     shell.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) return;
@@ -6119,6 +6218,7 @@
             lines: metrics.measuredLines.length,
             fits: metrics.fits,
             indicatorSafety: metrics.indicatorSafety,
+            indicatorClearance: metrics.indicatorClearance,
           };
         }),
         pages: pages.map((page) => {
@@ -6152,7 +6252,9 @@
             fits: metrics.fits,
             characters: metrics.characterCount,
             indicatorSafety: indicatorRect.top - textRect.bottom,
-            tokenSource: Array.from(layout.querySelectorAll(".novel-phrase-token, .novel-space-token"), (token) => token.textContent || "").join(""),
+            indicatorClearance: metrics.indicatorClearance,
+            horizontalOverflow: metrics.horizontalOverflow,
+            tokenSource: Array.from(layout.childNodes, (node) => node instanceof HTMLBRElement ? node.dataset.sourceBreak || "" : node.textContent || "").join(""),
             tokenLines: tokenRows.sort((left, right) => left.top - right.top),
           };
         }),

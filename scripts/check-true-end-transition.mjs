@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+const runtime = read("novel-mode.js");
+const css = read("novel-mode.css");
+const timings = { EXIT_COVER: 430, EXIT_HOLD: 500, EXIT_REVEAL: 1800, ENTRY_BACKGROUND_HOLD: 240 };
+for (const [name, duration] of Object.entries(timings)) assert(runtime.includes(`const STAFF_ROLL_${name}_MS = ${duration};`));
+assert.equal(Object.values(timings).reduce((sum, duration) => sum + duration, 0), 5940 / 2);
+assert.match(css, /novel-staff-roll-exit-cover 430ms/u);
+assert.match(css, /novel-staff-roll-exit-reveal 1800ms/u);
+assert.match(css, /novel-staff-roll-depart 360ms/u);
+assert.match(css, /background-size: 128px 128px/u);
+assert.match(css, /ending-static-noise\.svg/u);
+assert.match(read("assets/effects/ending-static-noise.svg"), /feTurbulence.*numOctaves="1"/u);
+assert.match(runtime, /if \(!motionReduced\(\)\) \{\s*const noise = document\.createElement\("div"\);/u);
+assert.match(runtime, /launchTrueEnd\(\{ onReady: revealTrueEnd, deferInterfaceReveal: true \}\)/u);
+assert.doesNotMatch(css, /novel-staff-roll-exit-strobe/u);
+for (const effect of ["bands", "dropout", "noise"]) assert(css.includes(`@keyframes novel-staff-roll-exit-${effect}`));
+console.log("True-end transition passed: 2.97-second choreography, tiled noise, color tears and reduced-motion/ready guards.");

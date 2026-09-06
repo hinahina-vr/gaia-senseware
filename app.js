@@ -10501,7 +10501,8 @@ for (const country of countryValues) {
     version: "v3",
     kicker: "WORLD MAP / 操作ガイド",
     avoid: ".gaia-live-exhibit-readout",
-    available: () => japanIsOpen && !japanLayer.hidden && !document.body.classList.contains("gaia-tour-open"),
+    available: () => japanIsOpen && !japanLayer.hidden && !document.body.classList.contains("gaia-tour-open")
+      && !japanLayer.classList.contains("is-demo-running"),
     steps: [
       {
         target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", ".map-mode-groups", "#map-mobile-bank-toggle"),

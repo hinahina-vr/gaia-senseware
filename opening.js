@@ -253,6 +253,21 @@
       copy: ["気候変動や観測ポイントを、", "インタラクティブな地図上で", "探索・分析できます。"],
     },
   ].filter((step) => step.target instanceof HTMLButtonElement);
+  const replayRouteGlint = (target) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Hover and focus can overlap, leaving the same CSS animation finished.
+    // Restart the existing reflections for each new selection, even when the
+    // other state (or the story card's entrance animation) is still applied.
+    for (const animation of target.getAnimations({ subtree: true })) {
+      if (!["opening-route-glint", "opening-route-focus-flash"].includes(animation.animationName)) continue;
+      animation.currentTime = 0;
+      animation.play();
+    }
+  };
+  for (const { target } of routeGuideSteps) {
+    target.addEventListener("pointerenter", () => replayRouteGlint(target));
+    target.addEventListener("focus", () => replayRouteGlint(target));
+  }
   const routeGuideLayer = document.createElement("section");
   routeGuideLayer.className = "gaia-opening-route-guide";
   routeGuideLayer.id = "gaia-opening-route-guide";
@@ -349,6 +364,7 @@
     clearRouteGuideTarget();
     const step = routeGuideSteps[routeGuideIndex];
     step.target.classList.add("is-route-guide-target");
+    replayRouteGlint(step.target);
     const title = routeGuideLayer.querySelector("[data-route-guide-title]");
     title.textContent = step.title || "";
     title.hidden = !step.title;

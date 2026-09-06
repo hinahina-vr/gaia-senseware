@@ -4854,8 +4854,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* First-visit route guide: a quiet blue-hour annotation connected by a fine
-   thread of light. Keep the measured wrapper still while its surface unfolds. */
+/* Restore the blue speech bubble and its pointer. Keep the measured wrapper
+   still, with the bubble and tail entering together on the inner surface. */
 .gaia-opening-route-guide[hidden] { display: none; }
 
 .gaia-opening-route-guide {
@@ -4889,7 +4889,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   position: fixed;
   z-index: 40;
   box-sizing: border-box;
-  width: min(clamp(360px, 28vw, 440px), calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px));
   margin: 0;
   opacity: 0;
   pointer-events: auto;
@@ -4901,73 +4901,58 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   opacity: 1;
 }
 
-.gaia-opening-route-guide-bubble::before {
-  position: absolute;
-  left: var(--route-guide-arrow-left);
-  width: 1px;
-  height: 18px;
-  content: "";
-  background: linear-gradient(to bottom, rgba(188, 235, 220, 0.75), rgba(166, 218, 216, 0.16));
-  opacity: 0;
-  transform-origin: top;
-  pointer-events: none;
-}
-
-.gaia-opening-route-guide-bubble[data-placement="below"]::before {
-  top: -18px;
-}
-
 .gaia-opening-route-guide-bubble[data-placement="above"] {
   --route-guide-enter-y: 10px;
 }
 
-.gaia-opening-route-guide-bubble[data-placement="above"]::before {
-  bottom: -18px;
-  background: linear-gradient(to top, rgba(188, 235, 220, 0.75), rgba(166, 218, 216, 0.16));
-  transform-origin: bottom;
-}
-
 .gaia-opening-route-guide-surface {
   position: relative;
-  overflow: hidden;
-  padding: 22px 24px;
-  border: 1px solid rgba(168, 219, 210, 0.3);
-  border-radius: 5px;
-  color: #edf5ef;
+  overflow: visible;
+  padding: 16px 17px 15px;
+  border: 1px solid rgba(140, 236, 255, 0.9);
+  border-radius: 15px;
+  color: #f8fdff;
   background:
-    radial-gradient(ellipse at 0% 0%, rgba(125, 195, 175, 0.11), transparent 64%),
-    linear-gradient(135deg, rgba(17, 38, 46, 0.96), rgba(10, 21, 35, 0.97));
-  box-shadow: 0 18px 45px rgba(0, 5, 15, 0.32), inset 0 1px 0 rgba(224, 244, 226, 0.05);
+    radial-gradient(circle at 12% 0%, rgba(86, 213, 255, 0.2), transparent 43%),
+    linear-gradient(145deg, rgba(9, 55, 113, 0.985), rgba(10, 29, 78, 0.985));
+  box-shadow:
+    0 18px 54px rgba(0, 3, 22, 0.58),
+    0 0 0 4px rgba(76, 179, 255, 0.1),
+    inset 0 1px 0 rgba(231, 251, 255, 0.14);
   opacity: 0;
 }
 
-.gaia-opening-route-guide-surface::before,
-.gaia-opening-route-guide-surface::after {
+.gaia-opening-route-guide-surface::before {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
+  left: var(--route-guide-arrow-left);
+  width: 13px;
+  height: 13px;
   content: "";
-  background: linear-gradient(90deg, transparent, rgba(218, 236, 194, 0.66), rgba(157, 227, 213, 0.24), transparent);
+  background: #0a3977;
+  transform: translateX(-50%) rotate(45deg);
   pointer-events: none;
 }
 
-.gaia-opening-route-guide-surface::after {
-  width: 35%;
-  height: 100%;
-  background: linear-gradient(110deg, transparent, rgba(215, 241, 218, 0.07), transparent);
-  opacity: 0;
+.gaia-opening-route-guide-bubble[data-placement="below"] .gaia-opening-route-guide-surface::before {
+  top: -7px;
+  border-top: 1px solid rgba(140, 236, 255, 0.9);
+  border-left: 1px solid rgba(140, 236, 255, 0.9);
+}
+
+.gaia-opening-route-guide-bubble[data-placement="above"] .gaia-opening-route-guide-surface::before {
+  bottom: -7px;
+  border-right: 1px solid rgba(140, 236, 255, 0.9);
+  border-bottom: 1px solid rgba(140, 236, 255, 0.9);
 }
 
 .gaia-opening-route-guide-bubble [data-route-guide-copy] {
   margin: 0;
   font-family: var(--font-ja);
-  color: rgba(238, 246, 237, 0.94);
-  font-size: clamp(14px, 0.9vw, 16px);
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  line-height: 1.85;
+  color: rgba(231, 249, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  line-height: 1.65;
   line-break: strict;
   text-wrap: pretty;
 }
@@ -4975,10 +4960,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 .gaia-opening-route-guide-bubble [data-route-guide-copy] > span {
   display: inline-block;
   white-space: nowrap;
-}
-
-.gaia-opening-route-guide.is-presented .gaia-opening-route-guide-bubble::before {
-  animation: opening-guide-thread 340ms ease-out both;
 }
 
 .gaia-opening-route-guide.is-presented .gaia-opening-route-guide-surface {
@@ -4989,15 +4970,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   animation: opening-guide-words 540ms ease-out 200ms both;
 }
 
-.gaia-opening-route-guide.is-presented .gaia-opening-route-guide-surface::after {
-  animation: opening-guide-reflection 900ms ease-out 100ms both;
-}
-
-@keyframes opening-guide-thread {
-  from { opacity: 0; transform: scaleY(0); }
-  to { opacity: 1; transform: scaleY(1); }
-}
-
 @keyframes opening-guide-surface {
   from { opacity: 0; transform: translateY(var(--route-guide-enter-y)); filter: blur(3px); }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
@@ -5006,12 +4978,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @keyframes opening-guide-words {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes opening-guide-reflection {
-  0% { opacity: 0; transform: translateX(-120%) skewX(-18deg); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(400%) skewX(-18deg); }
 }
 
 .gaia-opening.is-route-guide-active .gaia-opening-final-menu.is-visible .gaia-opening-route {
@@ -5041,12 +5007,12 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     width: min(360px, calc(100vw - 24px));
   }
 
-  .gaia-opening-route-guide-surface { padding: 18px 16px; }
+  .gaia-opening-route-guide-surface { padding: 16px 17px 15px; }
 }
 
 @media (max-height: 430px) {
   .gaia-opening-route-guide-surface { padding: 14px 18px; }
-  .gaia-opening-route-guide-bubble [data-route-guide-copy] { font-size: 12px; line-height: 1.7; }
+  .gaia-opening-route-guide-bubble [data-route-guide-copy] { font-size: 12px; line-height: 1.55; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5056,7 +5022,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     transition: none;
   }
 
-  .gaia-opening-route-guide.is-presented .gaia-opening-route-guide-bubble::before,
   .gaia-opening-route-guide.is-presented .gaia-opening-route-guide-surface,
   .gaia-opening-route-guide.is-presented [data-route-guide-copy] {
     animation: none;
@@ -5064,8 +5029,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     transform: none;
     filter: none;
   }
-
-  .gaia-opening-route-guide.is-presented .gaia-opening-route-guide-surface::after { animation: none; }
 }
 
 /* Gateway route cards v3: every choice uses the same information hierarchy,
@@ -5550,7 +5513,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 .gaia-vn-panel-final .gaia-opening-route:hover::before,
 .gaia-vn-panel-final .gaia-opening-route:focus::before,
-.gaia-vn-panel-final .gaia-opening-route:focus-visible::before {
+.gaia-vn-panel-final .gaia-opening-route:focus-visible::before,
+.gaia-opening.is-route-guide-active .gaia-opening-route.is-route-guide-target::before {
   animation: opening-route-focus-flash 780ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
 }
 

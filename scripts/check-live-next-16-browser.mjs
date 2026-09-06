@@ -2,17 +2,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import "./check-exhibit-catalog.mjs";
 
 const base = process.argv[2] || "http://127.0.0.1:4397";
 const output = path.resolve(process.argv[3] || "artifacts/live-next-16");
 fs.mkdirSync(output, { recursive: true });
-const report = { status: "running", checks: [], errors: [] };
+const report = { status: "running", checks: [], catalogs: [], navigation: [], errors: [] };
 const ovation = fs.readFileSync("data/ovation-aurora-snapshot.json", "utf8");
-assert.equal(
-  fs.readFileSync("src/exploration/estat-exhibits.js", "utf8").match(/from "(\.\/live-exhibits\.js[^"]*)"/u)?.[1],
-  fs.readFileSync("src/exploration/index.js", "utf8").match(/import "(\.\/live-exhibits\.js[^"]*)"/u)?.[1],
-  "Both importers must share one live-exhibit module instance, including its cache revision",
-);
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 try {
   for (const width of [1440, 390]) {
@@ -37,6 +33,27 @@ try {
     page.on("pageerror", error => report.errors.push(error.message));
     await page.goto(`${base}/?preview=live-next-16#world`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && document.querySelectorAll(".map-mode-bank .map-mode-button").length === 30);
+    const catalogs = await page.evaluate(async () => {
+      const files = ["live-exhibits.js", "estat-exhibits.js", "observation-cities.js", "live-exhibit-catalog.js", "estat-exhibit-catalog.js"];
+      const modules = Object.fromEntries(files.map(file => [file, performance.getEntriesByType("resource").filter(entry => new URL(entry.name).pathname.endsWith(`/${file}`)).map(entry => entry.name)]));
+      const live = await import(modules["live-exhibit-catalog.js"][0]);
+      const estat = await import(modules["estat-exhibit-catalog.js"][0]);
+      const cities = await import(modules["observation-cities.js"][0]);
+      const legacy = await import(modules["live-exhibits.js"][0]);
+      return {
+        loads: Object.fromEntries(Object.entries(modules).map(([name, urls]) => [name, urls.length])),
+        liveShared: GaiaLiveExhibits.definitions === live.LIVE_EXHIBITS,
+        estatShared: GaiaEstatExhibits.definitions === estat.ESTAT_EXHIBITS,
+        citiesShared: GaiaLiveExhibits.observationPoints === cities.OBSERVATION_CITIES && legacy.OBSERVATION_CITIES === cities.OBSERVATION_CITIES,
+        liveReadouts: document.querySelectorAll(".gaia-live-exhibit-readout").length,
+        estatReadouts: document.querySelectorAll(".gaia-estat-readout").length,
+      };
+    });
+    report.catalogs.push({ width, ...catalogs });
+    assert(Object.values(catalogs.loads).every(count => count === 1), "Duplicate module request");
+    assert(catalogs.liveShared && catalogs.estatShared && catalogs.citiesShared, "Runtime did not reuse the canonical catalog");
+    assert.equal(catalogs.liveReadouts, 1);
+    assert.equal(catalogs.estatReadouts, 1);
     await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
     const expectMode = async (number) => {
       await page.waitForFunction(number => document.querySelector("#japan-mode-number")?.textContent === number, number);
@@ -77,6 +94,27 @@ try {
     await step('[data-estat-step="-1"]', "15");
     await step('[data-live-deck-step="-1"]', "14");
     await select("10");
+    const expectCity = async id => {
+      await page.waitForFunction(id => document.querySelector("#gaia-live-exhibit-canvas").dataset.observationCity === id
+        && document.querySelector("#japan-layer").dataset.livePoiTransition === "settled", id);
+      assert.equal(await page.locator(".gaia-live-city-picker select").inputValue(), id);
+    };
+    const chooseCity = async id => {
+      await page.evaluate(id => { GaiaLiveExhibits.selectObservationPoint(id); GaiaLiveExhibits.pausePoiAutoplay(); }, id);
+      await expectCity(id);
+    };
+    await chooseCity("naha");
+    assert.match(await page.locator('.gaia-live-exhibit-readout [data-live-poi-step="1"]').getAttribute("aria-label"), /01 北海道/u);
+    await page.locator('.gaia-live-city-picker [data-live-poi-step="1"]').click();
+    await expectCity("sapporo");
+    assert.match(await page.locator('.gaia-live-exhibit-readout [data-live-poi-step="-1"]').getAttribute("aria-label"), /47 沖縄県/u);
+    await page.locator('.gaia-live-city-picker [data-live-poi-step="-1"]').click();
+    await expectCity("naha");
+    await page.evaluate(() => GaiaLiveExhibits.resumePoiAutoplay());
+    await expectCity("sapporo");
+    await page.evaluate(() => GaiaLiveExhibits.pausePoiAutoplay());
+    report.navigation.push({ width, forward: "naha -> sapporo", backward: "sapporo -> naha", automatic: "naha -> sapporo" });
+    await page.screenshot({ path: path.join(output, `${width}-city-relay.png`) });
     await step('[data-live-deck-step="-1"]', "09");
     // Re-enter from another bank to catch stale aria-current selection.
     await select("25");

@@ -77,6 +77,7 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
       || name.includes("/data/natural-earth-50m-land.geojson"));
   });
   assert.deepEqual(eagerExplorationResources, [], `${name}: story route eagerly loaded exploration data`);
+  await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.evaluate(({ storageKey, configKey, label, reducedMotion: motionPreference }) => {
     localStorage.clear();
     const state = {
@@ -110,20 +111,8 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, label: name, reducedMotion });
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => {
-    const layer = document.querySelector("#novel-layer");
-    if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
-  });
-  await page.waitForFunction(() => {
-    const staffRoll = document.querySelector(".novel-staff-roll");
-    const resume = document.querySelector("#novel-resume-button");
-    return Boolean(staffRoll && !staffRoll.hidden) || Boolean(resume && !resume.hidden && !resume.disabled);
-  }, null, { timeout: 60_000 });
-  if (!await page.locator(".novel-staff-roll").isVisible()) {
-    await page.locator("#novel-resume-button").click();
-    await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
-  }
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"), null, { timeout: 60_000 });
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.entryTransition === "visible");
   const staffRoll = page.locator(".novel-staff-roll");
   await staffRoll.waitFor({ state: "visible", timeout: 60_000 });
   if (await staffRoll.getAttribute("data-phase") !== "complete") {
@@ -380,7 +369,7 @@ try {
   assert.match(trueEndModeSource, /createElement\("div", "true-end-interface"\)/u, "unified true-end interface layer is missing");
   assert.match(trueEndModeSource, /const SCENE_BLACKOUT_MS = 720/u, "full-black curtain timing is missing");
   assert.match(trueEndModeSource, /const SCENE_TITLE_FADE_MS = 440/u, "section-title fade timing is missing");
-  assert.match(trueEndModeSource, /const SCENE_TITLE_HOLD_MS = 1040/u, "section-title hold timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_TITLE_HOLD_MS = 1664/u, "section-title hold must be 1.6 times the original 1040ms");
   assert.match(trueEndModeSource, /const SCENE_TITLE_OUT_MS = 360/u, "section-title exit timing is missing");
   assert.match(trueEndModeSource, /const SCENE_REVEAL_MS = 920/u, "section reveal timing is missing");
   assert.match(trueEndModeSource, /await animateSceneOpacity\(sceneCard, 0, 1, SCENE_BLACKOUT_MS\)/u, "section transition does not close to black first");
@@ -1114,7 +1103,14 @@ try {
     }
     await separatorPage.evaluate(() => {
       const shell = document.querySelector(".true-end-shell");
-      if (shell?.classList.contains("is-revealing")) document.querySelector(".true-end-dialogue")?.click();
+      const dialogue = document.querySelector(".true-end-dialogue");
+      const [pageIndex, pageCount] = shell.dataset.messagePage.split("/").map(Number);
+      // Read every page of the last step before testing the section boundary.
+      for (let remaining = pageCount - pageIndex; remaining > 0; remaining -= 1) {
+        if (shell.classList.contains("is-revealing")) dialogue.click();
+        dialogue.click();
+      }
+      if (shell.classList.contains("is-revealing")) dialogue.click();
     });
     await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
 
@@ -1127,6 +1123,15 @@ try {
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-00-before.png`) });
 
     const separatorTriggeredAt = await separatorPage.evaluate(() => {
+      const shell = document.querySelector(".true-end-shell");
+      const trace = [];
+      globalThis.__trueEndSeparatorPhases = trace;
+      const observer = new MutationObserver(() => {
+        const phase = shell.dataset.sectionTransitionPhase;
+        if (trace.at(-1)?.phase !== phase) trace.push({ phase, time: performance.now() });
+        if (phase === "idle") observer.disconnect();
+      });
+      observer.observe(shell, { attributes: true, attributeFilter: ["data-section-transition-phase"] });
       const dialogue = document.querySelector(".true-end-dialogue");
       dialogue?.click();
       dialogue?.click();
@@ -1196,6 +1201,11 @@ try {
 
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "ready", null, { timeout: 3_000, polling: 10 });
     const ready = await scanFrame(separatorPage);
+    const titleHoldMs = await separatorPage.evaluate(() => {
+      const phases = globalThis.__trueEndSeparatorPhases;
+      return phases.find(({ phase }) => phase === "ready")?.time - phases.find(({ phase }) => phase === "switching")?.time;
+    });
+    assert(titleHoldMs >= 1650, `${viewport.name}: section title did not hold for 1.6 times the original duration (${titleHoldMs}ms)`);
     assert(ready.sceneCardOpacity >= 0.99, `${viewport.name}: curtain opened before section preparation completed`);
     assert.equal(ready.universeScene, "reconstruction", `${viewport.name}: next WebGL background was not ready before reveal`);
     assert.equal(ready.universePresenceState, "steady", `${viewport.name}: character presence was not fully displayed before reveal`);
@@ -1229,7 +1239,7 @@ try {
     assert.notEqual(afterSeparator.message, beforeSeparator.message, `${viewport.name}: next message did not appear after curtain fade-out`);
     assert.equal(afterSeparator.dialogueVisible, true, `${viewport.name}: message UI stayed hidden after curtain fade-out`);
     assert(afterSeparator.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: section completion timestamp is missing`);
-    assert(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt >= 3_200, `${viewport.name}: section separator was not held long enough (${(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt).toFixed(1)}ms)`);
+    assert(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt >= 4_100, `${viewport.name}: section separator was not held long enough (${(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt).toFixed(1)}ms)`);
     assert(afterSeparator.messageCommittedAt >= afterSeparator.sectionTransitionCompletedAt, `${viewport.name}: next message committed before section fade-out completed (${JSON.stringify({ section: afterSeparator.sectionTransitionCompletedAt, message: afterSeparator.messageCommittedAt })})`);
     assert(afterSeparator.messageCommittedAt > beforeSeparator.messageCommittedAt, `${viewport.name}: next message did not receive a new commit timestamp`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-05-after.png`) });
@@ -1240,9 +1250,39 @@ try {
       during: reveal.message,
       after: afterSeparator.message,
       durationMs: afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt,
+      titleHoldMs,
       webglFramesDuringTransition: ready.universeFrame - beforeSeparator.universeFrame,
       passed: true,
     });
+    // Exercise the pictured VENA 03 card too, via the real next-section control.
+    await separatorPage.evaluate(() => {
+      const shell = document.querySelector(".true-end-shell");
+      const phases = [];
+      globalThis.__trueEndSeparatorPhases = phases;
+      const observer = new MutationObserver(() => {
+        const phase = shell.dataset.sectionTransitionPhase;
+        if (phases.at(-1)?.phase !== phase) phases.push({ phase, time: performance.now() });
+        if (phase === "idle") observer.disconnect();
+      });
+      observer.observe(shell, { attributes: true, attributeFilter: ["data-section-transition-phase"] });
+      document.querySelector(".true-end-skip-button").click();
+    });
+    await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "switching");
+    assert.equal(await separatorPage.locator(".true-end-scene-card-content strong").textContent(), "星々の放課後");
+    await separatorPage.waitForTimeout(1100);
+    const starsHold = await scanFrame(separatorPage);
+    assert.equal(starsHold.sectionTransitionPhase, "switching", `${viewport.name}: VENA 03 ended at the former hold duration`);
+    assert.equal(starsHold.sceneCardTitleOpacity, 1, `${viewport.name}: VENA 03 did not stay fully visible`);
+    assert.equal(starsHold.dialogueVisible, false);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-vena-03-extended-hold.png`) });
+    await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "idle", null, { timeout: 8_000 });
+    const starsHoldMs = await separatorPage.evaluate(() => {
+      const phases = globalThis.__trueEndSeparatorPhases;
+      return phases.find(({ phase }) => phase === "ready")?.time - phases.find(({ phase }) => phase === "switching")?.time;
+    });
+    assert(starsHoldMs >= 1650, `${viewport.name}: VENA 03 hold was too short (${starsHoldMs}ms)`);
+    assert.equal((await scanFrame(separatorPage)).scene, "after-school-stars");
+    report.separatorOrder.at(-1).starsTitleHoldMs = starsHoldMs;
     await separatorContext.close();
   }
 

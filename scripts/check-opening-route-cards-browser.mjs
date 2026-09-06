@@ -91,6 +91,10 @@ try {
       const menu = document.querySelector("#gaia-opening-final-menu");
       const copy = guide.querySelector("[data-route-guide-copy]");
       const copyRect = copy.getBoundingClientRect();
+      const surface = guide.querySelector(".gaia-opening-route-guide-surface");
+      const surfaceStyle = getComputedStyle(surface);
+      const tail = getComputedStyle(surface, "::before");
+      const tailMatrix = new DOMMatrix(tail.transform);
       return {
         step: guide.dataset.step,
         targetId: target?.id,
@@ -109,6 +113,19 @@ try {
         buttonCount: guide.querySelectorAll("button").length,
         surfaceAnimation: getComputedStyle(guide.querySelector(".gaia-opening-route-guide-surface")).animationName,
         surfaceAnimationDuration: getComputedStyle(guide.querySelector(".gaia-opening-route-guide-surface")).animationDuration,
+        surfaceRadius: surfaceStyle.borderRadius,
+        surfaceOverflow: surfaceStyle.overflow,
+        tail: {
+          content: tail.content,
+          width: Number.parseFloat(tail.width),
+          height: Number.parseFloat(tail.height),
+          rotation: Math.round(Math.atan2(tailMatrix.b, tailMatrix.a) * 180 / Math.PI),
+          placement: bubble.dataset.placement,
+          top: tail.top,
+          bottom: tail.bottom,
+          borderTop: tail.borderTopWidth,
+          borderBottom: tail.borderBottomWidth,
+        },
         bubbleRect: bubble.getBoundingClientRect().toJSON(),
         targetRect: target.getBoundingClientRect().toJSON(),
         shadeRect: shade.getBoundingClientRect().toJSON(),
@@ -165,6 +182,15 @@ try {
     assert.equal(replayedGuide.targetId, "gaia-opening-route-story", `${viewport.name}: replay targets the wrong route`);
     assert.equal(replayedGuide.buttonCount, 0, `${viewport.name}: replayed guide restored removed buttons`);
     for (const guideStep of [...guideSteps, replayedGuide]) {
+      assert.equal(guideStep.surfaceRadius, "15px", `${viewport.name}: rounded speech-bubble shape was lost`);
+      assert.equal(guideStep.surfaceOverflow, "visible", `${viewport.name}: bubble clips its pointer`);
+      assert.equal(guideStep.tail.content, '""', `${viewport.name}: speech-bubble pointer is missing`);
+      assert.equal(guideStep.tail.width, 13);
+      assert.equal(guideStep.tail.height, 13);
+      assert.equal(guideStep.tail.rotation, 45, `${viewport.name}: bubble pointer is no longer triangular`);
+      const pointsUp = guideStep.tail.placement === "below";
+      assert.equal(pointsUp ? guideStep.tail.top : guideStep.tail.bottom, "-7px");
+      assert.equal(pointsUp ? guideStep.tail.borderTop : guideStep.tail.borderBottom, "1px");
       assert.equal(guideStep.indexLabelCount, 0, `${viewport.name}: a route-guide heading returned`);
       assert.equal(guideStep.inputBadgeCount, 0, `${viewport.name}: a guide input badge returned`);
       assert.equal(guideStep.hintCount, 0, `${viewport.name}: removed guide footer returned`);

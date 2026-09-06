@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import { ESTAT_EXHIBITS } from "../src/exploration/estat-exhibit-catalog.js";
 
 const browserPath = process.argv[2] || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const baseUrl = (process.argv[3] || "http://127.0.0.1:4198").replace(/\/$/u, "");
@@ -35,7 +36,7 @@ const openMap = async (page) => {
   await page.goto(`${baseUrl}/#earth`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter && globalThis.GaiaEstatExhibits), null, { timeout: 30_000 });
   await page.evaluate(() => { location.hash = "#japan"; });
-  await page.waitForFunction(() => document.querySelectorAll("#japan-estat-mode-list [data-estat-exhibit]").length === 10, null, { timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelectorAll(".map-mode-bank [data-estat-exhibit]").length === 10, null, { timeout: 20_000 });
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   assert.equal(await page.locator("[data-estat-return]").count(), 0, "Removed return tile must not be mounted");
 };
@@ -48,9 +49,13 @@ const canvasEvidence = (page) => page.locator("#gaia-estat-canvas").evaluate((ca
   let red = 0;
   let green = 0;
   let blue = 0;
+  const histogram = Array(96).fill(0);
   for (let index = 0; index < pixels.length; index += 16) {
     const alpha = pixels[index + 3];
-    if (alpha > 6) visible += 1;
+    if (alpha > 6) {
+      visible += 1;
+      for (let channel = 0; channel < 3; channel += 1) histogram[channel * 32 + (pixels[index + channel] >> 3)] += 1;
+    }
     energy += pixels[index] + pixels[index + 1] + pixels[index + 2] + alpha;
     red += pixels[index];
     green += pixels[index + 1];
@@ -64,6 +69,7 @@ const canvasEvidence = (page) => page.locator("#gaia-estat-canvas").evaluate((ca
     red,
     green,
     blue,
+    colorDistribution: histogram.map(count => count / Math.max(1, visible)),
     heatmap: canvas.dataset.estatHeatmap,
     shapeCount: Number(canvas.dataset.estatHeatmapShapeCount || 0),
     valueCount: Number(canvas.dataset.estatHeatmapValueCount || 0),
@@ -71,11 +77,11 @@ const canvasEvidence = (page) => page.locator("#gaia-estat-canvas").evaluate((ca
   };
 });
 
-const colorDistance = (left, right) => (
-  Math.abs(left.red - right.red)
-  + Math.abs(left.green - right.green)
-  + Math.abs(left.blue - right.blue)
-) / Math.max(1, left.red + left.green + left.blue);
+// Regional increases and decreases can cancel in a whole-canvas RGB average.
+// Compare the visible land's color distribution instead of its average color.
+const colorDistance = (left, right) => left.colorDistribution.reduce(
+  (distance, count, index) => distance + Math.abs(count - right.colorDistribution[index]), 0,
+) / 6;
 
 const snapshots = [];
 const atmosphereWebglEvidence = [];
@@ -89,7 +95,7 @@ try {
   assert.equal(await page.locator(".map-mode-bank").getAttribute("aria-label"), "地図の30展示を選ぶ");
   assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—30");
   assert.equal(await page.locator(".map-dock-bank-trigger > i").count(), 0, "obsolete downward bank chevron was still present");
-  assert.equal(await page.locator("#japan-estat-mode-list .map-mode-button").count(), 10);
+  assert.equal(await page.locator(".map-mode-bank [data-estat-exhibit]").count(), 10);
   assert.equal(await page.locator(".gaia-estat-marker").count(), 47);
   await page.waitForTimeout(700);
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
@@ -114,7 +120,7 @@ try {
   ];
   for (let index = 0; index < contracts.length; index += 1) {
     const contract = contracts[index];
-    await page.locator("#japan-estat-mode-list .map-mode-button").nth(index).evaluate((button) => button.click());
+    await page.locator(`.map-mode-bank [data-estat-exhibit="${ESTAT_EXHIBITS[index].id}"]`).evaluate((button) => button.click());
     await page.waitForFunction(({ number, key }) => (
       document.querySelector("#japan-layer")?.classList.contains("is-estat-exhibit")
       && document.querySelector("#japan-mode-number")?.textContent === number
@@ -386,7 +392,7 @@ try {
   const widePage = await wideContext.newPage();
   monitor(widePage);
   await openMap(widePage);
-  await widePage.locator("#japan-estat-mode-list .map-mode-button").nth(3).evaluate((button) => button.click());
+  await widePage.locator('[data-estat-exhibit="estat-average-temperature"].map-mode-button').evaluate((button) => button.click());
   await widePage.waitForFunction(() => document.querySelector(".gaia-estat-readout")?.dataset.estatExhibit === "averageTemperature");
   await widePage.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle", null, { timeout: 8_000 });
   await widePage.evaluate(() => {
@@ -433,10 +439,9 @@ try {
       };
     };
     return {
-      chapterKicker: measure(".gaia-estat-chapter > p"),
+      chapterKicker: measure(".gaia-estat-chapter [data-map-category-label]"),
       chapterNumber: measure(".gaia-estat-chapter b"),
       chapterTitle: measure(".gaia-estat-chapter strong"),
-      placeKicker: measure(".gaia-estat-place > p"),
       placeName: measure(".gaia-estat-place strong"),
       locality: measure(".gaia-estat-place small"),
       unit: measure(".gaia-estat-primary > span"),
@@ -444,12 +449,12 @@ try {
       comparisonValue: measure(".gaia-estat-comparison strong"),
     };
   });
-  assert.ok(wideReadoutType.chapterKicker.fontSize >= 11, `chapter kicker remained too small: ${JSON.stringify(wideReadoutType)}`);
+  assert.ok(wideReadoutType.chapterKicker.fontSize >= 10, `category label remained too small: ${JSON.stringify(wideReadoutType)}`);
   assert.ok(wideReadoutType.chapterNumber.fontSize >= 26, `chapter number remained too small: ${JSON.stringify(wideReadoutType)}`);
   assert.ok(wideReadoutType.chapterTitle.fontSize >= 21, `chapter title remained too small: ${JSON.stringify(wideReadoutType)}`);
-  assert.ok(wideReadoutType.placeKicker.fontSize >= 11, `place kicker remained too small: ${JSON.stringify(wideReadoutType)}`);
+  assert.equal(await widePage.locator(".gaia-estat-place > p").count(), 0, "Removed duplicate place label returned");
   assert.ok(wideReadoutType.placeName.fontSize >= 20, `prefecture name remained too small: ${JSON.stringify(wideReadoutType)}`);
-  assert.ok(wideReadoutType.locality.fontSize >= 12, `locality remained too small: ${JSON.stringify(wideReadoutType)}`);
+  assert.ok(wideReadoutType.locality.fontSize >= 10, `compact locality remained too small: ${JSON.stringify(wideReadoutType)}`);
   assert.ok(wideReadoutType.unit.fontSize >= 15, `measurement unit remained too small: ${JSON.stringify(wideReadoutType)}`);
   assert.ok(wideReadoutType.comparisonLabel.fontSize >= 12, `comparison label remained too small: ${JSON.stringify(wideReadoutType)}`);
   assert.ok(wideReadoutType.comparisonValue.fontSize >= 18, `comparison value remained too small: ${JSON.stringify(wideReadoutType)}`);
@@ -508,7 +513,7 @@ try {
   const mobilePage = await mobileContext.newPage();
   monitor(mobilePage);
   await openMap(mobilePage);
-  await mobilePage.locator("#japan-estat-mode-list .map-mode-button").nth(1).evaluate((button) => button.click());
+  await mobilePage.locator('[data-estat-exhibit="estat-lodging"].map-mode-button').evaluate((button) => button.click());
   await mobilePage.waitForFunction(() => document.querySelector(".gaia-estat-readout")?.dataset.estatExhibit === "lodging");
   await mobilePage.waitForTimeout(700);
   await mobilePage.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));

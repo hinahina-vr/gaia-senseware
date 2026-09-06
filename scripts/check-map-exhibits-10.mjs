@@ -4,6 +4,10 @@ import path from "node:path";
 import vm from "node:vm";
 import "./check-live-loading.mjs";
 import "./check-statistics-methods.mjs";
+import "./check-exhibit-catalog.mjs";
+import "./check-map-demo.mjs";
+import { LIVE_EXHIBITS } from "../src/exploration/live-exhibit-catalog.js";
+import { ESTAT_EXHIBITS } from "../src/exploration/estat-exhibit-catalog.js";
 // Both transport checks temporarily replace globals; run BYOK after imports settle.
 await import("./check-statistics-ai.mjs");
 
@@ -290,10 +294,7 @@ const liveContracts = [
   ["14", "cloud-drift", "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。"],
   ["15", "pm25-haze", "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。"],
 ];
-for (const [number, id, caption] of liveContracts) {
-  assert.match(liveExhibitsSource, new RegExp(`id: "${id}"[\\s\\S]*number: "${number}"`, "u"));
-  assert(liveExhibitsSource.includes(`caption: "${caption}"`), `${number}: explanatory contract changed`);
-}
+assert.deepEqual(LIVE_EXHIBITS.map(({ number, id, caption }) => [number, id, caption]), liveContracts, "Live explanatory contracts changed");
 assert.match(liveExhibitsSource, /getContext\("webgl"[\s\S]*WEBGL_FRAGMENT_SOURCE/u);
 assert.match(liveExhibitsSource, /WEBGL_WIND_BRUSH_VERTEX_SOURCE[\s\S]*WEBGL_WIND_BRUSH_FRAGMENT_SOURCE/u);
 assert.match(liveExhibitsSource, /vec3 windPalette[\s\S]*blue[\s\S]*cyan[\s\S]*green[\s\S]*yellow[\s\S]*orange[\s\S]*red/u);
@@ -303,7 +304,7 @@ assert.match(liveDataSource, /\/api\/live\/v1\/wind-field/u);
 assert.match(liveDataSource, /gaia:live-wind-field/u);
 assert.match(liveExhibitsSource, /visualLanguage = "continuous-signal-field"/u);
 assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 temperatureField[\s\S]*vec3 cloudField[\s\S]*vec3 no2Field/u);
-assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: 139\.6503, lat: 35\.6762, label: "東京" \}\)/u);
+for (const exhibit of LIVE_EXHIBITS) assert.deepEqual(exhibit.location, { lon: 139.6503, lat: 35.6762, label: "東京" });
 assert.match(liveExhibitsSource, /class="gaia-live-data-credit"/u);
 assert.match(liveExhibitsSource, /href="https:\/\/open-meteo\.com\/"/u);
 assert.match(liveExhibitsSource, /href="https:\/\/creativecommons\.org\/licenses\/by\/4\.0\/"/u);
@@ -341,10 +342,10 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-character-profile-five-lines-1/u);
-assert.match(read("src/exploration/estat-exhibits.js"), /key: "lodging",\s+unit: "人"/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-true-end-separator-1/u);
+assert.equal(ESTAT_EXHIBITS.find(exhibit => exhibit.key === "lodging").unit, "人");
 assert.match(liveExhibitsSource, /この地図で確かめること/u);
-assert.equal((liveExhibitsSource.match(/question: /gu) || []).length, 6);
+assert.equal(LIVE_EXHIBITS.filter(exhibit => typeof exhibit.question === "string" && exhibit.question.length).length, 6);
 assert.doesNotMatch(liveExhibitsSource, /LIVE WAVE|live-wave-bar|gaia-live-deck-wave/u);
 assert.match(modeLoaderSource, /data-ledger\.css\?v=gaia-source-link-icons-1/u);
 assert.match(modeLoaderSource, /data-ledger\.js\?v=gaia-source-link-icons-1/u);
@@ -354,7 +355,7 @@ assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-subject-categorie
 assert.match(modeLoaderSource, /map-exhibit-categories\.css\?v=gaia-subject-categories-1/u);
 assert.match(modeLoaderSource, /map-exhibit-categories\.js\?v=gaia-subject-categories-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-annual-temperature-labels-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-unified-metric-legend-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-map-demo-1/u);
 assert.match(modeLoaderSource, /metric-legend\.css\?v=gaia-unified-metric-legend-1/u);
 assert.match(modeLoaderSource, /map-instrument-ui\.css\?v=gaia-poi-compact-card-1/u);
 assert.match(modeLoaderSource, /styles\.css\?v=gaia-exhibit-preview-card-1/u);
@@ -397,7 +398,7 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-lodging-unit-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-map-demo-1/u);
 assert.match(modeLoaderSource, /map-exhibit-actions\.css\?v=gaia-estat-comparison-nowrap-1/u);
 assert.match(modeLoaderSource, /statistics-lab\.js\?v=gaia-observation-dialogue-1/u);
 await import("./check-map-action-statistics.mjs");

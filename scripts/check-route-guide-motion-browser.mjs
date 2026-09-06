@@ -23,8 +23,8 @@ try {
     const presented = () => page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-presented"));
     await presented();
 
-    // Seek the actual browser CSS animations: verify the connector, surface,
-    // and copy have distinct reveal phases without timing-sensitive sleeps.
+    // Seek the real CSS animation: the restored pointer shares the surface's
+    // entrance, while the text follows without changing the layout box.
     const inspectEntrance = async (step) => {
       const fresh = await page.evaluate(() => {
         const guide = document.querySelector("#gaia-opening-route-guide");
@@ -51,7 +51,9 @@ try {
             surface: Number(getComputedStyle(surface).opacity),
             copy: Number(getComputedStyle(copy).opacity),
             hintCount: guide.querySelectorAll(".gaia-opening-route-guide-hint, [data-route-guide-hint-action]").length,
-            thread: Number(getComputedStyle(bubble, "::before").opacity),
+            threadContent: getComputedStyle(bubble, "::before").content,
+            tailContent: getComputedStyle(surface, "::before").content,
+            tailTransform: getComputedStyle(surface, "::before").transform,
             filter: getComputedStyle(surface).filter,
             wrapperRect: bubble.getBoundingClientRect().toJSON(),
             count: guide.querySelectorAll("[data-route-guide-step], .gaia-opening-route-guide-index").length,
@@ -61,7 +63,7 @@ try {
         assert.equal(phase.count, 0);
         assert.equal(phase.hintCount, 0);
         phases.push(phase);
-        if (step === 1 && [190, 450, 1100].includes(time)) {
+        if ((step === 1 && [190, 450, 1100].includes(time)) || (step === 2 && time === 1100)) {
           const rect = phase.wrapperRect;
           await page.screenshot({ path: path.join(output, `${viewport.width}-step-${step}-${time}.png`),
             clip: { x: Math.max(0, rect.x - 8), y: Math.max(0, rect.y - 20), width: Math.min(viewport.width - Math.max(0, rect.x - 8), rect.width + 16), height: Math.min(viewport.height - Math.max(0, rect.y - 20), rect.height + 40) } });
@@ -69,8 +71,13 @@ try {
       }
       assert.equal(phases[0].surface, 0);
       assert.equal(phases[0].copy, 0);
-      assert(phases[1].thread > 0 && phases[1].surface > 0 && phases[1].surface < 1);
-      assert.equal(phases[1].copy, 0, "Copy must follow the initial light/surface reveal");
+      assert(phases[1].surface > 0 && phases[1].surface < 1);
+      for (const phase of phases) {
+        assert.equal(phase.threadContent, "none", "The thin connector line returned");
+        assert.equal(phase.tailContent, '""', "The speech-bubble pointer disappeared");
+        assert.equal(phase.tailTransform, phases[0].tailTransform, "The entrance animation rotated the pointer");
+      }
+      assert.equal(phases[1].copy, 0, "Copy must follow the bubble reveal");
       assert(phases[2].copy > 0 && phases[2].copy < 1);
       assert.equal(phases[3].surface, 1);
       assert.equal(phases[3].copy, 1);

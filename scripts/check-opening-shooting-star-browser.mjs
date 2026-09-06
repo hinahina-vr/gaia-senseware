@@ -48,12 +48,20 @@ const scanViewport = async (viewport) => {
   assert(first.startY <= viewport.height * 0.2, `${viewport.name}: shooting star did not start near the top edge`);
   assert(first.dx < 0 && first.dy > 0, `${viewport.name}: shooting star did not travel down and left`);
   assert(first.startX + first.dx < first.startX, `${viewport.name}: shooting star trajectory escaped toward the character side`);
-  assert(first.duration >= 880 && first.duration <= 1180, `${viewport.name}: shooting star duration is outside the intended range`);
+  assert(first.duration >= 1200 && first.duration <= 1500, `${viewport.name}: shooting star duration is outside the calmer range`);
+  assert(first.travel <= 320, `${viewport.name}: a large display enlarged the shooting star`);
+  assert(first.travel <= viewport.width * 0.22, `${viewport.name}: a mobile minimum enlarged the shooting star`);
+  assert(first.travel <= viewport.height * 0.3, `${viewport.name}: shooting star crosses too much of the sky`);
+  const speed = first.travel / (first.duration / 1000);
+  const previousTravel = Math.max(240, Math.min(viewport.width * 0.42, viewport.height * 0.86));
+  assert(speed < (previousTravel / 1.18) * 0.65, `${viewport.name}: shooting star did not become slower`);
+  assert(first.startX + first.dx >= 0, `${viewport.name}: shooting star disappears through the left screen edge`);
   assert(first.perspective >= 0.035 && first.perspective <= 0.065, `${viewport.name}: shooting star perspective model is outside its calibrated range`);
   assert(first.gravity >= first.travel * 0.022 && first.gravity <= first.travel * 0.035, `${viewport.name}: shooting star atmospheric drop is outside its calibrated range`);
-  assert(first.trailFraction >= 0.17 && first.trailFraction <= 0.22, `${viewport.name}: shooting star trail persistence is outside its calibrated range`);
-  assert(first.coreWidth >= 0.52 && first.coreWidth <= 0.82, `${viewport.name}: shooting star core is too heavy`);
-  assert(first.peakAlpha >= 0.5 && first.peakAlpha <= 0.62, `${viewport.name}: shooting star opacity is outside its restrained range`);
+  assert(first.trailFraction >= 0.12 && first.trailFraction <= 0.16, `${viewport.name}: shooting star trail persistence is outside its restrained range`);
+  assert(first.travel * first.trailFraction <= 42.001, `${viewport.name}: shooting star tail is too long`);
+  assert(first.coreWidth >= 0.38 && first.coreWidth <= 0.58, `${viewport.name}: shooting star core is too heavy`);
+  assert(first.peakAlpha >= 0.42 && first.peakAlpha <= 0.54, `${viewport.name}: shooting star opacity is outside its restrained range`);
 
   await page.waitForTimeout(320);
   const canvasPng = await page.locator("#gaia-opening-particles").evaluate((canvas) => canvas.toDataURL("image/png"));
@@ -66,15 +74,16 @@ const scanViewport = async (viewport) => {
   const events = await page.evaluate(() => globalThis.__gaiaShootingStarEvents.slice(0, 2));
   const interval = events[1].at - events[0].at;
   assert(interval >= 8_900 && interval <= 11_100, `${viewport.name}: shooting star interval was ${interval}ms`);
-  report.scans.push({ viewport, first, interval });
+  report.scans.push({ viewport, first, interval, speed, maxTrailPx: first.travel * first.trailFraction });
   await context.close();
 };
 
 try {
-  await Promise.all([
-    scanViewport({ name: "pc-1440", width: 1440, height: 900 }),
-    scanViewport({ name: "mobile-390", width: 390, height: 844 }),
-  ]);
+  for (const viewport of [
+    { name: "pc-1440", width: 1440, height: 900 },
+    { name: "mobile-390", width: 390, height: 844 },
+    { name: "pc-4k", width: 3840, height: 2160 },
+  ]) await scanViewport(viewport);
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);

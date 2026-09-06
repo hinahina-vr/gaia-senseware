@@ -67,7 +67,19 @@ flowchart LR
 
 MAP 10—15のPages APIはCloudflare Cache APIを使用し、D1へ観測値を保存しません。MAP 27—30は5分のブラウザキャッシュを使い、外部取得値をファイルへ書き出しません。すべてのライブ系展示は提供元、データ時刻、取得状態を画面に出し、失敗時の保存値をライブ値と区別します。
 
+MAP 10—25は、固定データと画面の実行処理を分離しています。以下はすべて `src/exploration/` 内のモジュールです。
+
+- `observation-cities.js`: 47都道府県の代表地点と前後の地点を求める処理。ライブ展示と公的統計展示で共有します。
+- `live-exhibit-catalog.js` / `estat-exhibit-catalog.js`: 展示ID、表示文言、単位、出典などの固定定義。ブラウザや地図を起動せずに読み込めます。
+- `live-exhibits.js` / `estat-exhibits.js`: 地図への描画、イベント処理、再生状態。固定データを使うためだけに別の描画モジュールを読み込みません。
+
+`scripts/check-exhibit-catalog.mjs` で定義・地点順序・共有依存を検査し、`scripts/check-live-next-16-browser.mjs` でモジュールの重複読込、展示境界、地点の前後移動と自動巡回を確認します。
+
+地図の「デモ」は明示的な開始操作から全30展示を25秒間隔で巡回します。`map-demo-controller.js` が単一の期限タイマー、周回、停止、非表示タブの残り時間保持を担当し、`map-demo.js` が既存の展示ボタンに接続します。訪問者の操作・地図退出・別のガイドや分析画面の開始で停止し、音量やミュート設定は変更しません。初期状態は停止で、再入場時も自動再開しません。`scripts/check-map-demo.mjs` と `scripts/check-map-demo-browser.mjs` で確認します。
+
 ## 主要アダプター
+
+物語本文の改行・改ページは `novel-mode.js` で実表示幅を測って決めます。1ページ最大3行とし、送りマークが本文の右にある場合は横方向の安全距離も評価します。語句単位で最少行数を保ちつつ句読点での改行を優先し、カタカナ語・数値と単位・語尾の分断を避けます。表示用の改行と台本の改行は区別し、本文・読み上げ用テキスト・文字送り順序を維持します。`scripts/check-dialogue-flow.mjs` と `scripts/check-dialogue-pagination-browser.mjs` で行割り・全本文・狭い画面・分かち書きなしのフォールバックを検査します。
 
 | アダプター | 役割 |
 |---|---|

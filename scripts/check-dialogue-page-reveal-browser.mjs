@@ -43,6 +43,7 @@ try {
 
     await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+    await page.evaluate(() => GaiaNovel.open());
     await page.evaluate(({ stepId, sceneId }) => {
       const progress = {
         storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,

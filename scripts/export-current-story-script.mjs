@@ -47,8 +47,8 @@ const staffRoll = Object.freeze({
       names: [
         "ZEN大学『共創地球論』",
         "ZEN大学『人新世の人類学』",
-        "ZEN大学『統計学入門』",
         "ZEN大学『リテラシーと応用のための物語理論』",
+        "ZEN大学『統計学入門』",
       ],
     }),
     Object.freeze({ role: "観測データ", department: "DATA SOURCES", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] }),
@@ -197,7 +197,7 @@ lines.push(
   "",
   `- ${staffRoll.copyright}`,
   `- ${staffRoll.thanks}`,
-  `- 約5秒後に「${staffRoll.continueLabel}」へ切り替え`,
+  `- 約6秒後に「${staffRoll.continueLabel}」へ切り替え`,
   "",
   "---",
   "",

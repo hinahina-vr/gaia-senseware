@@ -24,6 +24,8 @@ const textSteps = allSteps
 assert(textSteps.length > 0, `no text steps matched ${stepFilter || "the story"}`);
 
 const viewports = [
+  { name: "pc-1920", width: 1920, height: 1080 },
+  { name: "pc-3840", width: 3840, height: 2160 },
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "pc-low-1366", width: 1366, height: 600 },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
@@ -81,7 +83,8 @@ const analyzeStep = (step, pagination) => {
   pagination.pages.forEach((page, index) => {
     if (!page.fits) errors.push(`page ${index + 1} does not fit`);
     if (page.lines > 3 || page.lines > page.maxLines) errors.push(`page ${index + 1} exceeds rendered line limit`);
-    if (page.indicatorSafety < 12) errors.push(`page ${index + 1} indicator safety ${page.indicatorSafety}`);
+    if (page.indicatorClearance < 12) errors.push(`page ${index + 1} indicator clearance ${page.indicatorClearance}`);
+    if (page.horizontalOverflow > 1) errors.push(`page ${index + 1} horizontal overflow ${page.horizontalOverflow}`);
     if (page.tokenSource !== page.text) errors.push(`page ${index + 1} token source mismatch`);
     page.tokenLines.forEach((line, lineIndex) => {
       const text = line.text.trim();
@@ -132,6 +135,7 @@ try {
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
     await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.inspectDialoguePagination), null, { timeout: 15_000 });
+    await page.evaluate(() => GaiaNovel.open());
     await page.evaluate(({ progressKey, saveKey, settingsKey, progress }) => {
       localStorage.setItem(progressKey, JSON.stringify(progress));
       localStorage.setItem(saveKey, JSON.stringify([{
@@ -175,10 +179,28 @@ try {
       id: step.id,
       pagination: globalThis.GaiaNovel.inspectDialoguePagination(step.text),
     })), textSteps);
+    if (viewport.width >= 1920 && !stepFilter) {
+      const regression = results.find((entry) => entry.id === "festival_concept_new_028").pagination;
+      assert.equal(regression.pages.length, 1, "The three-line CO2 paragraph must not become a 1+2-line page split");
+      assert.deepEqual(regression.pages[0].tokenLines.map((line) => line.text), [
+        "画面の端にはCO2濃度だけでなく、",
+        "風向や都市の電力消費のパラメータも並んでいた。",
+        "気象シミュレーションという枠をはるかに超えている。",
+      ]);
+    }
+    const phraseRegression = await page.evaluate(() => GaiaNovel.inspectDialoguePagination("わたくしたちのハンドルネームと、四十数億年のGAIA Transformationを確かめる。"));
+    for (const phrase of ["わたくしたち", "ハンドルネーム", "四十数億年", "GAIA Transformation"]) {
+      assert(phraseRegression.tokens.some((token) => token.includes(phrase)), `Split phrase: ${phrase}`);
+    }
+    for (const source of ["「GAIA SENSEWARE」は、リアルタイムの観測を重ねる。\nものづくりの、そのものを考える。", `${"ながいことば".repeat(25)}。`]) {
+      const fallback = await page.evaluate((text) => GaiaNovel.inspectDialoguePagination(text, { forceFallback: true }), source);
+      assert.equal(fallback.pages.map((part) => part.text).join(""), source);
+      assert(fallback.pages.every((part) => part.fits && part.horizontalOverflow <= 1 && part.lines <= 3));
+    }
     let mobileBoundaryRegression = null;
     if (viewport.name === "mobile-390" && !stepFilter) {
-      const regressionStep = textSteps.find((step) => step.id === "festival_concept_001");
-      assert(regressionStep, "missing festival_concept_001 pagination regression step");
+      // Keep the ICU fragmentation regression independent of script revisions.
+      const regressionText = "秋の光が差し込むと、キャンパスの表情がゆっくり変わる。画面越しに見ていた景色が、目の前の空気と重なっていく。";
       await page.setViewportSize({ width: 280, height: 700 });
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       mobileBoundaryRegression = await page.evaluate((text) => {
@@ -208,7 +230,7 @@ try {
         } finally {
           Intl.Segmenter = NativeSegmenter;
         }
-      }, regressionStep.text);
+      }, regressionText);
       assert(mobileBoundaryRegression.tokens.some((token) => token.includes("変わる")), "ICU fragmentation split 変わる into separate page tokens");
       mobileBoundaryRegression.pages.slice(0, -1).forEach((pageResult, pageIndex) => {
         assert(safeBoundary.test(pageResult.text.trimEnd()), `mobile regression boundary ${pageIndex + 1} is not punctuation-safe: ${pageResult.text}`);

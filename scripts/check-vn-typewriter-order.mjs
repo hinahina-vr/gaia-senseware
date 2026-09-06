@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import "./check-dialogue-flow.mjs";
+import "./check-ending-logo.mjs";
+import "./check-ending-thanks.mjs";
+import "./check-true-end-transition.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -34,6 +38,6 @@ check("CSS hides only unrevealed glyphs", css.includes(".novel-text.is-revealing
 check("scramble fade is disabled during reveal", /\.novel-text\.is-revealing\s*\{\s*animation:\s*none;/u.test(css));
 check("block cursor is removed", !html.includes(">▌</span>") && /\.novel-cursor\s*\{\s*display:\s*none !important;/u.test(css));
 check("SCRIPT debug overlay is removed", /\.novel-script-debug\s*\{[\s\S]*?display:\s*none !important;/u.test(css));
-check("runtime cache key is current", modeLoader.includes("novel-mode.js?v=gaia-dialogue-fallback-1"));
+check("runtime cache key is current", modeLoader.includes("novel-mode.js?v=gaia-true-end-glitch-1"));
 
 console.log(JSON.stringify({ status: "passed", checks: checks.length, names: checks }, null, 2));

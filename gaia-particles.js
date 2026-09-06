@@ -122,12 +122,14 @@
 
     const launchShootingStar = (time) => {
       const angle = random(0.42, 0.56);
-      const travel = Math.max(240, Math.min(width * 0.42, height * 0.86));
+      // A small sky detail, not a viewport-wide sweep. Avoid a mobile minimum
+      // and cap the travel/trail so large displays cannot magnify the effect.
+      const travel = Math.min(320, width * 0.22, height * 0.3);
       const directionX = -Math.cos(angle);
       const directionY = Math.sin(angle);
       const shootingStar = {
         startedAt: time,
-        duration: random(880, 1180),
+        duration: random(1200, 1500),
         startX: random(width * 0.24, width * 0.48),
         startY: random(height * 0.035, height * 0.17),
         dx: directionX * travel,
@@ -138,9 +140,9 @@
         perspective: random(0.035, 0.065),
         gravity: travel * random(0.022, 0.035),
         crosswind: travel * random(-0.005, 0.007),
-        trailFraction: random(0.17, 0.22),
-        coreWidth: random(0.52, 0.82),
-        peakAlpha: random(0.5, 0.62),
+        trailFraction: Math.min(random(0.12, 0.16), 42 / travel),
+        coreWidth: random(0.38, 0.58),
+        peakAlpha: random(0.42, 0.54),
         phase: random(0, Math.PI * 2),
         hue: random(194, 210),
       };
@@ -222,12 +224,12 @@
 
         context.save();
         context.lineCap = "round";
-        drawTaperedTrail({ widthScale: 3.1, alphaScale: 0.24, saturation: 86, lightness: 87 });
+        drawTaperedTrail({ widthScale: 2.2, alphaScale: 0.24, saturation: 86, lightness: 87 });
         drawTaperedTrail({ widthScale: 1, alphaScale: 0.88, saturation: 74, lightness: 98 });
 
         const previous = positionOnShootingStarTrajectory(star, Math.max(0, progress - 0.004));
         const heading = Math.atan2(head.y - previous.y, head.x - previous.x);
-        const headRadius = star.coreWidth * 2.7;
+        const headRadius = star.coreWidth * 2;
         context.translate(head.x, head.y);
         context.rotate(heading);
         const headGlow = context.createRadialGradient(0, 0, 0, 0, 0, headRadius);

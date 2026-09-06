@@ -954,7 +954,7 @@
     },
     {
       "path": "assets/guide-previews/character.jpg",
-      "sha256": "1ce5dbca63f7edb968aeb7d1598541bfed4059249863f4de32cbdbf5a9ee8c5c",
+      "sha256": "375065d265acd91ef60d6a5187aac0ed1f6dfec07bd7f3c0dbcff8f876fe7195",
       "generationService": "未特定（元台帳参照）",
       "generationDate": null,
       "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
@@ -967,7 +967,7 @@
     },
     {
       "path": "assets/guide-previews/map.jpg",
-      "sha256": "f68be41525966d3431e936b15955050902bc03ac161f7bdba43e0276e3f8d919",
+      "sha256": "9e4200c23290202a1d39af63cb6a9f61836455576a88ff364b4c249a8b0f7053",
       "generationService": "未特定（元台帳参照）",
       "generationDate": null,
       "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
@@ -980,7 +980,7 @@
     },
     {
       "path": "assets/guide-previews/sensor.jpg",
-      "sha256": "80b4bdb64d3e573995c63274578a6bbefd42f694a7c78529cb631a91697b55de",
+      "sha256": "046cb004f0a009fa9fac377ce78536338d4be53baff9777b127f0f82f06794be",
       "generationService": "未特定（元台帳参照）",
       "generationDate": null,
       "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
@@ -993,7 +993,7 @@
     },
     {
       "path": "assets/guide-previews/sound.jpg",
-      "sha256": "627876a9cb1483384defe00d075246cc5927a1857dc64b8458f6e9748f2ecacf",
+      "sha256": "35350eeb34bda2c8b08e09298bc7aef242702e3466df81934841a977b0d5584a",
       "generationService": "未特定（元台帳参照）",
       "generationDate": null,
       "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",

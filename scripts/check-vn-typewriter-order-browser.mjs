@@ -26,7 +26,9 @@ const viewports = [
 const modes = ["normal", "high", "slow", "speed-change", "reflow", "click-skip", "space-skip", "auto", "fast", "reduced"]
   .filter((mode) => !modeFilter || mode === modeFilter);
 assert(viewports.length > 0 && modes.length > 0, "unknown viewport or mode filter");
-const speedForMode = (mode) => mode === "speed-change" || mode === "slow"
+// Reflow needs enough visible glyphs after the entry dissolve to sample both
+// sides of resize/font-ready events, even when page one is a short sentence.
+const speedForMode = (mode) => mode === "speed-change" || mode === "slow" || mode === "reflow"
   ? 50
   : mode === "high"
     ? 400
@@ -240,6 +242,8 @@ try {
       page.on("pageerror", (error) => report.pageErrors.push(`${tag}: ${error.message}`));
       page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${tag}: ${response.url()}`); });
       await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => globalThis.GaiaNovel);
+      await page.evaluate(() => GaiaNovel.open());
       await page.evaluate(({ progressKey, manualKey, settingsKey, progress, settings }) => {
         localStorage.setItem(progressKey, JSON.stringify(progress));
         localStorage.setItem(manualKey, JSON.stringify([{
