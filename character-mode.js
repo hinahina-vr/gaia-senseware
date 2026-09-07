@@ -27,6 +27,9 @@
       expression("teasing", "からかい", "sakuya-teasing-07-v1.png", "挑発的にからかう木下 咲弥"),
       expression("worried", "心配", "sakuya-worried-07-v1.png", "心配そうな表情の木下 咲弥"),
     ]),
+    aoneko: Object.freeze([
+      expression("calm", "シルエット", "aoneko-silhouette.svg", "青猫の中性的なシルエット"),
+    ]),
   });
   const characters = Object.freeze([
     {
@@ -95,6 +98,27 @@
       expressions: expressionSets.sakuya,
       src: expressionSets.sakuya[0].src,
       alt: expressionSets.sakuya[0].alt,
+    },
+    {
+      id: "aoneko",
+      native: "青猫",
+      tagline: "手元の観測を、世界につなぐ新しい仲間",
+      copy: "身近な環境を測り、小さなセンサーから地球との接点を探していく。",
+      quote: "「この小さなセンサーから、つなげてみたいです」",
+      profile: [
+        ["展示ブースを訪れたことをきっかけに、"],
+        ["「惑星の放課後」に加わった", "新しい仲間。"],
+        ["電子工作とプログラミングが好きで、"],
+        ["ESP32を使った試作や", "データ連携を手伝う。"],
+        ["身近な環境の小さな変化から、", "地球の見方を探している。"],
+      ],
+      domain: "電子工作・エッジ処理",
+      role: "試作・センサーデータ連携",
+      tool: "ESP32・温湿度センサー",
+      tone: "78, 161, 190",
+      expressions: expressionSets.aoneko,
+      src: expressionSets.aoneko[0].src,
+      alt: expressionSets.aoneko[0].alt,
     },
   ]);
 
@@ -739,6 +763,7 @@
 
   const renderExpressions = (character) => {
     if (!(expressionList instanceof HTMLElement)) return;
+    expressionList.closest(".character-book-expressions").hidden = character.expressions.length < 2;
     const activeId = character.expressions[0].id;
     expressionHoverReady = false;
     const buttons = character.expressions.map((item) => {
@@ -793,8 +818,11 @@
     const commit = () => {
       if (generation !== switchGeneration) return;
       setLetterText(native, character.native, 50);
-      setLetterText(fullName, character.fullName, 90);
-      setLetterText(reading, character.reading, 150);
+      fullName.hidden = !character.fullName;
+      reading.hidden = !character.reading;
+      layer.querySelector("#character-book-page-title > i").hidden = !character.fullName;
+      setLetterText(fullName, character.fullName || "", 90);
+      setLetterText(reading, character.reading || "", 150);
       setLetterText(tagline, character.tagline, 0);
       setProfileText(character.profile);
       setLetterText(quote, character.quote, quoteRevealDelay);

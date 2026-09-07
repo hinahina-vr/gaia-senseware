@@ -95,28 +95,15 @@ try {
         await page.screenshot({ path: path.join(output, `${width}-${n}.jpg`), type: "jpeg", quality: 85 });
       }
       const source = actions.locator(".gaia-map-action--source");
-      if (n <= 15) {
-        await source.click();
-        await checkScroll(`${n}/source-open`);
-        await page.waitForFunction(() => document.querySelector("#japan-data-panel").getAttribute("aria-hidden") === "false");
-        assert.match(await page.locator("#data-ledger-mode-title").textContent(), new RegExp(`^${n} `));
-        await page.locator("#japan-data-close").click();
-        await checkScroll(`${n}/source-close`);
-        assert(await source.evaluate(node => document.activeElement === node), "Source dialog restores focus to its real opener");
-      } else {
-        const href = await source.getAttribute("href");
-        assert.match(href, /^https:\/\//);
-        assert.equal(await source.getAttribute("target"), "_blank");
-        assert.match(await source.getAttribute("rel"), /noopener/);
-        // Verify the real click and destination without leaving the local QA run.
-        await context.route(href, route => route.fulfill({ body: "Source link QA", contentType: "text/plain" }));
-        const popupPromise = page.waitForEvent("popup");
-        await source.click();
-        const popup = await popupPromise;
-        await popup.waitForLoadState();
-        assert.equal(popup.url(), href);
-        await popup.close();
-      }
+      assert.equal(await source.getAttribute("href"), null, "Source actions must open the in-page ledger first");
+      await source.click();
+      await checkScroll(`${n}/source-open`);
+      await page.waitForFunction(() => document.querySelector("#japan-data-panel").getAttribute("aria-hidden") === "false");
+      assert.match(await page.locator("#data-ledger-mode-title").textContent(), new RegExp(`^${n} `));
+      assert(await page.locator("#data-ledger-sources a").count() > 0);
+      await page.locator("#japan-data-close").click();
+      await checkScroll(`${n}/source-close`);
+      assert(await source.evaluate(node => document.activeElement === node), "Source dialog restores focus to its real opener");
       await actions.locator(".gaia-map-action--analysis").click();
       await page.waitForFunction(() => globalThis.GaiaStatisticsLab.getState().open && globalThis.GaiaStatisticsLab.getState().analysisReady);
       const state = await page.evaluate(() => globalThis.GaiaStatisticsLab.getState());

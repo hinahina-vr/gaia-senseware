@@ -462,6 +462,17 @@
   padding: 0;
 }
 
+.data-ledger-card .data-ledger-attribution {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  min-width: 0;
+  margin: 8px 0 0;
+  color: rgba(191, 228, 218, 0.72);
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
 .data-ledger-card .data-source-links a {
   display: inline-flex;
   align-items: center;
@@ -504,6 +515,10 @@
 
 @media (max-width: 900px) {
   .japan-data-panel { width: 100%; }
+  /* Mobile realtime observations reach z-index 230. The ledger and its
+     backdrop must cover those controls for the whole source-reading session. */
+  #japan-layer.is-mobile-map-shell .japan-data-scrim { z-index: 240; }
+  #japan-layer.is-mobile-map-shell .japan-data-panel { z-index: 241; }
   .japan-data-header { min-height: 64px; padding: 10px 14px; }
   .japan-data-header h2 { font-size: 19px; }
   .japan-data-scroll { padding: 10px 14px 20px; }

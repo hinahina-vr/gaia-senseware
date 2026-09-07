@@ -463,7 +463,8 @@ try {
   const analysisAction = widePage.locator("[data-estat-analysis]");
   assert.equal(await sourceAction.isVisible(), true, "e-Stat source action was hidden on desktop");
   assert.equal(await analysisAction.isVisible(), true, "e-Stat analysis action was hidden on desktop");
-  assert.match(await sourceAction.getAttribute("href"), /^https:\/\/www\.data\.jma\.go\.jp\//u);
+  assert.equal(await sourceAction.getAttribute("href"), null);
+  assert.match(await widePage.evaluate(() => GaiaEstatExhibits.getSourceInfo().datasets[0].url), /^https:\/\/www\.data\.jma\.go\.jp\//u);
   assert.equal(await sourceAction.getAttribute("download"), null, "source action unexpectedly restored a download");
   await widePage.screenshot({ path: path.join(outputDir, "wide-19-source-analysis.png"), fullPage: true });
   await widePage.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));

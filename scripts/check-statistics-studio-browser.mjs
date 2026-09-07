@@ -75,6 +75,7 @@ try {
         const findings = page.locator("#gaia-statistics-findings");
         assert((await findings.evaluate(node => node.scrollWidth - node.clientWidth)) <= 1);
         assert((await findings.locator(":scope > .gaia-statistics-finding").count()) >= 3);
+        assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false, "No duplicate reading at any width");
         if (width <= 980) {
           assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false);
           assert.equal(await findings.evaluate(node => getComputedStyle(node).position), "static");

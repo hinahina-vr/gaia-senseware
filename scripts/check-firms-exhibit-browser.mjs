@@ -99,7 +99,8 @@ try {
   assert.equal(await desktop.locator(".gaia-live-city-marker:visible").count(), 0);
   assert.equal(await desktop.locator(".gaia-estat-marker:visible").count(), 0);
   assert.match(await desktop.locator(".gaia-firms-copy").innerText(), /火災の範囲ではなく.+熱異常/u);
-  assert.match(await desktop.locator(".gaia-firms-actions a").getAttribute("href"), /^https:\/\/firms\.modaps\.eosdis\.nasa\.gov\//u);
+  assert.equal(await desktop.locator("[data-firms-source]").getAttribute("aria-controls"), "japan-data-panel");
+  assert.match(await desktop.evaluate(() => GaiaFirmsExhibit.getSourceInfo().datasets[0].url), /^https:\/\/firms\.modaps\.eosdis\.nasa\.gov\//u);
   await desktop.locator("[data-firms-progress]").evaluate((input) => {
     input.value = "780";
     input.dispatchEvent(new Event("input", { bubbles: true }));

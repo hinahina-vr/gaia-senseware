@@ -135,7 +135,7 @@ try {
     assert.equal(initial.ariaHidden, "false", viewport.name + ": dialog remains hidden");
     assert.equal(initial.role, "dialog", viewport.name + ": dialog role is missing");
     assert.equal(initial.modal, "true", viewport.name + ": modal state is missing");
-    assert.equal(initial.selectors, 3, viewport.name + ": three-character selector is incomplete");
+    assert.equal(initial.selectors, 4, viewport.name + ": four-character selector is incomplete");
     assert.equal(initial.activeSelectors, 1, viewport.name + ": selector active state is ambiguous");
     assert.equal(initial.expressions, 4, viewport.name + ": Amane expression selector is incomplete");
     assert.equal(initial.activeExpressions, 1, viewport.name + ": expression active state is ambiguous");

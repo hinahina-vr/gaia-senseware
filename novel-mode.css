@@ -2563,11 +2563,11 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
 }
 
 .novel-layer[data-step-type="section-separator"] .novel-chapter-card {
-  animation: novel-section-chapter-in 2.2s ease both;
+  animation: novel-section-chapter-in 4.2s ease both;
 }
 
 .novel-layer[data-step-type="section-separator"] .novel-chapter-card::after {
-  animation: novel-section-chapter-beam 2.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: novel-section-chapter-beam 4.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3323,7 +3323,7 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
 
 @keyframes novel-section-chapter-in {
   0% { opacity: 0; filter: blur(7px); transform: translate(-50%, calc(-50% + 8px)) scale(0.985); }
-  15.8%, 84.2% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
+  8.3%, 91.7% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; filter: blur(4px); transform: translate(-50%, calc(-50% - 5px)) scale(1.008); }
 }
 
@@ -3338,8 +3338,8 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
 }
 
 @keyframes novel-section-chapter-beam {
-  0%, 6.6% { opacity: 0; transform: scaleX(0); }
-  21.1%, 83% { opacity: 1; transform: scaleX(1); }
+  0%, 3.5% { opacity: 0; transform: scaleX(0); }
+  11.1%, 91.1% { opacity: 1; transform: scaleX(1); }
   100% { opacity: 0; transform: scaleX(0.2); }
 }
 

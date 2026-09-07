@@ -6970,25 +6970,25 @@ h1 {
 }
 
 .signal-encoding-legend[data-mode="waste"] [data-encoding-mark="heatmap"] {
-  border: 1px solid rgba(224, 255, 239, 0.86);
-  border-radius: 50%;
-  background: conic-gradient(#70ffbe 0 34%, #ff916f 34% 100%);
+  border: 1px solid rgba(110, 210, 255, 0.75);
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgb(14,72,150), rgb(30,151,203), rgb(46,230,255));
 }
 
 .signal-encoding-legend[data-mode="waste"] [data-encoding-mark="nodata"] {
-  border: 2px dashed #d7ff67;
-  border-radius: 50%;
-  background: transparent;
+  border: 1px solid rgba(151, 181, 179, 0.5);
+  border-radius: 2px;
+  background: rgba(29, 86, 84, 0.2);
 }
 
 .signal-encoding-legend[data-mode="waste"] [data-encoding-mark="estimate"] {
-  border-color: rgba(112, 255, 190, 0.9);
-  background: #70ffbe;
+  border: 2px solid rgb(255, 239, 146);
+  background: transparent;
 }
 
 .signal-encoding-legend[data-mode="waste"] [data-encoding-mark="resolution"] {
-  border-color: rgba(255, 145, 111, 0.9);
-  background: #ff916f;
+  border: 1px solid rgba(160, 185, 176, 0.7);
+  background: rgba(160, 185, 176, 0.3);
 }
 
 .signal-encoding-legend[data-mode="anthropocene"] [data-encoding-mark="heatmap"] {

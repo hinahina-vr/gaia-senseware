@@ -13,16 +13,16 @@ if (!moduleRoot || !executablePath) throw new Error("GAIA_PLAYWRIGHT_PATH and GA
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const jsSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");
 const cssSource = fs.readFileSync(path.join(projectRoot, "novel-mode.css"), "utf8");
-assert.match(jsSource, /const SECTION_SEPARATOR_MS = 2200;/u);
-assert.match(jsSource, /const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;/u);
+assert.match(jsSource, /const SECTION_SEPARATOR_MS = 4200;/u);
+assert.match(jsSource, /const SECTION_SEPARATOR_REDUCED_MOTION_MS = 4900;/u);
 assert.match(jsSource, /const AUTO_DELAY_MS = 3600;/u, "AUTO delay must not change with the title hold");
 assert.match(cssSource, /animation: novel-chapter-in 1\.45s ease both;/u, "non-section cards must keep their original timing");
 assert.match(cssSource, /animation: novel-chapter-beam 1\.45s cubic-bezier\(0\.22, 1, 0\.36, 1\) both;/u, "non-section beams must keep their original timing");
-assert.match(cssSource, /animation: novel-section-chapter-in 2\.2s ease both;/u);
-assert.match(cssSource, /animation: novel-section-chapter-beam 2\.2s cubic-bezier\(0\.22, 1, 0\.36, 1\) both;/u);
-assert.match(cssSource, /15\.8%, 84\.2% \{ opacity: 1;/u);
-assert.match(cssSource, /0%, 6\.6% \{ opacity: 0; transform: scaleX\(0\); \}/u);
-assert.match(cssSource, /21\.1%, 83% \{ opacity: 1; transform: scaleX\(1\); \}/u);
+assert.match(cssSource, /animation: novel-section-chapter-in 4\.2s ease both;/u);
+assert.match(cssSource, /animation: novel-section-chapter-beam 4\.2s cubic-bezier\(0\.22, 1, 0\.36, 1\) both;/u);
+assert.match(cssSource, /8\.3%, 91\.7% \{ opacity: 1;/u);
+assert.match(cssSource, /0%, 3\.5% \{ opacity: 0; transform: scaleX\(0\); \}/u);
+assert.match(cssSource, /11\.1%, 91\.1% \{ opacity: 1; transform: scaleX\(1\); \}/u);
 assert.match(jsSource, /function renderChapterTitleUnits\(value\)/u);
 assert.match(jsSource, /renderChapterTitleUnits\(scene\.title\)/u);
 assert.match(jsSource, /renderChapterTitleUnits\(transition\.displayTitle\)/u);
@@ -47,7 +47,7 @@ const browser = await chromium.launch({ executablePath, headless: true, args: ["
 const routeUrl = new URL("/story", baseUrl).href;
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
-const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
 const errors = [];
 const responses404 = [];
 const report = { status: "running", separatorCases: separatorCases.length, scans: [], timingChecks: [], errors, responses404 };
@@ -179,10 +179,29 @@ try {
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
       assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), firstStep, `${label}: initial chapter card skipped the first story step`);
 
-      const startedAt = await page.evaluate(() => {
-        const started = performance.now();
+      await page.evaluate(() => {
+        const card = document.querySelector("#novel-chapter-card");
+        const layer = document.querySelector("#novel-layer");
+        const timing = { startedAt: null, finishedAt: null, visibleAfter3s: false };
+        window.__gaiaSeparatorTimingCheck = timing;
+        const observer = new MutationObserver(() => {
+          if (!card.hidden) {
+            // Measure the separator itself, excluding the restart's background transition.
+            if (timing.startedAt === null && layer.dataset.stepType === "section-separator") {
+              timing.startedAt = performance.now();
+              setTimeout(() => {
+                timing.visibleAfter3s = !card.hidden && Number(getComputedStyle(card).opacity) === 1;
+              }, 3000);
+            }
+            return;
+          }
+          if (timing.startedAt === null) return;
+          timing.finishedAt = performance.now();
+          observer.disconnect();
+        });
+        observer.observe(card, { attributes: true, attributeFilter: ["hidden"] });
+        observer.observe(layer, { attributes: true, attributeFilter: ["data-step-type"] });
         document.querySelector("#novel-restart-button").click();
-        return started;
       });
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
       const initialStep = await page.locator("#novel-layer").getAttribute("data-step-id");
@@ -198,14 +217,16 @@ try {
       if (reducedMotion) {
         assert.equal(animation, null, `${label}: reduced motion must not run the fade animation`);
       } else {
-        assert.equal(animation?.duration, 2200, `${label}: motion animation duration changed`);
+        assert.equal(animation?.duration, 4200, `${label}: motion animation duration changed`);
         const offsets = animation?.keyframes.map(({ offset }) => Number(offset.toFixed(3)));
-        assert.deepEqual(offsets, [0, 0.158, 0.842, 1], `${label}: fade/hold boundaries changed`);
+        assert.deepEqual(offsets, [0, 0.083, 0.917, 1], `${label}: fade/hold boundaries changed`);
       }
       await page.waitForFunction(() => document.querySelector("#novel-chapter-card")?.hidden, null, { timeout: 5000 });
-      const elapsed = await page.evaluate((start) => performance.now() - start, startedAt);
-      const minimum = reducedMotion ? 2820 : 2120;
-      const maximum = reducedMotion ? 3300 : 2600;
+      const timing = await page.evaluate(() => window.__gaiaSeparatorTimingCheck);
+      assert.equal(timing.visibleAfter3s, true, `${label}: extended hold must keep the title fully visible`);
+      const elapsed = timing.finishedAt - timing.startedAt;
+      const minimum = reducedMotion ? 4820 : 4120;
+      const maximum = reducedMotion ? 5300 : 4600;
       assert(elapsed >= minimum && elapsed <= maximum, `${label}: hide timing ${Math.round(elapsed)}ms is outside ${minimum}-${maximum}ms`);
       report.timingChecks.push({ label, elapsed, minimum, maximum, passed: true });
       assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), initialStep, `${label}: first story step was skipped`);
@@ -229,9 +250,7 @@ try {
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
       await page.evaluate(() => globalThis.GaiaNovel.open());
-      await page.locator("#novel-resume-button").click();
-      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+      // The current /story route resumes saved progress directly, without the legacy title menu.
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_005");
       assert.notEqual(await page.locator("#novel-layer").getAttribute("data-step-type"), "section-separator", `${label}: RESUME incorrectly replayed the scene title`);
 

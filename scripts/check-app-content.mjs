@@ -76,7 +76,7 @@ assert.equal(indexHtml.includes('id="gaia-template-character"'), true, "Lazy cha
 assert.equal(indexHtml.includes('id="character-book-layer"'), true, "Standalone character settings viewer is missing");
 assert.equal(indexHtml.includes("VISUAL MEMORY ARCHIVE"), true, "Immersive character archive heading is missing");
 assert.equal(indexHtml.includes('id="character-book-webgl"'), true, "Immersive character setting atmosphere is missing");
-assert.equal((indexHtml.match(/data-character-select=/gu) || []).length, 3, "Character setting selector must expose all three characters");
+assert.equal((indexHtml.match(/data-character-select=/gu) || []).length, 4, "Character setting selector must expose all four characters");
 assert.equal((indexHtml.match(/data-character-profile=/gu) || []).length, 0, "Duplicate lower character profiles must remain removed");
 assert.equal(indexHtml.includes('class="character-book-hero-detail"'), true, "Switchable hero character detail is missing");
 assert.equal(indexHtml.includes('id="character-book-profile"'), true, "Switchable hero character profile is missing");
@@ -91,7 +91,7 @@ assert.equal((indexHtml.match(/sound-archive-bg-v2\.png\?v=gaia-sound-linked-ink
 assert.match(characterRuntime, /const quoteRevealDelay = 620;/u, "Character quote letter animation starts too early");
 assert.match(characterRuntime, /setLetterText\(quote, character\.quote, quoteRevealDelay\);/u, "Character quote does not use the delayed reveal");
 assert.match(characterStyles, /\.character-book-layer\.is-open \.character-book-hero-quote\s*\{[\s\S]*?transition-delay: 520ms;/u, "Character quote panel does not enter one beat after the hero");
-assert.equal((modeLoader.match(/gaia-character-profile-five-lines-1/gu) || []).length, 2, "Character page assets are not cache-busted together");
+assert.equal((modeLoader.match(/gaia-aoneko-character-1/gu) || []).length, 2, "Character page assets are not cache-busted together");
 [
   "物語を彩った、六つの景色。絵をめくるたび、あの日の空気がよみがえります。",
   "キャラクター設定資料",
@@ -120,7 +120,7 @@ assert.equal((modeLoader.match(/gaia-character-profile-five-lines-1/gu) || []).l
 [
   ["世界を観測する", "地球のデータを光と色で描く"],
   ["みんなのセンサー", "あなたの端末をひとつのセンサーに"],
-  ["登場人物の記録", "3人の役割と設定スケッチ"],
+  ["登場人物の記録", "4人の役割と設定スケッチ"],
   ["音楽を聴く", "放課後を彩る音楽のアーカイブ"],
 ].forEach(([title, description]) => {
   assert.equal(indexHtml.includes(`<strong>${title}</strong>`), true, `Navigation card title is missing: ${title}`);

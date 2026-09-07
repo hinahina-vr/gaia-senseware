@@ -27,6 +27,17 @@ assert.deepEqual(primary(find("renewables", peers)).recordIds.sort(), ["0", "1"]
 assert.notEqual(find("renewables", peers.map(row => ({ ...row, value: 30 }))).primaryId, "near-peers");
 const differentYears = peers.map((row, i) => ({ ...row, year: 2000 + i }));
 assert.notEqual(find("renewables", differentYears).primaryId, "near-peers", "Known different years are not a matched comparison");
+const wind = rows([0.27, 19.94, 4, 8, 2, 6]).map((row, i) => ({ ...row, pressure: [987.5, 987.5, 1003, 1018, 1020, 1040][i] }));
+const windReading = find("planet-global-wind-pressure", wind, { unit: "m/s", valueLabel: "風速", insightContext: { measurementKind: "MODEL" } });
+assert.equal(windReading.primaryId, "near-peers");
+assert.deepEqual(windReading.comparison.points.map(point => point.id), ["0", "1"]);
+assert.deepEqual(windReading.comparison.metrics.map(metric => [metric.unit, ...metric.values]), [["hPa", 987.5, 987.5], ["m/s", 0.27, 19.94]]);
+assert.deepEqual(windReading.findings.map(finding => finding.kind), ["observation", "meaning", "limit"]);
+assert.match(windReading.headline, /19.67m\/s/);
+assert.match(windReading.scopeLabel, /モデル値/);
+assert.match(windReading.comparison.intro, /他の条件まで同じという意味ではありません/);
+assert.deepEqual(find("planet-global-wind-pressure", [...wind].reverse(), { unit: "m/s", valueLabel: "風速" }).comparison, windReading.comparison);
+assert.equal(find("planet-global-wind-pressure", [wind[0]], { unit: "m/s" }).comparison, null);
 const rain = rows([1000, 1010, 500, 1400, 2000]).map((row, i) => ({ ...row, rainyDays: [80, 140, 40, 100, 150][i] }));
 const rainAmount = rows([1000, 2500, 500, 1400, 2000]).map((row, i) => ({ ...row, rainyDays: [80, 81, 40, 100, 150][i] }));
 assert.equal(find("estat-prefecture-precipitation", rainAmount, { unit: "mm" }).primaryId, "near-peers");

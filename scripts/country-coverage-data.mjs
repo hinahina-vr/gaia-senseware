@@ -1,4 +1,5 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { applyRecyclingMapMetadata } from "./update-recycling-map-data.mjs";
 
 export const COUNTRY_SOURCE_URLS = {
   countries: "https://api.worldbank.org/v2/country?format=json&per_page=400",
@@ -97,7 +98,7 @@ export function buildWaste(observations, catalog, excluded = []) {
   }
   return [...latest.values()].filter(row => {
     if (row.recyclePercent >= 0 && row.recyclePercent <= 100) return true;
-    excluded.push({ ...row, reason: "Latest source percentage outside 0–100; cannot represent as a share pie. Not clamped or replaced with an older year." });
+    excluded.push({ ...row, reason: "Latest source percentage outside 0–100; cannot represent on the percentage map. Not clamped or replaced with an older year." });
     return false;
   }).sort((a, b) => a.iso3.localeCompare(b.iso3));
 }
@@ -208,6 +209,7 @@ export function applyCountryCoverage(snapshot, data, retrievedAt = new Date().to
     period: `${Math.min(...data.waste.map(row => row.year))}–${Math.max(...data.waste.map(row => row.year))}`,
     transformation: "国連SDG APIの全ページから自治体ごみ再資源化率の最新公表値を国・地域別に採用。世界・地域合計は除外。",
     caveat: "報告年・制度・廃棄物定義は国で異なります。公表値がない国は未収録で、近隣国からの推定値や0%では埋めません。SOURCEにも国連側の推計値が含まれ、Nature属性・注記を保存しています。最新値が0〜100%外の国は円グラフから除外し、元値と理由をcountryCoverage.excludedSourceValuesに保持します。" });
+  applyRecyclingMapMetadata(wasteMode);
   mode("anthropocene-scar").signals.emissions = data.emissions;
   mode("anthropocene-scar").signals.emissionsCoverage = coverage(data.emissions, data.catalog);
   update("anthropocene-scar", "gcp-fossil-co2", data.emissions, {

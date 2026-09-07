@@ -39,7 +39,7 @@ try {
     page.on("console", message => { if (message.type() === "error" && message.text().includes("Statistics Lab analysis failed")) report.errors.push(message.text()); });
     await page.goto(`${base}/?preview=discovery-qa#world`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && document.querySelectorAll(".map-mode-bank .map-mode-button").length === 30);
-    await page.evaluate(async () => { await GaiaMapObservationAdapter.waitSignalsReady(); GaiaModeEntryGuide.close("map", { restoreFocus: false }); });
+    await page.evaluate(async () => { await GaiaMapObservationAdapter.waitSignalsReady(); GaiaMapDemo.stop(); GaiaModeEntryGuide.close("map", { restoreFocus: false }); });
     for (const exhibit of catalog) {
       await page.evaluate(number => [...document.querySelectorAll(".map-mode-bank .map-mode-button")].find(button => button.textContent.trim() === number).click(), exhibit.number);
       await page.waitForFunction(number => document.querySelector("#japan-mode-number").textContent === number, exhibit.number);
@@ -50,6 +50,14 @@ try {
       const actionSelector = n >= 2 && n <= 5 ? "[data-planet-analysis]" : n === 6 ? "[data-firms-analysis]"
         : n >= 15 && n <= 20 ? "[data-live-deck-analysis]" : n >= 21 ? "[data-estat-analysis]" : "#gaia-statistics-button";
       await page.waitForFunction(selector => { const button = document.querySelector(selector); return button && !button.disabled; }, actionSelector);
+      if (await page.locator(actionSelector).getAttribute("aria-disabled") === "true") {
+        // Live-only displays intentionally do not expose statistical analysis.
+        await page.locator(actionSelector).evaluate(button => button.click());
+        assert.equal(await page.evaluate(() => GaiaStatisticsLab.getState().open), false);
+        report.checks.push({ width, number: exhibit.number, analysisDisabled: true });
+        console.log(`PASS ${width}/${exhibit.number}: live-only analysis remains disabled`);
+        continue;
+      }
       // Invoke the real exhibit's button, including the legacy proxy target.
       await page.locator(actionSelector).evaluate(button => button.click());
       await page.waitForFunction(() => GaiaStatisticsLab.getState().open && GaiaStatisticsLab.getState().analysisReady);
@@ -60,14 +68,18 @@ try {
           primary: { ...insight.candidates[0], chart: undefined }, lenses: insight.candidates.map(candidate => candidate.id),
           selectedTab: document.querySelector('[data-stat-view][aria-selected="true"]').dataset.statView,
           overflow: findings.scrollWidth - findings.clientWidth, text: findings.textContent,
-          fontSize: getComputedStyle(findings.querySelector('[data-kind="question"] p')).fontSize,
+          fontSize: getComputedStyle(findings.querySelector('[data-kind="meaning"] p')).fontSize,
+          firstFinding: findings.querySelector('[data-kind]')?.dataset.kind,
           chartFirstRecord: result.chart.rows?.[0]?.id || null, chartCount: result.chart.rows?.length || null,
         };
       });
       assert.equal(check.state.methodId, "discovery", exhibit.number);
       assert.equal(check.selectedTab, "findings");
       assert(check.overflow <= 1, `${width}/${exhibit.number}: text overflow`);
-      assert.equal(check.fontSize, "18px");
+      assert.equal(check.fontSize, "15px");
+      assert.equal(check.firstFinding, "observation");
+      assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false, "No duplicate reading in the sidebar");
+      assert.doesNotMatch(await page.locator("#gaia-statistics-findings").innerText(), /課題の候補|この違いが、なぜ問題/);
       assert(check.primary.signal && check.primary.meaning && check.primary.question && check.primary.test);
       assert.doesNotMatch(check.text, /NaN|undefined|Infinity/);
       if (n === 7) { assert.equal(check.state.datasetId, "ocean-currents"); assert.equal(check.primaryId, "opposing-currents"); }
@@ -107,8 +119,8 @@ try {
     await context.close();
   }
   assert.deepEqual(report.errors, []);
-  const desktop = report.checks.filter(row => row.width === 1440);
-  assert(new Set(desktop.map(row => row.primaryId)).size >= 9, "Insufficient actual feature diversity");
+  const desktop = report.checks.filter(row => row.width === 1440 && !row.analysisDisabled);
+  assert(new Set(desktop.map(row => row.primaryId)).size >= 8, "Insufficient actual feature diversity among the non-live exhibits");
   report.status = "passed";
 } catch (error) { report.status = "failed"; report.failure = error.stack; throw error; }
 finally { fs.writeFileSync(path.join(output, "report.json"), JSON.stringify(report, null, 2)); await browser.close(); }

@@ -96,7 +96,9 @@ try {
       await open("waste"); await select("summary");
       const sourceHeadline = await page.locator("#gaia-statistics-takeaway-title").textContent();
       await page.evaluate(() => { const input = document.querySelector("#gaia-statistics-derived"); input.checked = true; input.dispatchEvent(new Event("change")); });
-      await settle(); assert.match(await page.locator("#gaia-statistics-findings").textContent(), /補完値\d+行.*除外/);
+      // The current waste snapshot contains only SOURCE rows. Toggling the
+      // option must not invent exclusions; the comparison fixture tests IMPUTED rows.
+      await settle();
       assert.equal(await page.locator("#gaia-statistics-takeaway-title").textContent(), sourceHeadline);
       report.checks.push({ sourceHeadline, withImputed: await page.locator("#gaia-statistics-takeaway-title").textContent() });
       await page.evaluate(() => GaiaStatisticsLab.open({ dataset: {
@@ -105,7 +107,7 @@ try {
       } }));
       await settle();
       assert.match(await page.locator("#gaia-statistics-findings").textContent(), /対象 3行/);
-      assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /無理に特徴や原因を作らない/);
+      assert.match(await page.locator("#gaia-statistics-takeaway-title").textContent(), /比較に必要な記録が足りません/);
     }
     await open("co2-trend"); await select("regression");
     await page.locator('[data-stat-view="chart"]').click();
@@ -126,8 +128,8 @@ try {
       assert.equal(await page.locator(`[data-stat-view="${view}"]`).getAttribute("aria-selected"), "true");
       assert.equal(await page.locator(`#stat-panel-${view}`).evaluate(el => el.open), true);
       if (view === "findings") {
-        assert.match(await page.locator("#gaia-statistics-findings").textContent(), /課題の候補.*まだ仮説/);
-        if (width < 980) assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false, "No duplicate summary in mobile insight view");
+        assert.match(await page.locator("#gaia-statistics-findings").textContent(), /ここから分かること/);
+        assert.equal(await page.locator("#gaia-statistics-takeaway").isVisible(), false, "No duplicate summary in the reading view at any width");
         await page.screenshot({ path: path.join(output, `findings-${width}.png`) });
         await page.locator("#gaia-statistics-findings > button").click();
         assert.equal(await page.locator("#stat-view-values").getAttribute("aria-selected"), "true");

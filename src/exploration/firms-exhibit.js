@@ -1,6 +1,7 @@
+import { formatJapaneseNumber } from "../shared/number-format.js";
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
 import { earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-inline-data-sources-1";
 import { createRealtimeStatus, updateRealtimeStatus } from "./realtime-exhibit-status.js?v=gaia-realtime-identity-1";
 import { FIRE_REVEAL_EDGE, FIRE_COLUMN_LIFETIME, FIRE_COLUMN_LIMIT, FIRE_COLUMN_MOBILE_LIMIT,
   fireSequence, inverseFireEase, FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT } from "./fire-ignition.js?v=gaia-fire-columns-1";
@@ -52,6 +53,8 @@ let cycleStartedAt = 0;
 let lastRenderedAt = 0;
 let playbackEnabled = true;
 let manualProgress = 0;
+let heldPlayback = null;
+let pausedCycleElapsedMs = 0;
 let savedHeading;
 let renderedPlayback = null;
 
@@ -60,10 +63,7 @@ const ease = (value) => {
   const progress = clamp01(value);
   return progress * progress * (3 - 2 * progress);
 };
-const formatNumber = (value, decimals = 0) => Number(value).toLocaleString("ja-JP", {
-  minimumFractionDigits: decimals,
-  maximumFractionDigits: decimals,
-});
+const formatNumber = (value, decimals = 0) => formatJapaneseNumber(Number(value), decimals, decimals);
 const formatJst = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "—";
@@ -375,6 +375,7 @@ const findPoiAt = (clientX, clientY, pointerType) => {
 };
 
 const playbackState = (timestamp) => {
+  if (!playbackEnabled && heldPlayback) return heldPlayback;
   if (!playbackEnabled || matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
     return { progress: playbackEnabled ? 1 : manualProgress, extinguish: -1, phase: playbackEnabled ? "complete" : "scrub" };
   }
@@ -497,6 +498,23 @@ const updateTimeline = (state) => {
   }
 };
 
+const pausePlayback = () => {
+  if (!active || !playbackEnabled) return;
+  heldPlayback = { ...(renderedPlayback ?? playbackState(performance.now())), phase: "paused" };
+  pausedCycleElapsedMs = performance.now() - cycleStartedAt;
+  manualProgress = heldPlayback.progress;
+  playbackEnabled = false;
+  updateTimeline(heldPlayback);
+  globalThis.GaiaMapDemo?.stop?.("interaction");
+};
+
+const resumePlayback = () => {
+  if (!active || playbackEnabled) return;
+  playbackEnabled = true;
+  cycleStartedAt = performance.now() - (heldPlayback ? pausedCycleElapsedMs : REVEAL_DELAY_MS + inverseFireEase(manualProgress) * REVEAL_MS);
+  heldPlayback = null;
+};
+
 const draw = (timestamp = performance.now()) => {
   if (!active || document.hidden || !snapshot || !initializeWebgl()) {
     frame = 0;
@@ -517,7 +535,7 @@ const draw = (timestamp = performance.now()) => {
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   const state = playbackState(timestamp);
-  const motionTime = playbackEnabled && !matchMedia("(prefers-reduced-motion: reduce)").matches ? timestamp - cycleStartedAt : 0;
+  const motionTime = playbackEnabled && !matchMedia("(prefers-reduced-motion: reduce)").matches ? timestamp - cycleStartedAt : heldPlayback ? pausedCycleElapsedMs : 0;
   drawBackground(motionTime, canvas.width, canvas.height);
   drawFires(motionTime, projection, state, renderScale);
   drawFireColumns(timestamp, projection, state, renderScale);
@@ -626,6 +644,7 @@ const select = async () => {
   if (!active) return;
   renderSnapshot(payload);
   playbackEnabled = true;
+  heldPlayback = null;
   cycleStartedAt = performance.now();
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
     lon: 138,
@@ -739,11 +758,11 @@ const mount = () => {
     <div class="gaia-firms-quality"><span>夜間検知<strong data-firms-night-share>—</strong></span><span>信頼度80以上<strong data-firms-confidence-share>—</strong></span></div>
     <div class="gaia-firms-copy"><p>${DEFINITION.caption}</p><small>光点は火災の範囲ではなく、衛星が検知した熱異常の代表点です。火柱・火の粉は出現時の演出で、実際の炎の高さではありません。信頼度60未満は除外し、FRPを粒径へ変換しています。</small></div>
     <div class="gaia-firms-actions" aria-label="元データと統計分析">
-      <a href="${SOURCE_PAGE}" target="_blank" rel="noopener noreferrer" aria-label="NASA FIRMSのデータ出典を確認する（新しいタブ）"></a>
+      <button type="button" data-firms-source></button>
       <button type="button" data-firms-analysis></button>
     </div>
   `;
-  decorateMapActions(readout.querySelector(".gaia-firms-actions"), readout.querySelector(".gaia-firms-actions a"), readout.querySelector("[data-firms-analysis]"));
+  decorateMapActions(readout.querySelector(".gaia-firms-actions"), readout.querySelector("[data-firms-source]"), readout.querySelector("[data-firms-analysis]"));
   realtimeStatus = createRealtimeStatus();
   readout.querySelector(".gaia-firms-chapter").after(realtimeStatus);
   layer.append(readout);
@@ -766,16 +785,18 @@ const mount = () => {
     deactivate();
   }, { capture: true });
   readout.querySelectorAll("[data-firms-step]").forEach((item) => item.addEventListener("click", () => stepOutsideExhibit(item.dataset.firmsStep)));
+  readout.querySelector("[data-firms-progress]")?.addEventListener("pointerdown", pausePlayback);
   readout.querySelector("[data-firms-progress]")?.addEventListener("input", (event) => {
+    globalThis.GaiaMapDemo?.stop?.("interaction");
     playbackEnabled = false;
+    heldPlayback = null;
     manualProgress = clamp01(Number(event.currentTarget.value) / 1000);
     updateTimeline({ progress: manualProgress, extinguish: -1, phase: "scrub" });
   });
   readout.querySelector("[data-firms-play]")?.addEventListener("click", () => {
-    if (playbackEnabled) manualProgress = renderedPlayback?.progress ?? 0;
-    playbackEnabled = !playbackEnabled;
-    if (playbackEnabled) cycleStartedAt = performance.now() - REVEAL_DELAY_MS - inverseFireEase(manualProgress) * REVEAL_MS;
+    if (playbackEnabled) pausePlayback(); else resumePlayback();
   });
+  addEventListener("gaia:map-playback-resume", resumePlayback);
   addEventListener("resize", () => { if (active) lastRenderedAt = 0; }, { passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) cancelAnimationFrame(frame);
@@ -793,7 +814,13 @@ globalThis.GaiaFirmsExhibit = Object.freeze({
   select,
   deactivate,
   getStatisticsDataset: statisticsDataset,
+  getSourceInfo: () => active ? {
+    number: DEFINITION.number,
+    shortTitle: DEFINITION.shortTitle,
+    datasets: [{ id: DEFINITION.id, title: DEFINITION.sourceName, organisation: "NASA LANCE FIRMS", url: SOURCE_PAGE, attributionNote: DEFINITION.caption }],
+  } : null,
   findPoiAt,
+  pausePlayback,
   getState: () => ({ active, source: snapshot?.source || null, pointCount, playbackEnabled }),
 });
 

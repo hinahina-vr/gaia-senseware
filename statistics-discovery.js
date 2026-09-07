@@ -217,15 +217,26 @@ function peerCandidate(candidates, dataset, rows, domain) {
   const outputLabel = domain === "ecologies" ? "森林率" : domain === "water" ? "年間降水量" : domain === "rain-days" ? "雨日数" : dataset.valueLabel || dataset.yLabel || "観測値";
   const outputUnit = domain === "water" ? "mm" : domain === "rain-days" ? "日" : domain === "ecologies" ? "%" : dataset.unit;
   const conditions = spec.keys.map((key, index) => `${spec.labels[index]}は${fmt(a[key])} / ${fmt(b[key])}${spec.units[index]}`).join("、");
+  const matchedLabels = spec.labels.join("・");
+  const pairLabel = ["国・地域", "国"].includes(ctx.object) ? "2か国" : "2地点";
+  const comparison = {
+    caption: `${matchedLabels}が近い${pairLabel}`,
+    intro: `${usable.length}件の中から、${matchedLabels}の値が近く、${outputLabel}の差が大きい${pairLabel}を選びました。場所や他の条件まで同じという意味ではありません。`,
+    points: [a, b].map((row, index) => ({ id: String(row.id), label: `${ctx.object === "国・地域" || ctx.object === "国" ? "国" : "地点"}${index ? "B" : "A"}`, name: name(row) })),
+    metrics: [
+      ...spec.keys.map((key, index) => ({ label: spec.labels[index], unit: spec.units[index], values: [a[key], b[key]] })),
+      { label: outputLabel, unit: outputUnit, values: [a[spec.target], b[spec.target]], highlight: true },
+    ],
+  };
   addCandidate(candidates, {
-    id: "near-peers", lens: "似た条件なのに違う二つ", method: "条件を近づけた対象比較", score: spec.score,
-    title: domain === "wind" ? "気圧の数字が近くても、風の強さは同じではない。" : domain === "renewables" ? "日射と風が似ていても、電気のつくり方は大きく違う。" : domain === "ecologies" ? "都市に住む人が多いことと、森が少ないことは同義ではない。" : domain === "cloud" ? "同じくらい曇っていても、届く光は同じではない。" : domain === "water" ? "雨の日が同じくらいでも、受け止める水の量は違う。" : "雨の総量が似た土地で、同じ一週間の過ごし方が通じるか。",
+    id: "near-peers", lens: `${matchedLabels}と${outputLabel}を比べる`, method: `${matchedLabels}の値が近い2件の比較`, score: spec.score,
+    title: `${matchedLabels}が近い${pairLabel}でも、${outputLabel}に${fmt(gap)}${pp(outputUnit)}の差。`,
     signal: `${name(a)}と${name(b)}では、${conditions}。それでも${outputLabel}は${fmt(a[spec.target])}${outputUnit}と${fmt(b[spec.target])}${outputUnit}で、${fmt(gap)}${pp(outputUnit)}離れています。比較できる${usable.length}対象の中から、条件が近く差の大きい組を探索しました。`,
-    meaning: domain === "wind" ? "一地点の気圧の高低だけでは、周囲との気圧差や地形を落としてしまいます。風を通す・避ける場所を考えるなら、点の値より近隣との関係を調べる必要があります。" : domain === "water" ? "雨が降る頻度だけでは、土地が受け止める水の量をつかめません。貯める・流す・使う仕組みを考えるなら、日数と総量を別々に調べる必要があります。" : ctx.issue,
+    meaning: domain === "wind" ? "気圧が同じでも、周りの気圧や地形が違えば、風の強さは変わります。この2地点の違いが何によるものかは、まだ分かりません。" : `この${pairLabel}では、${matchedLabels}が近くても${outputLabel}は違います。${matchedLabels}だけでは、この差は説明できません。原因を特定した結果ではありません。`,
     question: domain === "wind" ? "この二地点では、周囲との気圧差・地形・標高がどう違うか？" : domain === "water" ? `${name(a)}と${name(b)}の水量の差は、一部の季節や数日に集中しているか？` : domain === "rain-days" ? `${name(a)}と${name(b)}では、雨の日の配置が屋外の仕事や移動にどう関わるか？` : ctx.question,
     test: domain === "wind" ? "隣接格子の同時刻の気圧と風向、標高を照合する。地表気圧には標高差も含まれるので、同じ値を同じ気象条件とは扱わない。" : ctx.need, caveat: ctx.limit,
     evidence: [[`${name(a)}の${outputLabel}`, a[spec.target], outputUnit], [`${name(b)}の${outputLabel}`, b[spec.target], outputUnit], ["条件を比較できた対象", usable.length, "件"]],
-    recordIds: ids([a, b]), calculation: `各条件の差が標本内レンジの${fmt(spec.tolerance * 100)}%以下の組から、目的値の差が大きい組を選択。対照実験・有意差検定ではない。`,
+    comparison, recordIds: ids([a, b]), calculation: `各条件の差が標本内レンジの${fmt(spec.tolerance * 100)}%以下の組から、目的値の差が大きい組を選択。対照実験・有意差検定ではない。`,
     chart: pointChart(usable, { x: spec.keys[0], y: spec.target, xLabel: `${spec.labels[0]}（${spec.units[0]}）`, yLabel: `${outputLabel}（${outputUnit}）`, unit: outputUnit, highlight: [a, b] }),
   });
 }
@@ -404,6 +415,33 @@ function distributionCandidates(candidates, dataset, rows, domain) {
   });
 }
 
+// The first reading is about what the records show. Research prompts and
+// selection formulas remain available separately, not as the visitor's task.
+function visitorReading(candidate, dataset) {
+  const label = dataset.valueLabel || dataset.yLabel || "値";
+  const meanLabel = label.includes("平均") ? label : `${label}の平均`;
+  const readings = {
+    "baseline-shift": [`${meanLabel}を、前と後の期間で比べる`, "一度だけ高かった・低かったという話ではなく、一定期間の平均を比べています。期間の取り方によって差は変わります。"],
+    "yearly-variability": [`${label}の低い年と高い年を比べる`, "年平均をひとつ示すだけでは、年ごとの幅は見えません。ここでは、同じ対象の低い年と高い年を確認できます。"],
+    "pace-change": [`${label}の増減ペースは、前半と後半で違う`, "期間を前半と後半に分け、それぞれの増減ペースを直線で表した比較です。途中の年も含めて計算しており、最初と最後の値だけを引いたものではありません。"],
+    concentration: [`${label}の合計は、一部の対象に集中`, "対象をひとつずつ数えた割合と、値を合計した割合は違います。数が少ない対象でも、合計に占める割合が大きい場合があります。"],
+    "two-sided-migration": ["入ってくる人と出ていく人、どちらが多い？", "転入超過は、入ってくる人のほうが多いこと。転出超過は、出ていく人のほうが多いことです。両方を足してしまうと、地域ごとの逆向きの動きが見えなくなります。"],
+    "comparison-needed": ["1件の記録だけでは、変化は分かりません", "比べる相手がないので、この値がいつもより高いか低いかは判断できません。同じ場所の別の時刻や、周辺の記録が必要です。"],
+    "opposing-currents": ["向きの違う海流は、平均すると打ち消し合う", "反対向きに流れる2つの海流を合わせると、平均は小さくなります。平均が小さくても、各地点で流れが弱いとは限りません。"],
+    "haze-ground-mismatch": ["空のかすみと、地上のPM2.5は別の指標", "光学的厚さは空全体で光が通りにくい度合い、PM2.5は地表付近の細かい粒子の濃度です。測っている範囲が違うので、最大になる地点も同じとは限りません。"],
+    "shared-rise": ["3つの観測所で、CO₂濃度が上昇", "同じ年の地点間の差より、期間の前後で比べた濃度の上昇が大きくなっています。ある1地点だけの変化ではありません。"],
+    "recording-coverage": ["どの種類の記録が多く収録されている？", "ここで数えているのは、このデータに収録された記録です。記録が少ないことは、現実に少ない・存在しないという意味ではありません。"],
+    "uneven-event-years": ["地震の記録件数は、年によって違う", "この記録では、毎年同じ回数ではありません。ただし、世界全体の件数から、ある地域の危険度や次の地震は判断できません。"],
+    "same-magnitude-depth": ["規模が近い地震でも、震源の深さが違う", "マグニチュードは地震の規模です。同じくらいの規模でも深さは違い、この2つの数値だけでは地表の揺れや被害は分かりません。"],
+    "flat-data": ["今回の記録では、値に差がありません", "記録上は同じ値なので、順位は付けられません。丸め方や測定の細かさによって、違いが記録されていない可能性もあります。"],
+    "isolated-tail": ["特に大きな値を、全体の分布と比べる", "多くの記録が集まる範囲から離れた値を表示しています。大きな値であることと、異常・危険・誤りであることは別です。"],
+    "different-contexts": [`${label}が低い対象と高い対象を比べる`, "対象ごとの値には幅があります。全体の平均だけでなく、どの対象の値なのかを合わせて見る比較です。"],
+    "not-enough-comparison": ["比較に必要な記録が足りません", "この範囲では、差や変化を示せるだけの比較ができません。対象を絞り込んでいる場合は、範囲を広げると比べられることがあります。"],
+  };
+  const [headline, summary] = readings[candidate.id] || [candidate.title, candidate.meaning];
+  return { headline, summary };
+}
+
 export function discoverData({ dataset, rows = [], methodId = "discovery", recordQuery = "" }) {
   // A user can show imputed records, but they must never create a ranked claim
   // about a country. Keep them visible in the ledger and exclude from discovery.
@@ -441,15 +479,16 @@ export function discoverData({ dataset, rows = [], methodId = "discovery", recor
   const nonSource = valid.filter(row => row.provenance && row.provenance !== "SOURCE").length;
   const model = dataset.insightContext?.measurementKind === "MODEL" || /モデル/u.test(dataset.title || "");
   const scope = `${dataset.title} / 現在の対象 ${valid.length}行${recordQuery ? ` / 絞り込み「${recordQuery}」` : ""}。${model ? "モデル値を含む出典由来の記録です。" : "出典由来の収録値についての探索です。"}${nonSource ? `派生値を含みます（${nonSource}行）。` : ""}${excluded ? `補完値${excluded}行は特徴探索から除外しました。` : ""}${methodId !== "discovery" ? "課題探索は選択した統計手法の結論とは別です。その手法の読み取りは下の補足で確認できます。" : ""}`;
-  return { methodId, domain, primaryId: primary.id, status: primary.status, headline: primary.title, summary: primary.meaning,
+  const reading = visitorReading(primary, dataset);
+  return { methodId, domain, primaryId: primary.id, status: primary.status, ...reading,
+    comparison: primary.comparison || null,
+    scopeLabel: `${model ? "モデル値を含む記録" : "出典に基づく記録"} · ${valid.length}件${recordQuery ? ` · 絞り込み「${recordQuery}」` : ""}${excluded ? ` · 補完値${excluded}件を除外` : ""}`,
     evidence: primary.evidence, caveat: primary.caveat, scope, candidates: candidates.slice(0, 4),
     analysis: { lens: primary.lens, method: primary.method, calculation: primary.calculation, examined: candidates.map(candidate => candidate.lens) },
     findings: [
-      { kind: "question", title: "課題の候補 · まだ仮説", body: primary.question },
-      { kind: "meaning", title: "この違いが、なぜ問題になるのか", body: primary.meaning },
-      { kind: "observation", title: "この問いが生まれた観測", body: primary.signal, recordIds: primary.recordIds },
-      { kind: "test", title: "何を足せば確かめられるか", body: primary.test },
-      { kind: "limit", title: "断定しないこと", body: primary.caveat },
+      { kind: "observation", title: primary.comparison ? "比べた2つの記録" : "記録にあること", body: primary.signal, recordIds: primary.recordIds },
+      { kind: "meaning", title: "ここから分かること", body: reading.summary },
+      { kind: "limit", title: "このデータだけでは分からないこと", body: primary.caveat },
     ],
   };
 }

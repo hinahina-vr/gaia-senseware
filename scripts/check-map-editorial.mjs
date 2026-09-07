@@ -9,6 +9,7 @@ const sandbox = { window: {} };
 vm.runInNewContext(read("app-content.js"), sandbox);
 const content = sandbox.window.GaiaAppContent;
 const fixture = JSON.parse(read("docs/design/map-editorial-20260907/copy.json")).exhibits;
+const recyclingRevision = JSON.parse(read("docs/design/recycling-map-20260907.json"));
 // Evaluate only the frozen, browser-independent definition blocks.
 const fire = read("src/exploration/firms-exhibit.js").match(/const DEFINITION = (Object\.freeze\(\{[\s\S]*?\n\}\));/u)?.[1];
 const planet = read("src/exploration/planet-signals-exhibit.js").match(/const DEFINITIONS = (Object\.freeze\(\[[\s\S]*?\n\]\));/u)?.[1];
@@ -23,7 +24,9 @@ assert.equal(fixture.length, 30);
 assert.equal(records.length, 30);
 assert.equal(new Set(records.map(record => record.id)).size, 30);
 for (const [index, record] of records.entries()) {
-  const expected = fixture[index];
+  const expected = record.number === recyclingRevision.number
+    ? { ...fixture[index], body: recyclingRevision.body }
+    : fixture[index];
   assert.equal(record.number, String(index + 1).padStart(2, "0"));
   for (const key of ["number", "id", "title", "body", "question"]) {
     assert.equal(record[key], expected[key], `${record.number}: ${key}`);

@@ -1,5 +1,5 @@
 import { descriptive } from "./statistics-lab-core.js";
-import { discoverData } from "./statistics-discovery.js?v=gaia-annual-history-1";
+import { discoverData } from "./statistics-discovery.js?v=gaia-readable-comparison-1";
 
 // Observation-level copy is separate from the statistical explanation. Only
 // the rows used by the current analysis are supplied; no network or AI needed.

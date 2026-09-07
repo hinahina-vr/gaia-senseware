@@ -25,7 +25,8 @@ try {
     await page.goto(`${base}/#character`, { waitUntil: "domcontentloaded" });
     await page.locator(".character-book-selector").waitFor({ state: "visible" });
     await page.waitForFunction(() => [...document.querySelectorAll(".character-book-selector img")].every(img => img.complete && img.naturalHeight));
-    const inspect = () => page.locator(".character-book-selector img").evaluateAll((nodes, landmarks) => nodes.map(img => {
+    // The faceless Aoneko silhouette has no eye-to-chin scale to compare.
+    const inspect = () => page.locator('.character-book-selector button:not([data-character-select="aoneko"]) img').evaluateAll((nodes, landmarks) => nodes.map(img => {
       const id = img.closest("button").dataset.characterSelect;
       const point = landmarks[id];
       const r = img.getBoundingClientRect(), circle = img.parentElement.getBoundingClientRect();

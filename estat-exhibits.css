@@ -317,6 +317,27 @@
   font: 750 15px/1.1 Consolas, var(--font-ja);
 }
 
+/* Migration uses the prefecture itself as its POI. Keep its selected readout
+   at the previous point-label size, without a dot or a looping reveal. */
+#japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip {
+  min-width: min(360px, calc(100vw - 24px));
+  max-width: min(440px, calc(100vw - 24px));
+  padding: 20px 22px 16px;
+  gap: 10px;
+  transform: translate(-50%, 20px);
+  animation: none;
+}
+#japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip > span { display: contents; }
+#japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip strong { order: 0; font-size: 23px; line-height: 1.5; }
+#japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip > b { order: 1; font-size: 17px; line-height: 1.6; }
+#japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip small { order: 2; color: #a0b9b0; font-size: 12px; line-height: 1.6; }
+@media (max-width: 600px) {
+  #japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip { min-width: 270px; padding: 16px; gap: 5px; }
+  #japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip strong { font-size: 19px; }
+  #japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip > b { font-size: 14px; }
+  #japan-layer[data-estat-exhibit="migration"] .gaia-estat-prefecture-tooltip small { font-size: 11px; }
+}
+
 @keyframes estat-region-tooltip-in {
   from { opacity: 0; filter: blur(4px); transform: translate(14px, calc(-100% - 6px)) scale(0.94); }
   to { opacity: 1; filter: none; transform: translate(14px, calc(-100% - 14px)) scale(1); }
@@ -450,6 +471,7 @@
 
 .gaia-estat-primary {
   grid-template-columns: auto min-content;
+  align-items: baseline;
   overflow: hidden;
 }
 
@@ -461,34 +483,19 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
   text-shadow: 0 0 25px color-mix(in srgb, var(--estat-accent) 36%, transparent);
-  transform-origin: center;
+  white-space: nowrap;
+  transform: none;
+  filter: none;
+  opacity: 1;
 }
 
 .gaia-estat-primary > strong.is-counting {
   color: color-mix(in srgb, var(--estat-accent) 76%, white);
-  will-change: transform, filter, opacity;
-}
-
-.gaia-estat-primary > strong.is-counting-up {
-  animation: gaia-estat-count-up 96ms steps(2, end) infinite;
-}
-
-.gaia-estat-primary > strong.is-counting-down {
-  animation: gaia-estat-count-down 96ms steps(2, end) infinite;
-}
-
-@keyframes gaia-estat-count-up {
-  from { opacity: 0.72; filter: blur(0.65px); transform: translateY(2px); }
-  to { opacity: 1; filter: blur(0); transform: translateY(-1px); }
-}
-
-@keyframes gaia-estat-count-down {
-  from { opacity: 0.72; filter: blur(0.65px); transform: translateY(-2px); }
-  to { opacity: 1; filter: blur(0); transform: translateY(1px); }
 }
 .gaia-estat-primary > span {
-  align-self: end;
-  padding-bottom: 4px;
+  align-self: baseline;
+  padding-bottom: 0;
+  white-space: nowrap;
   color: rgba(225, 250, 245, 0.76);
   font: 650 clamp(15px, 0.85vw, 20px)/1 var(--font-ja);
 }

@@ -138,7 +138,9 @@
     grid-template-columns: var(--map-chapter-width) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-estat-readout {
-    grid-template-columns: var(--map-chapter-width) var(--map-prefecture-label-width) minmax(max-content, .9fr) minmax(0, 1.45fr) minmax(max-content, .7fr) minmax(0, 1fr) var(--map-exhibit-actions-width);
+    /* The explanation now spans a separate row; keep the last column reserved
+       for the source/analysis pair at its shared screen-space position. */
+    grid-template-columns: var(--map-chapter-width) var(--map-prefecture-label-width) minmax(190px, .9fr) minmax(200px, 1.45fr) minmax(190px, .7fr) var(--map-exhibit-actions-width);
   }
   body.map-grid-desktop #japan-layer .gaia-firms-readout {
     grid-template-columns: var(--map-chapter-width) minmax(max-content, .98fr) minmax(max-content, .8fr) minmax(160px, 1.4fr) minmax(max-content, .82fr) minmax(0, 1.3fr) var(--map-exhibit-actions-width);

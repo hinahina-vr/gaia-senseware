@@ -89,6 +89,7 @@ function mountMapDemo() {
       if (toggle?.getAttribute("aria-expanded") === "true") toggle.click();
     }
     const started = controller.start();
+    if (started && !automatic) dispatchEvent(new CustomEvent("gaia:map-playback-resume"));
     syncPause();
     return started;
   };

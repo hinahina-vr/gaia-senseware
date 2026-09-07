@@ -290,6 +290,14 @@
   height: 756.5%;
 }
 
+.character-book-selector [data-character-select="aoneko"] img {
+  top: -26%;
+  height: 560%;
+}
+
+#character-book-page-title > [hidden],
+.character-book-expressions[hidden] { display: none; }
+
 .character-book-selector b {
   margin-top: 9px;
   font: 700 9px/1.2 Consolas, "Courier New", monospace;
@@ -522,6 +530,29 @@
 .character-book-expression-list button[aria-pressed="true"] img {
   filter: saturate(1) brightness(1.04);
   transform: translateX(-50%) scale(1.025);
+}
+
+/* Mizuha's rightmost (worried) portrait is the fixed chin reference.
+   Source portraits are 887 × 1774; keep the original 780% facial scale.
+   Chin landmarks: calm (489,301), sad (489,329), teasing (489,305),
+   worried (475,308). Offsets use the source-to-circle scale (780 / 1774). */
+.character-book-expression-list button[data-character-id="mizuha"] > span {
+  transform: none;
+}
+.character-book-expression-list button[data-character-id="mizuha"] img {
+  transform: translateX(-50%);
+}
+.character-book-expression-list button[data-character-id="mizuha"][data-character-expression="calm"] img {
+  top: -51.9222%;
+  left: 43.8444%;
+}
+.character-book-expression-list button[data-character-id="mizuha"][data-character-expression="sad"] img {
+  top: -64.2334%;
+  left: 43.8444%;
+}
+.character-book-expression-list button[data-character-id="mizuha"][data-character-expression="teasing"] img {
+  top: -53.6809%;
+  left: 43.8444%;
 }
 
 .character-book-hero-figure {
@@ -1356,6 +1387,16 @@ body.character-mode-open .experience > :is(#gaia-canvas, .abstract-mode-backgrou
 
 @media (max-width: 350px) {
   .character-book-hero-quote { top: -20%; }
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  /* Aoneko's silhouette and quote use the hero's 960px reading layout, not
+     viewport height, so the quote stays above the biography on short phones. */
+  .character-book-layer[data-character-id="aoneko"] .character-book-hero-figure {
+    top: 430px;
+    bottom: auto;
+    height: 480px;
+  }
 }
 
 @media (max-height: 660px) and (orientation: landscape) {

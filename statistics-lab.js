@@ -1,3 +1,4 @@
+import { formatJapaneseNumber } from "./src/shared/number-format.js";
 import {
   analyzeAnova,
   analyzeBayes,
@@ -34,8 +35,8 @@ import {
 import { METHOD_GROUPS, METHOD_LOOKUP, actionLabel, resolveLegacyAction } from "./statistics-methods.js?v=gaia-analysis-guide-1";
 import { ANALYSIS_PURPOSES, ANALYSIS_CARDS, analysisIcon } from "./statistics-menu.js?v=gaia-analysis-guide-1";
 import { createStatisticsAi } from "./statistics-ai.js?v=gaia-observation-studio-1";
-import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-annual-history-1";
-import { analyzeDiscovery } from "./statistics-discovery.js?v=gaia-annual-history-1";
+import { buildDataInsight } from "./statistics-data-insights.js?v=gaia-readable-comparison-1";
+import { analyzeDiscovery } from "./statistics-discovery.js?v=gaia-readable-comparison-1";
 
 const q = (selector) => document.querySelector(selector);
 const lab = q("#gaia-statistics-lab");
@@ -244,7 +245,7 @@ if (!lab || !openButton) {
     if (!Number.isFinite(value)) return "—";
     const absolute = Math.abs(value);
     if (absolute > 0 && (absolute < 0.001 || absolute >= 1e6)) return value.toExponential(2);
-    return new Intl.NumberFormat("ja-JP", { maximumFractionDigits: digits }).format(value);
+    return formatJapaneseNumber(value, digits);
   };
   const modeById = (id) => state.snapshot?.modes?.find((mode) => mode.id === id);
   const joinById = (left, right) => {
@@ -306,7 +307,15 @@ if (!lab || !openButton) {
     const climate = (blue.climate || []).map((row) => ({ id: row.id, label: row.name, value: Number(row.windSpeedMs), x: Number(row.temperatureC), y: Number(row.windSpeedMs), provenance: "SOURCE", ...row }));
     const earthquakeEvents = (disaster.globalEvents || []).map((row) => ({ ...row, date: new Date(row.occurredAt) })).filter((row) => !Number.isNaN(row.date.valueOf()));
     const yearly = [];
-    for (let year = 2001; year <= 2025; year += 1) yearly.push({ id: String(year), label: String(year), value: earthquakeEvents.filter((row) => row.date.getUTCFullYear() === year).length, x: year, y: earthquakeEvents.filter((row) => row.date.getUTCFullYear() === year).length, provenance: "SOURCE" });
+    const earthquakeCountsByYear = new Map();
+    for (const row of earthquakeEvents) {
+      const year = row.date.getUTCFullYear();
+      earthquakeCountsByYear.set(year, (earthquakeCountsByYear.get(year) || 0) + 1);
+    }
+    for (let year = 2001; year <= 2025; year += 1) {
+      const count = earthquakeCountsByYear.get(year) || 0;
+      yearly.push({ id: String(year), label: String(year), value: count, x: year, y: count, provenance: "SOURCE" });
+    }
     const sortedEvents = [...earthquakeEvents].sort((a, b) => a.date - b.date);
     const gaps = sortedEvents.slice(1).map((row, index) => ({ id: row.id, label: row.date.toISOString().slice(0, 10), value: (row.date - sortedEvents[index].date) / 86_400_000, provenance: "DERIVED" }));
     const wasteRows = (waste.countryWaste || []).map((row) => ({ id: row.id, label: row.name, value: Number(row.recyclePercent), x: Number(row.lon), y: Number(row.recyclePercent), provenance: row.valueStatus === "SOURCE" ? "SOURCE" : "IMPUTED", ...row }));
@@ -1112,7 +1121,7 @@ if (!lab || !openButton) {
     ui.takeawayEvidence.replaceChildren();
     ui.takeaway.dataset.state = insight ? "ready" : "empty";
     ui.takeawayHeadline.textContent = insight?.headline || "この条件では、まだ結論を表示できません。";
-    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = insight.analysis ? `${insight.status === "needs-comparison" ? "比較を設計する" : "課題を発見する · 探索段階"} / ${insight.analysis.lens}` : "選択した分析から読めること";
+    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = insight.scopeLabel || "このデータから分かること";
     ui.takeawayBody.textContent = insight.summary;
     ui.takeawayCaveat.textContent = `注意：${insight.caveat}`;
     const evidence = insight.evidence.slice(0, 3);
@@ -1125,7 +1134,7 @@ if (!lab || !openButton) {
       value.textContent = format(metric[1], 2);
       if (metric[2]) { const unit = document.createElement("small"); unit.textContent = ` ${metric[2]}`; value.append(unit); }
       button.append(label, value);
-      button.title = "インサイトを開いて対象範囲と根拠を確認";
+      button.title = "比較した記録と説明を開く";
       button.addEventListener("click", () => {
         selectResultView("findings");
         ui.findings.focus({ preventScroll: true });
@@ -1140,21 +1149,55 @@ if (!lab || !openButton) {
     ui.findings.replaceChildren();
     const heading = document.createElement("h4"); heading.textContent = insight.headline;
     const scope = document.createElement("p"); scope.className = "gaia-statistics-finding-scope"; scope.textContent = insight.scope;
+    if (insight.scopeLabel) {
+      const label = document.createElement("p"); label.className = "gaia-statistics-reading-scope"; label.textContent = insight.scopeLabel;
+      ui.findings.append(label);
+    }
     ui.findings.append(heading);
     const conditions = document.createElement("details"); conditions.className = "gaia-statistics-discovery-alternatives";
-    const conditionsLabel = document.createElement("summary"); conditionsLabel.textContent = "対象範囲・探索方法を確認";
+    const conditionsLabel = document.createElement("summary"); conditionsLabel.textContent = "比較の選び方・計算方法";
     conditions.append(conditionsLabel, scope);
     if (insight.analysis) {
       const lens = document.createElement("p"); lens.className = "gaia-statistics-finding-scope";
-      lens.textContent = `今回の着眼点：${insight.analysis.method}。${insight.analysis.calculation}`; conditions.append(lens);
+      lens.textContent = `${insight.analysis.method}。${insight.analysis.calculation}`; conditions.append(lens);
+      const primary = insight.candidates?.find(candidate => candidate.id === insight.primaryId);
+      if (primary?.test) {
+        const next = document.createElement("p"); next.textContent = `さらに確かめるには：${primary.test}`; conditions.append(next);
+      }
     }
     insight.findings.forEach((finding) => {
       const article = document.createElement("article"); article.className = "gaia-statistics-finding";
       const title = document.createElement("h5"); title.textContent = finding.title;
       const body = document.createElement("p"); body.textContent = finding.body;
       article.dataset.kind = finding.kind || "reading";
-      article.append(title, body);
-      (finding.recordIds || []).slice(0, 3).forEach((recordId) => {
+      article.append(title);
+      if (finding.kind === "observation" && insight.comparison) {
+        const comparison = insight.comparison;
+        const table = document.createElement("table"); table.className = "gaia-statistics-comparison";
+        table.setAttribute("aria-label", comparison.caption);
+        const head = table.createTHead().insertRow();
+        const item = document.createElement("th"); item.scope = "col"; item.textContent = "比べる値"; head.append(item);
+        comparison.points.forEach(point => {
+          const cell = document.createElement("th"); cell.scope = "col";
+          const label = document.createElement("button"); label.type = "button"; label.className = "gaia-statistics-comparison-record";
+          label.textContent = `${point.label}の記録 →`;
+          label.setAttribute("aria-label", `${point.label}・${point.name}の記録を見る`);
+          label.addEventListener("click", () => drillToRecord({ recordId: point.id, label: point.name }));
+          const name = document.createElement("span"); name.textContent = point.name;
+          cell.append(label, name); head.append(cell);
+        });
+        const rows = table.createTBody();
+        comparison.metrics.forEach(metric => {
+          const row = rows.insertRow(); row.dataset.highlight = String(Boolean(metric.highlight));
+          const label = document.createElement("th"); label.scope = "row"; label.textContent = metric.label;
+          if (metric.unit) { const unit = document.createElement("small"); unit.textContent = metric.unit; label.append(unit); }
+          row.append(label);
+          metric.values.forEach(value => { const cell = row.insertCell(); cell.textContent = format(value, 2); });
+        });
+        const note = document.createElement("p"); note.className = "gaia-statistics-comparison-note"; note.textContent = comparison.intro;
+        article.append(table, note);
+      } else article.append(body);
+      (finding.kind === "observation" && insight.comparison ? [] : finding.recordIds || []).slice(0, 3).forEach((recordId) => {
         const row = rowsFor(dataset).find(row => String(row.id) === recordId);
         if (!row) return;
         const button = document.createElement("button"); button.type = "button"; button.className = "gaia-statistics-next-button";
@@ -1167,14 +1210,13 @@ if (!lab || !openButton) {
     const alternatives = (insight.candidates || []).filter(candidate => candidate.id !== insight.primaryId);
     if (alternatives.length) {
       const details = document.createElement("details"); details.className = "gaia-statistics-discovery-alternatives";
-      const summary = document.createElement("summary"); summary.textContent = `このデータで確かめたい、別の問い（${alternatives.length}）`; details.append(summary);
+      const summary = document.createElement("summary"); summary.textContent = `ほかの比較を見る（${alternatives.length}）`; details.append(summary);
       alternatives.forEach(candidate => {
         const article = document.createElement("article"); article.className = "gaia-statistics-finding";
-        const title = document.createElement("h5"); title.textContent = candidate.title;
+        const title = document.createElement("h5"); title.textContent = candidate.method;
         const observation = document.createElement("p"); observation.textContent = candidate.signal;
-        const question = document.createElement("p"); question.textContent = `問い：${candidate.question}`;
-        const test = document.createElement("p"); test.textContent = `確かめ方：${candidate.test}`;
-        article.append(title, observation, question, test); details.append(article);
+        const limit = document.createElement("p"); limit.textContent = candidate.caveat;
+        article.append(title, observation, limit); details.append(article);
       }); ui.findings.append(details);
     }
     if (insight.statisticalReading) {
@@ -1183,7 +1225,7 @@ if (!lab || !openButton) {
       const body = document.createElement("p"); body.textContent = `${insight.statisticalReading.headline} ${insight.statisticalReading.summary} ${insight.statisticalReading.caveat}`;
       details.append(summary, body); ui.findings.append(details);
     }
-    const supporting = document.createElement("button"); supporting.type = "button"; supporting.className = "gaia-statistics-next-button"; supporting.textContent = "数値の内訳で裏付けを確認 →";
+    const supporting = document.createElement("button"); supporting.type = "button"; supporting.className = "gaia-statistics-next-button"; supporting.textContent = "計算に使った数値を見る →";
     supporting.addEventListener("click", () => { selectResultView("values"); ui.formula.focus({ preventScroll: true }); });
     ui.findings.append(supporting);
   };
@@ -1445,7 +1487,7 @@ if (!lab || !openButton) {
     state.selectedRecordId = recordId;
     ui.recordsBody.querySelectorAll("tr[data-selected]").forEach((candidate) => delete candidate.dataset.selected);
     row.dataset.selected = "true";
-    ui.recordDetails.open = true;
+    selectResultView("records");
     const label = row.querySelector("th strong")?.textContent || target.label || recordId;
     ui.recordDrillStatus.textContent = `${label}の監査レコードを表示しました。`;
     requestAnimationFrame(() => {

@@ -1,9 +1,11 @@
 import { OBSERVATION_CITIES } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
+import { formatJapaneseNumber } from "../shared/number-format.js";
+import { setAttributeIfChanged, setTextIfChanged, setStyleIfChanged } from "../shared/dom-updates.js";
 import { formatPrefecturePlace } from "./observation-place-label.js?v=gaia-place-inline-1";
 import { EARTH_CENTER_LONGITUDE, earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
 import { japanPrefectureView } from "./japan-prefecture-view.js?v=gaia-prefecture-gis-view-1";
-import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-lodging-color-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { ESTAT_EXHIBITS as EXHIBITS } from "./estat-exhibit-catalog.js?v=gaia-poi-manual-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-inline-data-sources-1";
 import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
 import { createMetricLegend, updateMetricLegend, metricLegendProgress } from "./metric-legend.js?v=gaia-lodging-color-1";
 
@@ -17,7 +19,7 @@ const PRIMARY_VALUE_COUNT_STEPS = 32;
 const LONG_TERM_PERIOD_MS = 1050;
 const ESTAT_WEBGL_HUB_COUNT = 8;
 const ESTAT_WEBGL_ANCHOR_TRANSITION_MS = 1400;
-const PREFECTURE_REGION_EXHIBITS = new Set(["averageTemperature", "summerHigh", "winterLow", "relativeHumidity", "sunshineHours", "precipitation", "rainyDays"]);
+const WEATHER_STATION_EXHIBITS = new Set(["averageTemperature", "summerHigh", "winterLow", "relativeHumidity", "sunshineHours", "precipitation", "rainyDays"]);
 const LONG_TERM_TEMPERATURE_KEYS = new Set(["averageTemperature", "summerHigh", "winterLow"]);
 const ESTAT_WEBGL_THEMES = Object.freeze({
   migration: Object.freeze({ index: 0, visual: "tidal-migration-currents" }),
@@ -62,6 +64,9 @@ let transitionStartedAt = 0;
 let frame = 0;
 let nextMonthAt = 0;
 let nextPoiAt = 0;
+let playbackEnabled = true;
+let hoveredPrefectureIndex = -1;
+let prefectureTooltipPointer = null;
 let series;
 let seriesPromise;
 let prefectureShapes = [];
@@ -79,10 +84,7 @@ const formatNumber = (value, signed = false, decimals = 0) => {
   if (!Number.isFinite(value)) return "欠測";
   const number = Number(value);
   const sign = signed && number > 0 ? "+" : "";
-  return `${sign}${number.toLocaleString("ja-JP", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })}`;
+  return `${sign}${formatJapaneseNumber(number, decimals, decimals)}`;
 };
 
 const settlePrimaryValue = (element, value, exhibit, state = "settled") => {
@@ -295,8 +297,7 @@ const loadSeries = () => {
   return seriesPromise;
 };
 
-const projection = () => {
-  const rect = canvas?.getBoundingClientRect();
+const projection = (rect = canvas?.getBoundingClientRect()) => {
   if (!rect?.width || !rect?.height) return null;
   const overlay = document.querySelector("#japan-overlay");
   const zoom = Math.max(1, Number(overlay?.dataset.earthZoom) || 1);
@@ -321,7 +322,8 @@ const project = (location, currentProjection) => {
 };
 
 const currentExhibit = () => EXHIBITS[activeIndex] || EXHIBITS[0];
-const usesPrefectureRegions = (exhibit = currentExhibit()) => PREFECTURE_REGION_EXHIBITS.has(exhibit.key);
+const usesWeatherStations = (exhibit = currentExhibit()) => WEATHER_STATION_EXHIBITS.has(exhibit.key);
+const usesPrefectureRegions = (exhibit = currentExhibit()) => exhibit.key === "migration" || usesWeatherStations(exhibit);
 const currentPeriod = () => periodsFor()[periodIndex] || "—";
 const valuesFor = (index = periodIndex) => {
   const exhibit = currentExhibit();
@@ -334,7 +336,7 @@ const periodDurationFor = (exhibit = currentExhibit()) => (
   exhibit.longTerm ? LONG_TERM_PERIOD_MS : PERIOD_MS
 );
 const observationStationFor = (index = selectedIndex, exhibit = currentExhibit()) => {
-  if (!usesPrefectureRegions(exhibit)) return null;
+  if (!usesWeatherStations(exhibit)) return null;
   const station = series?.weatherHistorySource?.stations?.[index] || series?.temperatureHistorySource?.stations?.[index];
   if (!station) return null;
   const view = exhibit.key === "sunshineHours" ? "a4" : ["precipitation", "rainyDays"].includes(exhibit.key) ? "a1" : "a2";
@@ -1122,6 +1124,8 @@ const drawNature = (x, y, strength, selected, time, exhibit, index) => {
 };
 
 const hidePrefectureRegionTooltip = () => {
+  hoveredPrefectureIndex = -1;
+  prefectureTooltipPointer = null;
   if (prefectureRegionTooltip) prefectureRegionTooltip.hidden = true;
 };
 
@@ -1137,9 +1141,9 @@ const showPrefectureRegionTooltip = (index, event) => {
     const currentProjection = projection();
     [x, y] = currentProjection ? project(city, currentProjection) : [mapRect.width / 2, mapRect.height / 2];
   }
-  prefectureRegionTooltip.querySelector("small").textContent = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
-  prefectureRegionTooltip.querySelector("strong").textContent = formatPrefecturePlace(city.prefecture, observationStationFor(index)?.station);
-  prefectureRegionTooltip.querySelector("b").textContent = `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim();
+  setTextIfChanged(prefectureRegionTooltip.querySelector("small"), `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`);
+  setTextIfChanged(prefectureRegionTooltip.querySelector("strong"), formatPrefecturePlace(city.prefecture, observationStationFor(index)?.station));
+  setTextIfChanged(prefectureRegionTooltip.querySelector("b"), `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim());
   prefectureRegionTooltip.style.left = `${Math.max(84, Math.min(mapRect.width - 84, x))}px`;
   prefectureRegionTooltip.style.top = `${Math.max(78, Math.min(mapRect.height - 136, y))}px`;
   prefectureRegionTooltip.hidden = false;
@@ -1163,11 +1167,16 @@ const syncPrefectureRegionPaths = () => {
     region.setAttribute("role", "button");
     region.setAttribute("tabindex", "0");
     region.setAttribute("aria-current", "false");
-    region.addEventListener("pointerdown", (event) => event.stopPropagation());
-    region.addEventListener("pointerenter", (event) => showPrefectureRegionTooltip(shape.index, event));
-    region.addEventListener("pointermove", (event) => showPrefectureRegionTooltip(shape.index, event));
+    region.addEventListener("pointerdown", (event) => { event.stopPropagation(); pausePlayback(); });
+    const preview = (event) => {
+      hoveredPrefectureIndex = shape.index;
+      prefectureTooltipPointer = event.type === "focus" ? null : { clientX: event.clientX, clientY: event.clientY };
+      showPrefectureRegionTooltip(shape.index, prefectureTooltipPointer);
+    };
+    region.addEventListener("pointerenter", preview);
+    region.addEventListener("pointermove", preview);
     region.addEventListener("pointerleave", hidePrefectureRegionTooltip);
-    region.addEventListener("focus", (event) => showPrefectureRegionTooltip(shape.index, event));
+    region.addEventListener("focus", preview);
     region.addEventListener("blur", hidePrefectureRegionTooltip);
     region.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1191,36 +1200,41 @@ const updatePrefectureRegions = (currentProjection, interpolatedValues) => {
   syncPrefectureRegionPaths();
   if (!prefectureRegionLayer || !prefectureRegionGroup) return;
   const { rect, scale, originX, originY } = currentProjection;
-  prefectureRegionLayer.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
-  prefectureRegionGroup.setAttribute("transform", `translate(${originX} ${originY}) scale(${scale})`);
+  setAttributeIfChanged(prefectureRegionLayer, "viewBox", `0 0 ${rect.width} ${rect.height}`);
+  setAttributeIfChanged(prefectureRegionGroup, "transform", `translate(${originX} ${originY}) scale(${scale})`);
+  const exhibit = currentExhibit();
   prefectureRegionPaths.forEach((region, index) => {
     const value = interpolatedValues[index];
     const city = OBSERVATION_CITIES[index];
-    region.setAttribute("aria-current", String(index === selectedIndex));
-    region.setAttribute("aria-label", `${city.code} ${city.prefecture}、${currentExhibit().valueLabel} ${formatNumber(value, false, currentExhibit().decimals || 0)} ${Number.isFinite(value) ? currentExhibit().unit : "欠測"}`);
+    setAttributeIfChanged(region, "aria-current", index === selectedIndex);
+    setAttributeIfChanged(region, "aria-label", `${city.code} ${city.prefecture}、${exhibit.valueLabel} ${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : "欠測"}`);
   });
+  // Keep the chosen prefecture's values visible while the visitor scrubs years.
+  if (hoveredPrefectureIndex >= 0) showPrefectureRegionTooltip(hoveredPrefectureIndex, prefectureTooltipPointer);
+  else if (exhibit.key === "migration" || !playbackEnabled) showPrefectureRegionTooltip(selectedIndex);
 };
 
 const updateMarkers = (currentProjection, interpolatedValues) => {
+  const exhibit = currentExhibit();
+  const periodLabel = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
   markerButtons.forEach((button, index) => {
     const city = OBSERVATION_CITIES[index];
     const [x, y, rect] = project(city, currentProjection);
     const visible = x >= -20 && x <= rect.width + 20 && y >= -28 && y <= rect.height + 28;
-    button.hidden = !visible;
-    button.style.left = `${x}px`;
-    button.style.top = `${y}px`;
+    if (button.hidden !== !visible) button.hidden = !visible;
+    setStyleIfChanged(button, "left", `${x}px`);
+    setStyleIfChanged(button, "top", `${y}px`);
     const value = interpolatedValues[index];
     const missing = !Number.isFinite(value);
-    const strength = normalizedValue(value, currentExhibit());
+    const strength = normalizedValue(value, exhibit);
     button.classList.toggle("is-missing", missing);
-    button.style.setProperty("--estat-strength", strength.toFixed(3));
-    button.style.setProperty("--estat-marker-size", `${(14 + strength * 12).toFixed(2)}px`);
-    button.style.setProperty("--estat-core-size", `${(5 + strength * 7).toFixed(2)}px`);
-    button.style.setProperty("--estat-glow-size", `${(8 + strength * 18).toFixed(2)}px`);
-    button.setAttribute("aria-current", String(index === selectedIndex));
-    const exhibit = currentExhibit();
-    button.querySelector("b").textContent = `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${missing ? "" : exhibit.unit}`.trim();
-    button.querySelector("small").textContent = `${currentPeriod()} · ${exhibit.provider || "e-Stat"}`;
+    setStyleIfChanged(button, "--estat-strength", strength.toFixed(3));
+    setStyleIfChanged(button, "--estat-marker-size", `${(14 + strength * 12).toFixed(2)}px`);
+    setStyleIfChanged(button, "--estat-core-size", `${(5 + strength * 7).toFixed(2)}px`);
+    setStyleIfChanged(button, "--estat-glow-size", `${(8 + strength * 18).toFixed(2)}px`);
+    setAttributeIfChanged(button, "aria-current", index === selectedIndex);
+    setTextIfChanged(button.querySelector("b"), `${exhibit.valueLabel}　${formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0)} ${missing ? "" : exhibit.unit}`.trim());
+    setTextIfChanged(button.querySelector("small"), periodLabel);
   });
 };
 
@@ -1230,7 +1244,7 @@ const draw = (timestamp = performance.now()) => {
     return;
   }
   const rect = syncCanvas();
-  const currentProjection = projection();
+  const currentProjection = projection(rect);
   if (!currentProjection) {
     frame = requestAnimationFrame(draw);
     return;
@@ -1283,8 +1297,8 @@ const draw = (timestamp = performance.now()) => {
     });
   }
   const periods = periodsFor();
-  if (timestamp >= nextMonthAt && periods.length > 1) setPeriod((periodIndex + 1) % periods.length, { auto: true });
-  if (timestamp >= nextPoiAt) selectPrefecture((selectedIndex + 1) % OBSERVATION_CITIES.length, { auto: true });
+  if (playbackEnabled && timestamp >= nextMonthAt && periods.length > 1) setPeriod((periodIndex + 1) % periods.length, { auto: true });
+  if (playbackEnabled && timestamp >= nextPoiAt) selectPrefecture((selectedIndex + 1) % OBSERVATION_CITIES.length, { auto: true });
   frame = requestAnimationFrame(draw);
 };
 
@@ -1327,7 +1341,7 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-rank]").textContent = rank ? `${rank} / ${ordered.length}` : "欠測";
   readout.querySelector("[data-estat-delta]").textContent = delta === null ? (periodIndex === 0 ? "起点" : "比較不可") : `${formatNumber(delta, true, exhibit.decimals || 0)} ${exhibit.unit}`;
   readout.querySelector("[data-estat-frequency]").textContent = `${exhibit.provider || "e-Stat"} · ${exhibit.frequency.toUpperCase()}`;
-  readout.querySelector(".gaia-estat-comparison span:first-child").childNodes[0].nodeValue = usesPrefectureRegions(exhibit) ? "観測地点順位" : "都道府県順位";
+  readout.querySelector(".gaia-estat-comparison span:first-child").childNodes[0].nodeValue = usesWeatherStations(exhibit) ? "観測地点順位" : "都道府県順位";
   readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = exhibit.longTerm
     ? `${baselineYear}年差`
     : exhibit.frequency === "年次" ? "前年差" : "前月差";
@@ -1348,10 +1362,6 @@ const renderReadout = () => {
   readout.dataset.estatPeriodCount = String(periods.length);
   readout.dataset.estatTrendPerDecade = Number.isFinite(trendPerDecade) ? trendPerDecade.toFixed(4) : "";
   readout.dataset.estatObservationStation = station?.station || "";
-  const sourceAction = readout.querySelector("[data-estat-source-action]");
-  sourceAction.href = station?.url || sourceMetadataFor(exhibit).sourceUrl || exhibit.source;
-  sourceAction.title = `${exhibit.sourceName}を${exhibit.provider || "e-Stat"}で確認`;
-  sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データを${exhibit.provider || "e-Stat"}で確認する（新しいタブ）`);
   const range = valueRangeFor(exhibit);
   const gradient = paletteCss(legendPaletteFor(exhibit, range));
   heatLegend.style.setProperty("--estat-heat-gradient", gradient);
@@ -1365,11 +1375,11 @@ const renderReadout = () => {
     maximumLabel: `${formatNumber(range.maximum, exhibit.key === "migration", exhibit.decimals || 0)} ${exhibit.unit}`,
     gradient,
     scale: exhibit.key === "lodging" ? "log" : "linear",
-    description: `${periods[0]}〜${periods.at(-1)}の47${usesPrefectureRegions(exhibit) ? "観測地点" : "都道府県"}に共通の色の範囲。針は選択中の値。`,
+    description: `${periods[0]}〜${periods.at(-1)}の47${usesWeatherStations(exhibit) ? "観測地点" : "都道府県"}に共通の色の範囲。針は選択中の値。`,
   });
   const scopeNote = exhibit.key === "migration" ? "日本人移動者のみ（外国人は含まない）"
     : exhibit.key === "lodging" ? "従業者10人以上の施設（小規模施設は含まない）"
-    : usesPrefectureRegions(exhibit) ? "代表観測地点の値（県全域の平均ではない）" : "暦年の着工戸数（完成戸数ではない）";
+    : usesWeatherStations(exhibit) ? "代表観測地点の値（県全域の平均ではない）" : "暦年の着工戸数（完成戸数ではない）";
   heatLegend.querySelector("[data-estat-history-note]").textContent = [
     series.unavailable ? "" : `${periods[0]}〜${periods.at(-1)}年 · ${scopeNote}`,
     exhibit.key === "lodging" ? "面の色は紫→青→青緑→黄の対数目盛。人数の値は変えていません。" : "",
@@ -1406,6 +1416,25 @@ const renderReadout = () => {
     const markerValue = values[index];
     button.setAttribute("aria-label", `${OBSERVATION_CITIES[index].code} ${OBSERVATION_CITIES[index].prefecture}、${exhibit.valueLabel} ${formatNumber(markerValue, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(markerValue) ? exhibit.unit : ""}`.trim());
   });
+};
+
+// Read the selected station at activation time, without building analysis rows.
+const getSourceInfo = () => {
+  if (activeIndex < 0) return null;
+  const exhibit = currentExhibit();
+  const station = observationStationFor();
+  const city = OBSERVATION_CITIES[selectedIndex];
+  return {
+    number: exhibit.number,
+    shortTitle: exhibit.shortTitle,
+    datasets: [{
+      id: exhibit.id,
+      title: exhibit.sourceName,
+      organisation: exhibit.provider || "e-Stat",
+      url: station?.url || sourceMetadataFor(exhibit).sourceUrl || exhibit.source,
+      attributionNote: `対象：${formatPrefecturePlace(city.prefecture, station?.station)}。${exhibit.caption}`,
+    }],
+  };
 };
 
 const statisticsDataset = () => {
@@ -1518,7 +1547,23 @@ const applyHeading = () => {
   }
 };
 
+const pausePlayback = () => {
+  playbackEnabled = false;
+  if (layer) layer.dataset.estatPlayback = "manual";
+  globalThis.GaiaMapDemo?.stop?.("interaction");
+};
+
+const resumePlayback = () => {
+  if (activeIndex < 0) return;
+  playbackEnabled = true;
+  layer.dataset.estatPlayback = "auto";
+  nextMonthAt = performance.now() + periodDurationFor();
+  nextPoiAt = performance.now() + POI_MS;
+};
+
 const selectPrefecture = (index, { auto = false } = {}) => {
+  if (auto && !playbackEnabled) return;
+  if (!auto) pausePlayback();
   const requested = Math.max(0, Math.min(OBSERVATION_CITIES.length - 1, Number(index) || 0));
   if (requested === selectedIndex && auto) {
     nextPoiAt = performance.now() + POI_MS;
@@ -1547,6 +1592,8 @@ const selectPrefecture = (index, { auto = false } = {}) => {
 };
 
 const setPeriod = (index, { auto = false } = {}) => {
+  if (auto && !playbackEnabled) return;
+  if (!auto) pausePlayback();
   const periods = periodsFor();
   if (!periods.length) return;
   const length = periods.length;
@@ -1608,8 +1655,7 @@ const select = async (index) => {
   document.querySelectorAll(".map-mode-button:not([data-estat-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
   applyHeading();
   renderReadout();
-  nextMonthAt = performance.now() + periodDurationFor();
-  nextPoiAt = performance.now() + POI_MS;
+  resumePlayback();
   atmosphereAnchorPreviousIndex = selectedIndex;
   atmosphereAnchorChangedAt = performance.now() - ESTAT_WEBGL_ANCHOR_TRANSITION_MS;
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.(japanPrefectureView(innerWidth));
@@ -1632,6 +1678,7 @@ const deactivate = () => {
   delete layer.dataset.estatExhibit;
   delete layer.dataset.estatFrequency;
   delete layer.dataset.estatPoiDisplay;
+  delete layer.dataset.estatPlayback;
   delete layer.dataset.estatPeriodTransition;
   delete layer.dataset.estatLodgingVisual;
   delete layer.dataset.estatLodgingFlashCadence;
@@ -1700,7 +1747,7 @@ const mount = () => {
     button.className = "gaia-estat-marker";
     button.dataset.estatPrefecture = city.code;
     button.innerHTML = `<i aria-hidden="true"></i><span><strong>${city.prefecture}</strong><b>—</b><small></small></span>`;
-    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("pointerdown", (event) => { event.stopPropagation(); pausePlayback(); });
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -1756,7 +1803,7 @@ const mount = () => {
     <small data-estat-mobile-history-note></small>
     <div class="gaia-estat-copy"><p data-estat-caption></p><small data-estat-guide></small><small data-estat-quality hidden></small></div>
     <div class="gaia-estat-actions" aria-label="元データと統計分析">
-      <a data-estat-source-action href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer"></a>
+      <button type="button" data-estat-source-action></button>
       <button type="button" data-estat-analysis></button>
     </div>
   `;
@@ -1787,7 +1834,9 @@ const mount = () => {
   readout.querySelectorAll("[data-estat-step]").forEach((button) => button.addEventListener("click", () => {
     stepExhibit(button.dataset.estatStep);
   }));
+  readout.querySelector("[data-estat-month]")?.addEventListener("pointerdown", pausePlayback);
   readout.querySelector("[data-estat-month]")?.addEventListener("input", (event) => setMonth(Number(event.currentTarget.value)));
+  addEventListener("gaia:map-playback-resume", resumePlayback);
   readout.querySelector("[data-estat-analysis]")?.addEventListener("click", openStatistics);
   addEventListener("resize", () => { if (activeIndex >= 0) draw(performance.now()); }, { passive: true });
   document.addEventListener("visibilitychange", () => {
@@ -1808,8 +1857,11 @@ globalThis.GaiaEstatExhibits = Object.freeze({
   setMonth,
   setPeriod,
   selectPrefecture,
+  pausePlayback,
+  resumePlayback,
   getStatisticsDataset: statisticsDataset,
-  getState: () => ({ activeIndex, selectedIndex, monthIndex: periodIndex, periodIndex, period: currentPeriod() }),
+  getSourceInfo,
+  getState: () => ({ activeIndex, selectedIndex, monthIndex: periodIndex, periodIndex, period: currentPeriod(), playbackEnabled }),
 });
 
 export { mount };

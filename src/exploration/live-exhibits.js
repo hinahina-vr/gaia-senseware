@@ -1,7 +1,8 @@
+import { formatJapaneseNumber } from "../shared/number-format.js";
 import { STATUS_LABELS } from "./transforms.js?v=gaia-live-loading-1";
 import { earthBaseScale, earthLongitudeToMapX } from "./world-projection.js?v=gaia-japan-center-1";
 import { japanPrefectureView } from "./japan-prefecture-view.js?v=gaia-prefecture-gis-view-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-inline-data-sources-1";
 import { LIVE_EXHIBITS as EXHIBITS } from "./live-exhibit-catalog.js?v=gaia-exhibit-editorial-1";
 import { OBSERVATION_CITIES, findObservationCity, adjacentObservationCity } from "./observation-cities.js?v=gaia-exhibit-catalog-1";
 import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
@@ -12,7 +13,6 @@ import { formatPrefecturePlace } from "./observation-place-label.js?v=gaia-place
 export { OBSERVATION_CITIES };
 
 const LIVE_POI_DWELL_MS = 6800;
-const LIVE_POI_MANUAL_DWELL_MS = 12000;
 const LIVE_POI_DEPART_MS = 280;
 const LIVE_POI_ARRIVE_MS = 1320;
 
@@ -64,7 +64,7 @@ const formatValue = (measurement) => {
   if (measurement?.value == null || !Number.isFinite(Number(measurement.value))) return "—";
   const digits = measurement.key === "weatherPrecipitation" ? 2 : 1;
   const unit = measurement.unit || "";
-  return `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: digits })} ${unit}`.trim();
+  return `${formatJapaneseNumber(Number(measurement.value), digits)} ${unit}`.trim();
 };
 
 const formatJstDateTime = (value) => {
@@ -1267,6 +1267,11 @@ const selectObservationCity = (cityId, {
 } = {}) => {
   const nextCity = findObservationCity(cityId);
   if (!nextCity) return false;
+  if (source === "manual") {
+    resumePoiAfterPicker = false;
+    setPoiAutoplayEnabled(false);
+    globalThis.GaiaMapDemo?.stop?.("interaction");
+  }
   const previousCity = selectedCity();
   if (!force && previousCity.id === nextCity.id) {
     if (["departing", "arriving"].includes(layer?.dataset.livePoiTransition)) {
@@ -1280,7 +1285,7 @@ const selectObservationCity = (cityId, {
       renderReadout();
       draw(performance.now(), true);
     }
-    schedulePoiAutoplay(source === "manual" ? LIVE_POI_MANUAL_DWELL_MS : LIVE_POI_DWELL_MS);
+    schedulePoiAutoplay();
     return true;
   }
 
@@ -1331,7 +1336,7 @@ const selectObservationCity = (cityId, {
       dispatchEvent(new CustomEvent("gaia:live-poi-change", {
         detail: { from: previousCity.id, to: nextCity.id, code: nextCity.code, source, phase: "settled" },
       }));
-      schedulePoiAutoplay(source === "manual" ? LIVE_POI_MANUAL_DWELL_MS : LIVE_POI_DWELL_MS);
+      schedulePoiAutoplay();
     }, reducedMotion ? 0 : LIVE_POI_ARRIVE_MS);
   };
 
@@ -1458,7 +1463,11 @@ const mount = () => {
     button.setAttribute("aria-label", `${city.code} ${formatPrefecturePlace(city.prefecture, city.city)}の観測データを表示`);
     button.setAttribute("aria-current", String(city.id === selectedCityId));
     button.innerHTML = `<i aria-hidden="true"></i><span><strong>${formatPrefecturePlace(city.prefecture, city.city)}</strong><b data-live-marker-value>値は未取得</b><small data-live-marker-detail>地点を選んで取得</small></span>`;
-    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+      setPoiAutoplayEnabled(false);
+      globalThis.GaiaMapDemo?.stop?.("interaction");
+    });
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -1638,7 +1647,6 @@ const mount = () => {
       modeButtons[(activeButtonIndex + Number(button.dataset.liveDeckStep) + modeButtons.length) % modeButtons.length]?.click();
     });
   });
-  readout.querySelector("[data-live-deck-source]")?.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
   mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
   mobileReadoutToggle?.addEventListener("click", () => {
     setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");
@@ -1684,6 +1692,8 @@ const mount = () => {
   });
   map.addEventListener("keydown", (event) => {
     if (activeIndex < 0 || !["Enter", " "].includes(event.key)) return;
+    if (event.target instanceof Element && event.target !== map
+      && event.target.closest("button, input, select, textarea, [role='button'], [role='slider'], a[href]")) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     lightPointer.x = 0.5;
@@ -1760,6 +1770,7 @@ const mount = () => {
       schedulePoiAutoplay();
     }
   });
+  addEventListener("gaia:map-playback-resume", () => { if (activeIndex >= 0) setPoiAutoplayEnabled(true); });
 };
 
 if (globalThis.GaiaMapObservationAdapter) mount();

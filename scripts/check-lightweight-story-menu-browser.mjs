@@ -249,7 +249,7 @@ const assertCards = (scan, viewport) => {
   assert.equal(scan.landingEyebrowCount, 0, `${viewport.name}: obsolete landing eyebrow remains`);
   assert.equal(scan.cardCount, 4);
   assert.deepEqual(scan.cards.map((card) => card.title), ["世界を観測する", "みんなのセンサー", "登場人物の記録", "音楽を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["地球のデータを光と色で描く", "あなたの端末をひとつのセンサーに", "3人の役割と設定スケッチ", "放課後を彩る音楽のアーカイブ"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["地球のデータを光と色で描く", "あなたの端末をひとつのセンサーに", "4人の役割と設定スケッチ", "放課後を彩る音楽のアーカイブ"]);
   for (const property of ["titleFontSize", "titleFontWeight", "titleLetterSpacing", "titleLineHeight"]) {
     assert.equal(new Set(scan.cards.map((card) => card[property])).size, 1, `${viewport.name}: card ${property} values are not unified`);
   }

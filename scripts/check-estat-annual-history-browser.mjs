@@ -15,7 +15,7 @@ try {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
     await context.addInitScript(() => {
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v4", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ path: "data/ovation-aurora-snapshot.json", contentType: "application/json" }));
@@ -23,6 +23,7 @@ try {
     page.on("pageerror", error => report.errors.push(error.message));
     await page.goto(`${base}/?preview=annual-history#world`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true" && globalThis.GaiaEstatExhibits && globalThis.GaiaStatisticsLab);
+    await page.evaluate(() => { GaiaModeEntryGuide.close("map", { restoreFocus: false }); GaiaMapDemo.stop(); });
     const openAnalysis = async () => {
       if (width < 901) {
         await page.locator("#map-mobile-toolbar").getByRole("button", { name: "操作", exact: true }).click();
@@ -42,7 +43,7 @@ try {
           });
           const r = readout.getBoundingClientRect();
           return { value: readout.querySelector("[data-estat-value]").textContent, period: readout.dataset.estatPeriod,
-            frequency: readout.querySelector("[data-estat-frequency]").textContent, source: readout.querySelector("[data-estat-source-action]").href,
+            frequency: readout.querySelector("[data-estat-frequency]").textContent, source: GaiaEstatExhibits.getSourceInfo().datasets[0].url,
             place: readout.querySelector("[data-estat-place]").textContent, station: readout.dataset.estatObservationStation,
             count: Number(readout.dataset.estatPeriodCount), ticks: readout.querySelectorAll("[data-estat-months] i").length,
             min: slider.min, max: slider.max, aria: slider.getAttribute("aria-label"), labels,
@@ -103,10 +104,13 @@ try {
       report.checks.push({ width, key, pref: pref + 1, year, missing });
     }
     await page.evaluate(async () => { await GaiaEstatExhibits.select(2); GaiaEstatExhibits.setPeriod(0); });
-    // Keyboard moves by a year; a manual choice holds for two playback intervals.
+    // Keyboard moves by a year; manual selection never restarts automatically.
     const slider = page.locator("[data-estat-month]"); await slider.focus(); await page.keyboard.press("ArrowRight");
     assert.equal(await slider.inputValue(), "1");
-    await page.waitForFunction(() => GaiaEstatExhibits.getState().periodIndex >= 2, null, { timeout: 5000 });
+    const manualState = await page.evaluate(() => GaiaEstatExhibits.getState());
+    assert.equal(manualState.playbackEnabled, false);
+    await page.waitForTimeout(5000);
+    assert.deepEqual(await page.evaluate(() => GaiaEstatExhibits.getState()), manualState);
     await context.close();
   }
   // An unavailable snapshot stays unavailable, never relabelled monthly values.

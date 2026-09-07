@@ -680,3 +680,36 @@
   .gaia-statistics-lab .gaia-statistics-takeaway-evidence button span { font-size: 10px; }
   .gaia-statistics-lab .gaia-statistics-stage :is(th, td) { padding: 10px; font-size: 11px; }
 }
+
+/* One reading surface at every size: no second copy in the chart sidebar. */
+.gaia-statistics-lab .gaia-statistics-stage[data-result-view="findings"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 0; }
+.gaia-statistics-lab .gaia-statistics-stage[data-result-view="findings"] :is(.gaia-statistics-takeaway, .gaia-statistics-visual) { display: none; }
+.gaia-statistics-lab .gaia-statistics-stage[data-result-view="findings"] .gaia-statistics-stage-header { display: none; }
+.gaia-statistics-lab .gaia-statistics-stage[data-result-view="findings"] .gaia-statistics-view-tabs { grid-row: 1; }
+.gaia-statistics-lab #stat-panel-findings { grid-row: 2; width: 100%; max-width: 1040px; justify-self: center; }
+.gaia-statistics-lab #gaia-statistics-findings > h4 { margin: 8px 0 16px; padding: 0; border: 0; font-size: clamp(21px, 2vw, 28px); line-height: 1.55; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-reading-scope { margin: 10px 0 4px; color: #9eb7bc; font: 400 12px/1.7 var(--font-ui-ja); }
+.gaia-statistics-lab #gaia-statistics-findings > .gaia-statistics-finding { margin: 0; padding: 18px 0; border: 0; border-bottom: 1px solid var(--stat-line); border-radius: 0; background: none; box-shadow: none; }
+.gaia-statistics-lab #gaia-statistics-findings > .gaia-statistics-finding h5 { margin-bottom: 10px; color: #b3d9d0; font-size: 14px; }
+.gaia-statistics-lab #gaia-statistics-findings > .gaia-statistics-finding h5::before { display: none; }
+.gaia-statistics-lab #gaia-statistics-findings > .gaia-statistics-finding > p { max-width: 68ch; font-size: 15px; line-height: 1.85; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 12px; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison :is(th, td) { padding: 10px 18px; border-bottom: 1px solid var(--stat-line); text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison th:first-child { width: 28%; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison thead th { color: #afc7ca; background: #132b343b; font: 400 13px/1.65 var(--font-ui-ja); }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison-record { display: block; min-height: 44px; max-width: 100%; padding: 0; border: 0; border-radius: 0; color: #bce9db; background: none; box-shadow: none; font: 500 15px/1.5 var(--font-ui-ja); text-align: left; white-space: normal; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison thead span { display: block; margin-top: 4px; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison tbody th { color: #c6d8d7; font: 500 14px/1.6 var(--font-ui-ja); }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison small { display: block; color: #96b1b8; font-size: 12px; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison td { color: #dcebe7; font: 400 24px/1.3 'Segoe UI', var(--font-ui-ja); font-variant-numeric: tabular-nums; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison [data-highlight="true"] { background: #a3dec00b; }
+.gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison [data-highlight="true"] td { font-size: 32px; color: #bce9db; }
+.gaia-statistics-lab #gaia-statistics-findings > .gaia-statistics-finding > .gaia-statistics-comparison-note { color: #a5bcc1; font-size: 13px; }
+@media (max-width: 520px) {
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison :is(th, td) { padding: 10px 6px; }
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison thead th { font-size: 11px; }
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison-record { font-size: 12px; }
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison tbody th { font-size: 12px; }
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison td { font-size: 18px; }
+  .gaia-statistics-lab #gaia-statistics-findings .gaia-statistics-comparison [data-highlight="true"] td { font-size: 24px; }
+}

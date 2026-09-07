@@ -30,6 +30,10 @@ const inspect = (page) => page.evaluate(() => {
   const summary = rect("gx-phase-summary");
   const card = rect("gx-story-card");
   const controls = rect("gx-controls");
+  const phaseTitle = get("gx-phase-title");
+  const titleRange = document.createRange();
+  titleRange.selectNodeContents(phaseTitle);
+  const titleRects = [...titleRange.getClientRects()];
   const overlap = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
   const inside = (a) => a.left >= layer.left - 1 && a.right <= layer.right + 1 && a.top >= layer.top - 1 && a.bottom <= layer.bottom + 1;
   const portrait = layer.width <= 620;
@@ -38,6 +42,8 @@ const inspect = (page) => page.evaluate(() => {
   const planetY = layer.top + layer.height * (portrait ? layer.height <= 650 ? 0.3 : 0.36 : story ? 0.5 : 0.48);
   return {
     phase: get("gx-phase-index").textContent.trim(),
+    phaseTitle: phaseTitle.textContent,
+    phaseTitleLines: new Set(titleRects.map((box) => Math.round(box.top))).size,
     summary: get("gx-phase-summary").textContent,
     detailsHidden: get("gx-mobile-info").hidden,
     toggleExpanded: get("gx-mobile-info-toggle").getAttribute("aria-expanded"),
@@ -101,6 +107,8 @@ try {
         }
         assert.equal(state.summary, phases[index].summary, `${label}: wrong summary`);
         assert.equal(state.phase, phases[index].index, `${label}: wrong phase`);
+        assert.equal(state.phaseTitle, phases[index].title, `${label}: wrong title`);
+        assert.equal(state.phaseTitleLines, 1, `${label}: phase title wraps`);
         assert.equal(state.detailsHidden, true, `${label}: details did not reset`);
         assert.equal(state.toggleExpanded, "false");
         assert.equal(state.skip, "スキップ▶");
@@ -113,6 +121,9 @@ try {
         assert(state.guide.length > 0 && state.progressAria !== null, `${label}: missing gesture/progress`);
         await page.locator("#gx-mobile-info-toggle").click();
         assert.equal(await page.locator("#gx-mobile-info").getAttribute("hidden"), null);
+        const expanded = await inspect(page);
+        assert.equal(expanded.phaseTitleLines, 1, `${label}: expanded title wraps`);
+        assert.equal(expanded.phaseTitleOverflow, false, `${label}: expanded title overflow`);
         assert.equal(await page.locator("#gx-phase-copy").textContent(), phases[index].copy);
         await page.locator("#gx-data").scrollIntoViewIfNeeded();
         assert(await page.locator("#gx-data").isVisible(), `${label}: source button inaccessible`);

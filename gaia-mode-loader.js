@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const sharedStylesheet = "./styles.css?v=gaia-prefecture-gis-view-1";
+  const sharedStylesheet = "./styles.css?v=gaia-recycling-country-fill-1";
 
   const groups = Object.freeze({
     exploration: {
@@ -10,19 +10,19 @@
         sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-map-guide-sequence-1",
         "./scene-transition.css?v=gaia-52",
-        "./data-ledger.css?v=gaia-source-link-icons-1",
+        "./data-ledger.css?v=gaia-inline-data-sources-1",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-place-picker-1",
-        "./estat-exhibits.css?v=gaia-annual-history-1",
+        "./estat-exhibits.css?v=gaia-number-stable-1",
         "./firms-exhibit.css?v=gaia-firms-readout-fit-1",
         "./planet-signals-exhibit.css?v=gaia-epicenter-jump-1",
         "./statistics-lab.css?v=gaia-discovery-1",
-        "./statistics-workspace.css?v=gaia-visual-picker-1",
+        "./statistics-workspace.css?v=gaia-readable-comparison-1",
         "./statistics-atmosphere.css?v=gaia-observation-studio-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
         "./map-instrument-ui.css?v=gaia-country-emissions-history-1",
-        "./map-chapter-navigation.css?v=gaia-unified-picker-1",
-        "./map-exhibit-actions.css?v=gaia-realtime-analysis-disabled-1",
+        "./map-chapter-navigation.css?v=gaia-estat-copy-wrap-1",
+        "./map-exhibit-actions.css?v=gaia-estat-copy-wrap-1",
         "./map-exhibit-categories.css?v=gaia-exhibit-profile-1",
         "./ecologies-exhibit.css?v=gaia-ecologies-reading-1",
         "./metric-legend.css?v=gaia-unified-metric-legend-1",
@@ -39,20 +39,20 @@
       scripts: [
         "./mode-entry-guide.js?v=gaia-map-guide-sequence-1",
         "./scene-transition.js?v=gaia-66",
-        "./data-ledger.js?v=gaia-observation-panels-jst-1",
+        "./data-ledger.js?v=gaia-inline-data-sources-1",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-country-coverage-1",
+        "./app-content.js?v=gaia-recycling-country-fill-1",
         "./ecologies-exhibit.js?v=gaia-country-coverage-1",
         "./map-exhibit-categories.js?v=gaia-exhibit-profile-1",
-        "./app.js?v=gaia-prefecture-gis-view-1",
+        "./app.js?v=gaia-poi-manual-1",
         "./map-ui-grid-polish.js?v=gaia-story-map-dock-1",
         "./map-legend-drag.js?v=gaia-story-map-left-ui-1",
         "./map-mobile-shell.js?v=gaia-realtime-analysis-disabled-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-lodging-color-1",
-        "./statistics-lab.js?v=gaia-observation-studio-1",
+        "./src/exploration/index.js?v=gaia-poi-manual-1",
+        "./statistics-lab.js?v=gaia-readable-comparison-1",
       ],
     },
     story: {
@@ -60,7 +60,7 @@
       styles: [
         sharedStylesheet,
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-glitch-double-speed-1",
+        "./novel-mode.css?v=gaia-separator-plus-two-1",
         "./true-end.css?v=gaia-finale-label-mincho-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -74,7 +74,7 @@
         "./novel-back-half-cues.js?v=gaia-story-log-revisions-20260906-1",
         "./novel-temporal.js?v=gaia-temporal-1",
         "./ending-glitch.js?v=gaia-glitch-double-speed-1",
-        "./novel-mode.js?v=gaia-story-log-revisions-20260906-1",
+        "./novel-mode.js?v=gaia-separator-plus-two-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
@@ -89,7 +89,7 @@
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./gx-mode.js?v=gaia-gx-reading-1",
+        "./gx-mode.js?v=gaia-gx-single-line-titles-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
@@ -123,12 +123,12 @@
       styles: [
         sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-map-guide-sequence-1",
-        "./character-mode.css?v=gaia-character-profile-five-lines-1",
+        "./character-mode.css?v=gaia-aoneko-character-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./mode-entry-guide.js?v=gaia-map-guide-sequence-1",
-        "./character-mode.js?v=gaia-character-profile-five-lines-1",
+        "./character-mode.js?v=gaia-aoneko-character-1",
       ],
     },
     tour: {
@@ -141,6 +141,7 @@
   const assetPromises = new Map();
   const groupPromises = new Map();
   const loadedGroups = new Set();
+  const preloadedScripts = new Set();
   const characterPreloader = document.querySelector("#gaia-character-preloader");
   const characterPreloaderStatus = characterPreloader?.querySelector("[data-character-preloader-status]");
   let characterPreloaderShownAt = 0;
@@ -237,6 +238,18 @@
     return promise;
   };
 
+  const preloadScript = (src) => {
+    const absolute = new URL(src, document.baseURI).href;
+    if (assetPromises.has(absolute) || preloadedScripts.has(absolute)) return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "script";
+    link.href = src;
+    link.dataset.gaiaLazyAsset = "preload";
+    preloadedScripts.add(absolute);
+    document.head.append(link);
+  };
+
   const loadModule = (src) => {
     const absolute = new URL(src, document.baseURI).href;
     if (assetPromises.has(absolute)) return assetPromises.get(absolute);
@@ -278,6 +291,9 @@
           ...group.scripts.map(loadScript),
         ]);
       } else {
+        // Fetch the requested group's classic scripts concurrently, but retain
+        // the original evaluation/dependency order and load-error handling.
+        group.scripts.forEach(preloadScript);
         await Promise.all(group.styles.map(loadStyle));
         await Promise.all((group.modules || []).map(loadModule));
         for (const script of group.scripts) await loadScript(script);

@@ -528,7 +528,7 @@
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-country-coverage-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-recycling-country-fill-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -557,9 +557,9 @@
     },
     {
       title: "再資源化率は、国ごとにどう違うのか？",
-      subject: "各国の都市ごみ100%を同じ大きさの円グラフにし、再資源化された割合と、それ以外を地図上で比べます。",
-      reading: "緑の扇形が再資源化率、橙が再資源化として報告されなかった残りです。実線は国連の公開値、破線は近い5か国から補った値です。",
-      action: "左右ボタンかスライダーで収録した国・地域を切り替えます。円グラフを押すと、再資源化率、報告年、国連の出典を確認できます。未収録はゼロや近隣国の推定値で埋めません。",
+      subject: "各国の都市ごみの再資源化率を、国土の青の明るさで比べます。国連の公表値がある国・地域を対象にします。",
+      reading: "国土の青が明るいほど再資源化率が高く、0〜100%の同じ色尺度で比べます。無着色は未収録で、0%とは異なります。報告年は国・地域で異なります。",
+      action: "左右ボタンかスライダーで収録した国・地域を切り替えます。国土を押すと、再資源化率、報告年、国連の出典を確認できます。未収録はゼロや近隣国の推定値で埋めません。",
     },
     {
       title: "化石燃料由来CO₂は、1945年からどこで増えたのか？",
@@ -1191,6 +1191,7 @@
   let co2TimelinePausedUntil = 0;
   let co2TimelineLastStep = -1;
   let co2TimelineHeld = false;
+  let mapTimelineManuallyPaused = false;
   const requestedSourceTab = new URLSearchParams(window.location.search).get("code");
   let activeSourceTab = ["visual", "transform", "raw"].includes(requestedSourceTab)
     ? requestedSourceTab
@@ -1660,10 +1661,14 @@
   const formatModeNumber = (index) => String(index + 1).padStart(2, "0");
   // Public map chapters differ from the unchanged shader/story mode indices.
   const formatMapModeNumber = (index) => modes[index].mapNumber;
+  const observationNumberFormatters = new Map();
   const formatObservationNumber = (value, maximumFractionDigits = 2) => {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return "—";
-    return numeric.toLocaleString("ja-JP", { maximumFractionDigits });
+    if (!observationNumberFormatters.has(maximumFractionDigits)) {
+      observationNumberFormatters.set(maximumFractionDigits, new Intl.NumberFormat("ja-JP", { maximumFractionDigits }));
+    }
+    return observationNumberFormatters.get(maximumFractionDigits).format(numeric);
   };
   const japaneseRegionNames = typeof Intl.DisplayNames === "function"
     ? new Intl.DisplayNames(["ja"], { type: "region" })
@@ -2477,7 +2482,7 @@
     return path;
   };
 
-  const drawRenewableCountryChoropleth = (ctx, rect, rows, selectedIso3, now) => {
+  const drawPercentageCountryChoropleth = (ctx, rect, rows, selectedIso3, now, valueKey, emphasizeSelection = true) => {
     if (mapScope !== "earth" || naturalEarthCountryState !== "ready") {
       return { filledCount: 0, visibleCount: 0 };
     }
@@ -2491,13 +2496,14 @@
     ctx.rect(originX, originY, width, height);
     ctx.clip();
     rows.forEach((row, index) => {
+      if (!Number.isFinite(row[valueKey]) || row[valueKey] < 0 || row[valueKey] > 100) return;
       const path = getNaturalEarthCountryGeographicPath(row.mapIso3 || row.iso3);
       if (!path) return;
       const reveal = getMapPlotReveal(index, rows.length, now);
       if (reveal.progress <= 0) return;
       filledCount += 1;
       visibleCount += reveal.alpha >= 0.12 ? 1 : 0;
-      const ratio = clamp((row.renewablePercent || 0) / 100, 0, 1);
+      const ratio = clamp(row[valueKey] / 100, 0, 1);
       const selected = row.iso3 === selectedIso3;
       const red = Math.round(14 + ratio * 32);
       const green = Math.round(72 + ratio * 158);
@@ -2506,7 +2512,7 @@
         ctx.save();
         ctx.translate(copy.x, copy.y);
         ctx.scale(scale, scale);
-        ctx.fillStyle = `rgba(${red},${green},${blue},${reveal.alpha * (selected ? 0.94 : 0.38 + ratio * 0.5)})`;
+        ctx.fillStyle = `rgba(${red},${green},${blue},${reveal.alpha * (selected && emphasizeSelection ? 0.94 : 0.38 + ratio * 0.5)})`;
         ctx.fill(path, "evenodd");
         ctx.strokeStyle = selected
           ? `rgba(255,239,146,${reveal.alpha * 0.98})`
@@ -2519,6 +2525,9 @@
     ctx.restore();
     return { filledCount, visibleCount };
   };
+
+  const drawRenewableCountryChoropleth = (ctx, rect, rows, selectedIso3, now) =>
+    drawPercentageCountryChoropleth(ctx, rect, rows, selectedIso3, now, "renewablePercent");
 
   const drawAnthropoceneCountryChoropleth = (ctx, rect, rows, selectedIso3, now) => {
     if (mapScope !== "earth" || naturalEarthCountryState !== "ready") {
@@ -3953,24 +3962,21 @@
       const index = clamp(wasteSelectedIndex, 0, Math.max(0, rows.length - 1));
       const selected = rows[index];
       const sourceRecycle = selected?.recyclePercent || 0;
-      const imputed = selected?.valueStatus === "IMPUTED";
       return {
         kind: "waste",
-        phaseLabel: `${imputed ? "近隣5か国から補完" : "国連SDG 12.5.1公式値"} · ${String(index + 1).padStart(2, "0")} / ${String(rows.length).padStart(2, "0")}`,
+        phaseLabel: `国連SDG 12.5.1公表値 · ${String(index + 1).padStart(2, "0")} / ${String(rows.length).padStart(2, "0")}`,
         yearLabel: `${sourceRecycle.toFixed(1)}%`,
-        valueLabel: `${selected ? getCountryNameJa(selected) : "—"} · ${imputed ? "補完値" : `${selected?.year || "—"}年公式値`}`,
-        methodLabel: imputed
-          ? `破線円 / 近隣5か国の中央値（${selected?.donorIso3?.join("・") || "参照国"}）`
-          : "実線円 / 国連SDG 12.5.1の公式値",
+        valueLabel: `${selected ? getCountryNameJa(selected) : "—"} · ${selected?.year || "—"}年公表値`,
+        methodLabel: "国別塗り分け / 都市ごみの再資源化率",
         timeLabel: `国・地域 / 01→${String(rows.length).padStart(2, "0")}`,
         sourceRecycle,
         selectedIndex: index,
         selected,
         legend: [
-          "緑 / 再資源化",
-          "橙 / それ以外",
-          "実線 / 国連公式値",
-          "無表示 / 未収録（ゼロではない）",
+          "国土の青 / 再資源化率",
+          "無着色 / 未収録",
+          "黄色の枠 / 選択中",
+          "濃い青 / 0%",
         ],
       };
     }
@@ -4399,16 +4405,13 @@
     if (signalMode.id === "nothing-is-waste") {
       const rows = signals.countryWaste || [];
       return rows.map((row, sequenceIndex) => {
-        const imputed = row.valueStatus === "IMPUTED";
         return {
           ...row,
           countryJa: getCountryNameJa(row),
           kind: "sequence-poi",
           sequenceIndex,
           sequenceLength: rows.length,
-          meta: imputed
-            ? `計算で補った値 / ${row.recyclePercent.toFixed(1)}% / 近くの5か国を参照`
-            : `${row.year} / ${row.recyclePercent.toFixed(1)}% / 国連の公式データ`,
+          meta: `${row.year}年 / 再資源化率 ${row.recyclePercent.toFixed(1)}% / 国連公表値（国連側の推計を含む）`,
         };
       });
     }
@@ -4452,9 +4455,11 @@
     }
     if (signalMode.id === "earth-organ") {
       const state = getMapSequenceState(signalMode);
-      return (state?.rows || []).map((row) => ({
+      return (state?.rows || []).map((row, sequenceIndex) => ({
         ...row,
         kind: "sequence-poi",
+        sequenceIndex,
+        sequenceLength: state.rows.length,
         lon: row.lon,
         lat: row.lat,
         meta: `${row.year || "—"}年 / 再生可能エネルギー発電割合 ${row.renewablePercent.toFixed(1)}%`,
@@ -4500,7 +4505,7 @@
       ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
       ctx.textAlign = "left"; ctx.textBaseline = "top";
-      const blocks = [primary, secondary, detail].map((text, index) => ({
+      const blocks = (renewable ? [primary, secondary] : [primary, secondary, detail]).map((text, index) => ({
         text: String(text || "—"), font: `400 ${fonts[index]}px ${mapHeadingFont}`, size: fonts[index],
       }));
       const naturalWidth = Math.max(...blocks.map(block => { ctx.font = block.font; return ctx.measureText(block.text).width; }));
@@ -4596,9 +4601,7 @@
       { radius, detail: "NASA POWER · 気候平均値" });
     const drawRenewableObservationLabel = (point, selected, radius = 8) => drawSelectionLabel(point,
       selected.countryJa || selected.country, `再生可能エネルギー発電割合　${selected.renewablePercent.toFixed(1)}%`, null,
-      { radius, renewable: true, detail: `${selected.year}年の値　${selected.potential
-        ? `代表点の日射 ${selected.potential.solarKwhM2Day.toFixed(2)} kWh/㎡/日 · 風 ${selected.potential.windSpeedMs.toFixed(2)} m/s`
-        : "日射・風：代表点の値は未収録"}` });
+      { radius, renewable: true });
     delete japanOverlay.dataset.selectionLabelWidthPx;
     delete japanOverlay.dataset.selectionLabelHeightPx;
     delete japanOverlay.dataset.selectionLabelPrimaryFontPx;
@@ -5332,101 +5335,49 @@
       const sequence = getMapSequenceState(signalMode);
       const rows = signalMode.signals.countryWaste || [];
       const selectedIndex = sequence?.selectedIndex ?? 0;
-      const orderedRows = rows
-        .map((row, index) => ({ row, index }))
-        .sort((a, b) => Number(a.index === selectedIndex) - Number(b.index === selectedIndex));
-      const officialCount = rows.filter((row) => row.valueStatus !== "IMPUTED").length;
-      const baseRadius = clamp(rect.width / 78, 20, 29);
-      const selectedRadius = clamp(rect.width / 34, 46, 62);
-      japanOverlay.dataset.recyclingEncoding = "fixed-diameter-pie";
-      japanOverlay.dataset.recyclingPieCount = String(rows.length);
-      japanOverlay.dataset.recyclingOfficialCount = String(officialCount);
-      japanOverlay.dataset.recyclingImputedCount = String(rows.length - officialCount);
-      japanOverlay.dataset.recyclingSelectedRate = sequence?.sourceRecycle.toFixed(1) || "0.0";
+      const selected = sequence?.selected;
+      const heatmap = drawPercentageCountryChoropleth(ctx, rect, rows, selected?.iso3, now, "recyclePercent", false);
+      japanOverlay.dataset.recyclingEncoding = "country-choropleth";
+      japanOverlay.dataset.recyclingPieCount = "0";
+      japanOverlay.dataset.recyclingCountryCount = String(rows.length);
+      japanOverlay.dataset.recyclingCountryFillCount = String(heatmap.filledCount);
+      japanOverlay.dataset.recyclingVisibleCountryFillCount = String(heatmap.visibleCount);
+      japanOverlay.dataset.recyclingFillScale = "country-blue-0-100";
+      japanOverlay.dataset.recyclingOfficialCount = String(rows.length);
+      japanOverlay.dataset.recyclingImputedCount = "0";
+      japanOverlay.dataset.recyclingSelectedRate = selected?.recyclePercent.toFixed(1) ?? "";
       japanOverlay.dataset.recyclingSelectedIndex = String(selectedIndex);
-      japanOverlay.dataset.recyclingSelectedStatus = sequence?.selected?.valueStatus === "IMPUTED" ? "imputed" : "official";
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      orderedRows.forEach(({ row, index }) => {
-        const point = pointFor(row);
-        if (!visible(point, selectedRadius + 20)) return;
-        const reveal = getMapPlotReveal(index, rows.length, now);
-        if (reveal.progress <= 0) return;
-        const rate = clamp(row.recyclePercent / 100, 0, 1);
-        const selected = index === selectedIndex;
-        const imputed = row.valueStatus === "IMPUTED";
-        const radius = selected ? selectedRadius : baseRadius;
-        const startAngle = -Math.PI / 2;
-        const endAngle = startAngle + rate * Math.PI * 2;
+      japanOverlay.dataset.recyclingSelectedIso3 = selected?.iso3 || "";
+      japanOverlay.dataset.recyclingSelectedStatus = selected ? "official" : "missing";
+      japanOverlay.dataset.countryGeometryState = naturalEarthCountryState;
 
-        ctx.save();
-        applyMapPlotReveal(ctx, point, reveal);
-        ctx.globalAlpha *= imputed && !selected ? 0.72 : 1;
-        ctx.shadowColor = selected ? "rgba(118,255,194,.52)" : "rgba(34,224,153,.22)";
-        ctx.shadowBlur = selected ? 22 : 8;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = selected ? "rgba(255,137,103,.92)" : "rgba(226,116,88,.78)";
-        ctx.fill();
-
-        if (rate > 0.0001) {
+      // Country polygons carry the value. Only a small locator marks the selection.
+      if (selected) {
+        const point = pointFor(selected);
+        const reveal = getMapPlotReveal(selectedIndex, rows.length, now);
+        if (visible(point) && reveal.progress > 0) {
+          ctx.save();
+          applyMapPlotReveal(ctx, point, reveal);
           ctx.beginPath();
-          ctx.moveTo(point.x, point.y);
-          ctx.arc(point.x, point.y, radius, startAngle, endAngle);
-          ctx.closePath();
-          ctx.fillStyle = selected ? "rgba(91,245,169,.98)" : "rgba(76,225,157,.9)";
+          ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,239,146,.98)";
           ctx.fill();
+          ctx.restore();
+          drawSelectionLabel(point, getCountryNameJa(selected),
+            `再資源化率　${selected.recyclePercent.toFixed(1)}%`, null,
+            { radius: 8, detail: `${selected.year}年 · 国連公表値（国連側の推計を含む）` });
         }
-
-        ctx.shadowBlur = 0;
-        ctx.setLineDash(imputed ? [3, 3] : []);
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = selected ? "rgba(238,255,247,.98)" : "rgba(202,255,230,.78)";
-        ctx.lineWidth = selected ? 2.4 : 1.4;
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, selected ? radius * 0.43 : radius * 0.34, 0, Math.PI * 2);
-        ctx.fillStyle = selected ? "rgba(3,18,22,.94)" : "rgba(3,18,22,.82)";
-        ctx.fill();
-
-        if (selected || rect.width >= 900) {
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = "rgba(244,255,250,.98)";
-          ctx.font = selected
-            ? `400 15px ${mapHeadingFont}`
-            : `400 8px ${mapHeadingFont}`;
-          ctx.fillText(`${Math.round(row.recyclePercent)}%`, point.x, point.y + (selected ? -1 : 0));
-        }
-
-        if (selected) {
-          ctx.textBaseline = "alphabetic";
-          drawSelectionLabel(
-            { x: point.x + radius + 7, y: point.y },
-            getCountryNameJa(row),
-            `再資源化率　${row.recyclePercent.toFixed(1)}%${imputed ? "（補完値）" : ""}`,
-            "rgba(138,255,202,.96)",
-            { anchor: point, radius, detail: imputed
-              ? `近隣5か国による補完 · ${row.donorIso3?.join("・") || "参照国は出典を確認"}`
-              : `${row.year ? `${row.year}年` : "報告年不明"} · 国連公式値` },
-          );
-        }
-        ctx.restore();
-      });
-      ctx.restore();
+      }
       drawQuantitativeLegendPanel({
         id: "recycling-rate",
-        title: "再資源化率 / 国・地域別",
-        current: `選択中 ${sequence?.sourceRecycle?.toFixed(1) || "—"}%${sequence?.selected?.valueStatus === "IMPUTED" ? "（補完値）" : ""}`,
-        value: Number(sequence?.sourceRecycle),
+        title: `再資源化率 / ${rows.length}の国・地域`,
+        current: `${selected?.year || "—"}年　${selected?.recyclePercent.toFixed(1) ?? "—"}%`,
+        value: selected?.recyclePercent,
         minimum: 0,
         maximum: 100,
         minimumLabel: "0%",
         maximumLabel: "100%",
-        colors: ["rgb(226,116,88)", "rgb(255,187,98)", "rgb(76,225,157)"],
+        colors: ["rgb(14,72,150)", "rgb(30,151,203)", "rgb(46,230,255)"],
         markerColor: "rgba(244,255,250,.98)",
       });
     } else if (signalMode.id === "anthropocene-scar") {
@@ -6072,9 +6023,7 @@
   const getJapanPoiFocusRadius = (poi, rect) => {
     const signalModeId = getActiveSignalMode()?.id;
     if (poi?.type === "data" && signalModeId === "nothing-is-waste") {
-      const selectedRadius = clamp(rect.width / 34, 46, 62);
-      const baseRadius = clamp(rect.width / 78, 20, 29);
-      return (poi.index === wasteSelectedIndex ? selectedRadius : baseRadius) + 7;
+      return 16;
     }
     if (poi?.type === "data" && signalModeId === "forest-cloud-engine") {
       return Math.max(24, getForestRainRadius(poi.record?.precipitationMmDay) + 7);
@@ -6788,7 +6737,7 @@
         const narratives = {
           "forest-cloud-engine": ["森林 × 雨 / 世界の参照地点", "緑は森林域、水色円は世界の国・地域に置いた参照地点の平均降水量です。直径が大きいほど雨が多く、国平均ではありません。円のない場所を雨量ゼロとは扱いません。"],
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
-          "nothing-is-waste": ["再資源化率 / 国・地域別", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。国連の公表値がある国・地域を、左右ボタンとスライダーで切り替えます。報告年は国で異なり、未収録はゼロや推定値で埋めません。"],
+          "nothing-is-waste": ["再資源化率 / 国・地域別", "国土の青が明るいほど再資源化率が高く、0〜100%の同じ色尺度で比較します。国土を押すか、左右ボタンとスライダーで公表値のある国・地域を切り替えます。無着色は未収録で、0%とは異なります。報告年は国ごとに異なります。"],
           "anthropocene-scar": ["1945—2023年 化石燃料由来CO₂ × 2016年固定夜間光", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
           "three-ecologies": ["都市人口率が高い国は、森が少ない？", "緑は陸地の森林率、青は人口の都市居住率。都市人口率が近い二国、収録国・地域の散布図、文化・記憶を切り替えて比較します。欠測を除外し基準年も異なるため、因果関係の結論ではありません。"],
           "earth-organ": ["再生可能エネルギー発電割合 / 世界の国・地域", "国土の青が明るいほど、総発電量に占める再生可能エネルギーの割合が高い国です。公表値のある国・地域を、高い国から低い国へ移動します。年は国ごとに異なります。日射・風は31代表地点のみの補足で、未収録値は補いません。"],
@@ -7042,7 +6991,7 @@
     requestAnimationFrame(() => window.setTimeout(async () => {
       if (!isCurrent()) return;
       try {
-        const { renderCountryEmissionsHistory } = await import("./src/exploration/country-emissions-history.js?v=gaia-country-emissions-history-1");
+        const { renderCountryEmissionsHistory } = await import("./src/exploration/country-emissions-history.js?v=gaia-render-refactor-1");
         if (!isCurrent()) return;
         renderCountryEmissionsHistory(japanPoiHistory, {
           rows: signalMode.signals.emissions,
@@ -7076,7 +7025,7 @@
     }
     selectedJapanPoi = null;
     japanWaveReplay = null;
-    if (co2TimelineHeld) {
+    if (co2TimelineHeld && !mapTimelineManuallyPaused) {
       co2TimelineHeld = false;
       if (getActiveSignalMode()?.id === "rhythm-of-disaster") {
         resumeTimelineAfterManualSeek();
@@ -7229,6 +7178,8 @@
   };
 
   const openJapanPoi = (poi, clientX, clientY) => {
+    pauseMapTimeline();
+    if (japanLayer.classList.contains("is-firms-exhibit")) globalThis.GaiaFirmsExhibit?.pausePlayback?.();
     if (getActiveSignalMode()?.id === "three-ecologies" && poi.type === "data") {
       if (poi.record.iso3) selectEcologiesCountry(poi.record.iso3, { focus: false });
       else {
@@ -7374,7 +7325,7 @@
 
     const modeDataPois = getModeDataPois();
     if (
-      signalModeId === "anthropocene-scar"
+      ["anthropocene-scar", "nothing-is-waste"].includes(signalModeId)
       && mapScope === "earth"
       && naturalEarthCountryState === "ready"
       && countryHitTestContext
@@ -7404,9 +7355,8 @@
       } else if (signalModeId === "population-tide") {
         hitRadius = Math.max(hitRadius, getPopulationRadius(record.population, rect));
       } else if (signalModeId === "nothing-is-waste") {
-        hitRadius = record.sequenceIndex === wasteSelectedIndex
-          ? clamp(rect.width / 34, 46, 62) + 8
-          : clamp(rect.width / 78, 20, 29) + 8;
+        // Small territories retain a point fallback; larger countries use their borders.
+        hitRadius = touchLikePointer ? 12 : 6;
       }
       considerCandidate({ type: "data", record, index }, point, hitRadius);
     });
@@ -7730,14 +7680,11 @@
     }
     if (signalMode.id === "nothing-is-waste") {
       const state = getMapSequenceState(signalMode);
-      const imputed = state?.selected?.valueStatus === "IMPUTED";
       return {
         output: state?.phaseLabel || "国・地域別の値",
         location: state?.selected ? getCountryNameJa(state.selected) : "—",
-        value: `再資源化率 ${state?.sourceRecycle.toFixed(1) || "—"}% / ${imputed ? "補完値" : "国連公式値"}`,
-        note: imputed
-          ? `${state?.selected ? getCountryNameJa(state.selected) : "この国"}は国連公式値がないため、近隣5か国（${state?.selected?.donorIso3?.join("・") || "参照国"}）の中央値で補完しています。破線は補完値を示し、国別順位や政策評価には使えません。`
-          : `${state?.selected ? getCountryNameJa(state.selected) : "この国"} ${state?.selected?.year || "報告年不明"}。国連SDG 12.5.1の公式値です。実線円の緑が再資源化率、橙がそれ以外です。`,
+        value: `再資源化率 ${state?.sourceRecycle.toFixed(1) || "—"}% / 国連公表値`,
+        note: `${state?.selected ? getCountryNameJa(state.selected) : "この国"} ${state?.selected?.year || "報告年不明"}。国土の青が明るいほど再資源化率が高く、無着色は未収録です。国連公表値には国連側の推計も含み、報告年・定義は国で異なります。`,
         temporal: true,
       };
     }
@@ -7985,7 +7932,7 @@
         ? [
           { label: "表示", value: readout.value },
           { label: "対象国", value: sequence?.selected?.country || "—" },
-          { label: "データ区分", value: sequence?.selected?.valueStatus === "IMPUTED" ? "近隣5か国からの補完値" : `国連公式値 / ${sequence?.selected?.year || "報告年不明"}` },
+          { label: "データ区分", value: `国連公表値（国連側の推計を含む） / ${sequence?.selected?.year || "報告年不明"}` },
         ]
         : [
           { label: "表示", value: readout.value },
@@ -8081,7 +8028,7 @@
     japanLayer.classList.toggle("is-co2-timeline", showTimeline);
     if (showTimeline) {
       co2TimelineDisplay.dataset.phase = timelineState.kind;
-      const timelineTransport = isWasteCountrySelector
+      const timelineTransport = isWasteCountrySelector || mapTimelineManuallyPaused
         ? "手動選択"
         : reducedMotion
         ? signalMode?.id === "rhythm-of-disaster"
@@ -8192,7 +8139,7 @@
       }
       if (isWasteCountrySelector) {
         input.setAttribute("aria-label", "表示する国・地域を選ぶ");
-        input.setAttribute("aria-valuetext", `${sequenceState.selectedIndex + 1}番目、${getCountryNameJa(sequenceState.selected)}、再資源化率 ${sequenceState.sourceRecycle.toFixed(1)}%、${sequenceState.selected.valueStatus === "IMPUTED" ? "補完値" : "国連公式値"}`);
+        input.setAttribute("aria-valuetext", `${sequenceState.selectedIndex + 1}番目、${getCountryNameJa(sequenceState.selected)}、再資源化率 ${sequenceState.sourceRecycle.toFixed(1)}%、${sequenceState.selected.year}年、国連公表値`);
       } else {
         if (signalMode?.id === "earth-organ") {
           input.setAttribute("aria-label", "再生可能電力の国・地域を選ぶ");
@@ -8288,6 +8235,28 @@
     }
     return (clamp(position, 0, 100) / 100) * duration;
   };
+
+  const pauseMapTimeline = () => {
+    // Story detours keep their existing completion lifecycle; exploration stays manual.
+    if (!storyModeDetour) mapTimelineManuallyPaused = true;
+    co2TimelineHeld = true;
+    co2TimelinePausedUntil = 0;
+    ecologiesPlaying = false;
+    globalThis.GaiaMapDemo?.stop?.("interaction");
+  };
+
+  const resumeMapTimeline = () => {
+    if (!japanIsOpen || storyModeDetour) return;
+    mapTimelineManuallyPaused = false;
+    co2TimelineHeld = false;
+    co2TimelinePausedUntil = 0;
+    co2TimelineLastStep = -1;
+    const signalMode = getActiveSignalMode();
+    if (signalMode?.id === "three-ecologies") ecologiesPlaying = true;
+    co2TimelineStartedAt = performance.now() - getTimelineElapsedForPosition(signalMode, signalTimePosition, getActiveTimelineDuration());
+    updateSignalInterface();
+  };
+  addEventListener("gaia:map-playback-resume", resumeMapTimeline);
 
   const resumeTimelineAfterManualSeek = (now = performance.now()) => {
     co2TimelineLastStep = -1;
@@ -8402,6 +8371,7 @@
     co2TimelinePausedUntil = 0;
     co2TimelineLastStep = -1;
     co2TimelineHeld = false;
+    mapTimelineManuallyPaused = false;
     earthquakeYearTransition.generation = -1;
     earthquakeYearTransition.currentYear = "";
     earthquakeYearTransition.currentEvents = [];
@@ -8534,10 +8504,10 @@ drawNonGeographicRelationNetwork(documented); // no location, frequency, or stre
 // A blank map area is not absence. Never connect a GloBI relation to a GBIF point.`,
     "nothing-is-waste": `const observed = latestPublishedCountryValues(unSdgAllPages); // SOURCE
 // Exclude regional aggregates; keep missing countries missing, never zero or neighbor-filled.
-// Percentages outside 0–100 remain in the source audit, not clamped into a pie.
+// Percentages outside 0–100 remain in the source audit, not clamped into the map.
 const country = observed[countrySelectorIndex]; // slider or arrow buttons
-drawFixedDiameterPie({ recycled: country.recyclePercent, other: 100 - country.recyclePercent });
-drawOutline("SOLID");
+drawCountryChoropleth(observed, { key: "recyclePercent", range: [0, 100], palette: "blue" });
+highlightCountry(country.iso3); // Selection changes the outline, not the percentage.
 // Reporting years and definitions differ; source estimates retain Nature/footnotes.
 showCountryValue({
   country: country.country,
@@ -8825,6 +8795,10 @@ for (const country of countryValues) {
   });
 
   signalTimeInputs.forEach((input) => {
+    input.addEventListener("pointerdown", () => { if (!storyModeDetour) pauseMapTimeline(); });
+    input.addEventListener("keydown", (event) => {
+      if (!storyModeDetour && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) pauseMapTimeline();
+    });
     input.addEventListener("input", () => {
       const activeSignalMode = getActiveSignalMode();
       const isWasteCountrySelector = activeSignalMode?.id === "nothing-is-waste";
@@ -8843,8 +8817,14 @@ for (const country of countryValues) {
       }
       if (japanIsOpen) {
         if (getActiveSignalMode()?.id === "three-ecologies") ecologiesPlaying = false;
-        co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
-        resumeTimelineAfterManualSeek();
+        if (storyModeDetour) {
+          co2TimelineHeld = storyModeDetour.phase === "temperature-anomaly";
+          resumeTimelineAfterManualSeek();
+        } else {
+          pauseMapTimeline();
+          closeJapanPoi();
+          clearJapanPoiHover();
+        }
       }
       signalTimeInputs.forEach((peer) => {
         if (peer !== input) peer.value = String(isWasteCountrySelector ? wasteSelectedIndex : signalTimePosition);
@@ -10042,6 +10022,10 @@ for (const country of countryValues) {
   });
 
   japanMap.addEventListener("keydown", (event) => {
+    // POI buttons and sliders own their keys; map panning must not cancel
+    // native activation or turn a manual range adjustment into a map gesture.
+    if (event.target instanceof Element && event.target !== japanMap
+      && event.target.closest("button, input, select, textarea, [role='button'], [role='slider'], a[href], [contenteditable='true']")) return;
     const movement = event.shiftKey ? 110 : 46;
     if (
       mapScope === "earth" &&
@@ -10285,7 +10269,12 @@ for (const country of countryValues) {
     }
     const activeLiveId = japanLayer.dataset.liveExhibit;
     const liveExhibit = globalThis.GaiaLiveExhibits?.definitions?.find?.((candidate) => candidate.id === activeLiveId);
-    if (liveExhibit) {
+    const exhibitSources = globalThis.GaiaEstatExhibits?.getSourceInfo?.()
+      || globalThis.GaiaFirmsExhibit?.getSourceInfo?.()
+      || globalThis.GaiaPlanetSignals?.getSourceInfo?.();
+    if (exhibitSources) {
+      dataLedger.updateExhibitSources(exhibitSources);
+    } else if (liveExhibit) {
       dataLedger.updateLiveExhibit(liveExhibit, globalThis.GaiaLiveData?.getState?.() || {});
     } else {
       const signalMode = getActiveSignalMode();
@@ -10303,7 +10292,8 @@ for (const country of countryValues) {
     japanDataPanel.setAttribute("aria-hidden", "false");
     japanDataScrim.setAttribute("aria-hidden", "false");
     japanDataScrim.tabIndex = 0;
-    japanDataButton.setAttribute("aria-expanded", "true");
+    japanLayer.querySelectorAll('[aria-controls="japan-data-panel"]').forEach(button => button.setAttribute("aria-expanded", "true"));
+    japanDataPanel.querySelector(".japan-data-scroll").scrollTop = 0;
     japanLayer.classList.add("japan-data-open");
     requestAnimationFrame(() => japanDataClose.focus({ preventScroll: true }));
   };
@@ -10325,7 +10315,7 @@ for (const country of countryValues) {
     japanDataPanel.setAttribute("aria-hidden", "true");
     japanDataScrim.setAttribute("aria-hidden", "true");
     japanDataScrim.tabIndex = -1;
-    japanDataButton.setAttribute("aria-expanded", "false");
+    japanLayer.querySelectorAll('[aria-controls="japan-data-panel"]').forEach(button => button.setAttribute("aria-expanded", "false"));
     japanLayer.classList.remove("japan-data-open");
     if (restoreFocus && document.activeElement !== focusTarget) {
       focusTarget.focus({ preventScroll: true });
@@ -10968,8 +10958,14 @@ for (const country of countryValues) {
     },
     setSignalTime: (position) => {
       signalTimePosition = clamp(Number(position) || 0, 0, 100);
-      co2TimelineHeld = false;
-      resumeTimelineAfterManualSeek();
+      if (storyModeDetour) {
+        co2TimelineHeld = false;
+        resumeTimelineAfterManualSeek();
+      } else {
+        pauseMapTimeline();
+        closeJapanPoi();
+        clearJapanPoiHover();
+      }
       signalTimeInputs.forEach((input) => { input.value = String(signalTimePosition); });
       updateSignalInterface();
       return signalTimePosition;
@@ -11013,7 +11009,9 @@ for (const country of countryValues) {
     },
     getTourReceipt,
     captureObservation: captureMapObservation,
-    getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen }),
+    pauseTimeline: pauseMapTimeline,
+    resumeTimeline: resumeMapTimeline,
+    getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen, timelineManuallyPaused: mapTimelineManuallyPaused, timelineHeld: co2TimelineHeld }),
   });
   globalThis.GaiaMapObservationAdapter = mapObservationAdapter;
   const focusEcologiesLocation = (row, label) => {
@@ -11035,6 +11033,7 @@ for (const country of countryValues) {
     const rows = getThreeEcologiesComparison(mode.signals)?.rows || [];
     const index = rows.findIndex(row => row.iso3 === iso3);
     if (index < 0) return;
+    pauseMapTimeline();
     closeJapanPoi(); clearJapanPoiHover();
     ecologiesPlaying = false; co2TimelineHeld = true;
     signalTimePosition = ((index + .5) / rows.length) * 100;
@@ -11045,16 +11044,19 @@ for (const country of countryValues) {
   const ecologiesExhibit = globalThis.GaiaEcologiesExhibit?.mount(japanLayer, {
     select: selectEcologiesCountry,
     view: view => {
+      pauseMapTimeline();
       ecologiesView = view; ecologiesPlaying = false; co2TimelineHeld = true; closeJapanPoi(); clearJapanPoiHover();
       const heading = japanLayer.querySelector("#map-guide-title");
       if (heading) heading.textContent = view === "culture" ? "割合では語れない、場所の意味。" : "都市人口率が高い国は、森が少ない？";
     },
     play: () => {
+      mapTimelineManuallyPaused = false;
       ecologiesPlaying = !ecologiesPlaying; co2TimelineHeld = !ecologiesPlaying;
       co2TimelinePausedUntil = 0;
       co2TimelineStartedAt = performance.now() - (signalTimePosition / 100) * getActiveTimelineDuration();
     },
     site: index => {
+      pauseMapTimeline();
       ecologiesCultureIndex = index;
       const site = getActiveSignalMode()?.signals?.culture?.[index];
       if (site) focusEcologiesLocation(site, "ecologies-culture");
@@ -11404,9 +11406,23 @@ for (const country of countryValues) {
       return;
     }
     if (japanIsOpen) {
-      if (event.key === "Escape" && japanDataIsOpen) {
-        closeJapanData();
-      } else if (event.key === "Escape" && selectedJapanPoi) {
+      if (japanDataIsOpen) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeJapanData();
+        } else if (event.key === "Tab") {
+          const targets = [...japanDataPanel.querySelectorAll('button, a[href], [tabindex="0"]')]
+            .filter(element => !element.disabled && element.getClientRects().length > 0);
+          const first = targets[0], last = targets.at(-1);
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault(); last?.focus({ preventScroll: true });
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first?.focus({ preventScroll: true });
+          }
+        }
+        return;
+      }
+      if (event.key === "Escape" && selectedJapanPoi) {
         closeJapanPoi({ restoreFocus: true });
       } else if (event.key === "Escape" || event.key.toLowerCase() === "j") {
         event.preventDefault();

@@ -1,5 +1,6 @@
 // Annual country totals from the already-loaded GCB snapshot. No interpolation,
 // land-use emissions, night-light conversion or additional network data.
+import { formatJapaneseNumber } from "../shared/number-format.js";
 export function getCountryEmissionsSeries(rows, iso3) {
   if (!iso3 || !Array.isArray(rows)) return [];
   const years = new Map();
@@ -43,7 +44,7 @@ export function renderCountryEmissionsHistory(container, { rows, iso3, country, 
     if (text != null) node.textContent = text;
     return node;
   };
-  const number = (value, digits = 1) => value.toLocaleString("ja-JP", { maximumFractionDigits: digits });
+  const number = (value, digits = 1) => formatJapaneseNumber(value, digits);
   if (!series.length) {
     container.replaceChildren(element("p", "country-emissions-status", "この国には表示できる経年データがありません。"));
     container.dataset.state = "empty";

@@ -5,6 +5,11 @@
   "type": "module",
   "description": "惑星の放課後 — GAIA SENSATION — pure HTML/CSS/JavaScript installation",
   "scripts": {
+    "check:inline-sources:browser": "node scripts/check-inline-data-sources-browser.mjs",
+    "check:render-refactor": "node scripts/check-render-utilities.mjs && node scripts/check-mode-loader-prefetch.mjs",
+    "check:render-refactor:browser": "node scripts/check-refactor-equivalence-browser.mjs",
+    "check:estat-copy:browser": "node scripts/check-estat-copy-layout-browser.mjs",
+    "postcheck": "npm run check:render-refactor",
     "check:exhibit-profiles:browser": "node scripts/check-map-exhibit-profiles-browser.mjs",
     "check:place-picker:browser": "node scripts/check-observation-place-picker-browser.mjs",
     "check:place-inline:browser": "node scripts/check-observation-place-inline-browser.mjs",

@@ -11,6 +11,13 @@ const gxStyles = read("gx-mode.css");
 const readingStyles = read("gx-reading-layout.css");
 const novel = read("novel-mode.js");
 const loader = read("gaia-mode-loader.js");
+const phases = JSON.parse(read("data/gx-deep-time.json")).phases;
+
+for (const phase of phases) {
+  assert(Array.from(phase.title).length <= 11, `${phase.id}: keep the title concise for one-line mobile display`);
+  assert(gx.includes(`title: ${JSON.stringify(phase.title)}`), `${phase.id}: fallback title differs from the data`);
+}
+assert(html.includes(`<h3 id="gx-phase-title">${phases[0].title}</h3>`), "Initial GX title differs from the data");
 
 assert.match(novel, /if \(!\["map01", "gx"\]\.includes\(step\.interaction\.kind\)\) \{/u);
 assert.doesNotMatch(novel, /水面の操作[^\n]*\/ 3/u);
@@ -33,7 +40,7 @@ assert.match(gx, /event\.key === "Enter" \|\| event\.key === " "/u);
 assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルをスキップして戻る"[\s\S]{0,240}<span>スキップ<\/span><b aria-hidden="true">▶<\/b>/u);
 assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルをスキップして\$\{returnTo === "novel" \? "ストーリー" : "入口"\}へ戻る/u);
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
-assert.match(loader, /gx-mode\.js\?v=gaia-gx-reading-1/u);
+assert.match(loader, /gx-mode\.js\?v=gaia-gx-single-line-titles-1/u);
 assert.match(loader, /novel-mode\.js\?v=/u);
 assert.match(loader, /gx-mode\.css\?v=gaia-gx-reading-1/u);
 assert.match(loader, /gx-reading-layout\.css\?v=gaia-gx-reading-1/u);

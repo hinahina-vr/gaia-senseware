@@ -1,6 +1,7 @@
+import { formatJapaneseNumber } from "../shared/number-format.js";
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-japan-center-1";
 import { earthBaseScale, earthLongitudeToMapX as mapLongitude } from "./world-projection.js?v=gaia-japan-center-1";
-import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-realtime-analysis-disabled-1";
+import { decorateMapActions } from "./map-exhibit-actions.js?v=gaia-inline-data-sources-1";
 import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-japan-center-1";
 import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
 import { createMetricLegend, updateMetricLegend } from "./metric-legend.js?v=gaia-observation-mincho-1";
@@ -166,10 +167,7 @@ const clamp01 = (value) => clamp(value, 0, 1);
 const average = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 const asFinite = (value, fallback = 0) => value !== null && value !== undefined && value !== ""
   && Number.isFinite(Number(value)) ? Number(value) : fallback;
-const formatNumber = (value, decimals = 1) => Number(value).toLocaleString("ja-JP", {
-  minimumFractionDigits: decimals,
-  maximumFractionDigits: decimals,
-});
+const formatNumber = (value, decimals = 1) => formatJapaneseNumber(Number(value), decimals, decimals);
 const formatJst = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "時刻不明";
@@ -835,10 +833,6 @@ const renderReadout = (definition, data) => {
   legend.querySelector("[data-planet-detail-caption]").textContent = definition.caption;
   readout.querySelector("[data-planet-state]").textContent = data.sourceState;
   readout.querySelector("[data-planet-time]").textContent = formatJst(data.observedAt);
-  const source = readout.querySelector("[data-planet-source-link]");
-  source.href = definition.sourcePage;
-  source.title = definition.sourceName;
-  source.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
   updatePlanetLegend(definition, data);
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
@@ -906,10 +900,6 @@ const select = async (index) => {
   readout.querySelector("[data-planet-epicenter-name]").textContent = "読み込み中";
   readout.querySelector("[data-planet-secondary-b-item]").hidden = definition.renderer === "quake";
   readout.querySelector("[data-planet-secondary-b-label]").textContent = definition.renderer === "quake" ? "最大震源" : "—";
-  const sourceLink = readout.querySelector("[data-planet-source-link]");
-  sourceLink.href = definition.sourcePage;
-  sourceLink.title = definition.sourceName;
-  sourceLink.setAttribute("aria-label", `${definition.sourceName}のデータ出典を確認する（新しいタブ）`);
   readout.querySelector("[data-planet-kicker]").textContent = `${definition.number} / CONNECTING`;
   readout.querySelector("[data-planet-primary]").textContent = "—";
   readout.querySelector("[data-planet-unit]").textContent = "";
@@ -1071,7 +1061,7 @@ const mount = () => {
       <button type="button" data-planet-epicenter hidden disabled><small>最大震源</small><strong data-planet-epicenter-name></strong><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="5"/><path d="M10 1v5m0 8v5M1 10h5m8 0h5"/></svg></button>
     </div>
     <div class="gaia-planet-copy"><p data-planet-caption></p><small><b data-planet-state>FETCHING</b> · <time data-planet-time>—</time></small></div>
-    <div class="gaia-planet-source"><a data-planet-source-link target="_blank" rel="noopener noreferrer"></a><button type="button" data-planet-analysis disabled></button></div>
+    <div class="gaia-planet-source"><button type="button" data-planet-source-link></button><button type="button" data-planet-analysis disabled></button></div>
   `;
   decorateMapActions(readout.querySelector(".gaia-planet-source"), readout.querySelector("[data-planet-source-link]"), readout.querySelector("[data-planet-analysis]"));
   realtimeStatus = createRealtimeStatus();
@@ -1119,6 +1109,21 @@ globalThis.GaiaPlanetSignals = Object.freeze({
   select,
   deactivate,
   findPoiAt,
+  getSourceInfo: () => {
+    if (activeIndex < 0) return null;
+    const definition = DEFINITIONS[activeIndex];
+    return {
+      number: definition.number,
+      shortTitle: definition.shortTitle,
+      datasets: [{
+        id: definition.id,
+        title: definition.sourceName,
+        organisation: definition.loader === "earthquake" ? "USGS" : definition.loader === "air" ? "Open-Meteo / CAMS" : "Open-Meteo / DWD・ECMWFほか",
+        url: definition.sourcePage,
+        attributionNote: definition.caption,
+      }],
+    };
+  },
   getState: () => ({
     active: activeIndex >= 0,
     id: activeIndex >= 0 ? DEFINITIONS[activeIndex].id : null,

@@ -77,7 +77,7 @@
     }
 
     section.append(heading, title, organisation, links);
-    if (dataset.attributionNote) section.append(element("p", "data-ledger-organisation", dataset.attributionNote));
+    if (dataset.attributionNote) section.append(element("p", "data-ledger-attribution", dataset.attributionNote));
     return section;
   };
 
@@ -186,6 +186,19 @@
       elements.sources.replaceChildren(renderDataset(dataset, 0));
     };
 
+    const updateExhibitSources = (exhibit) => {
+      elements.title.textContent = `${exhibit.number} ${exhibit.shortTitle}`;
+      elements.question.textContent = "";
+      elements.act.textContent = "DATA SOURCES";
+      elements.state.textContent = `${exhibit.datasets.length}種類のデータを使用`;
+      elements.updated.textContent = "";
+      elements.historyState.hidden = true;
+      elements.historyUpdated.hidden = true;
+      elements.liveState.hidden = true;
+      elements.liveUpdated.hidden = true;
+      elements.sources.replaceChildren(...exhibit.datasets.map(renderDataset));
+    };
+
     const updateOsm = () => {};
 
     const updateJma = ({ state, eventCount = 0, observationCount = 0, retrievedAt }) => {
@@ -215,6 +228,7 @@
     return Object.freeze({
       updateMode,
       updateLiveExhibit,
+      updateExhibitSources,
       updateOsm,
       updateJma,
       updateUsgs,

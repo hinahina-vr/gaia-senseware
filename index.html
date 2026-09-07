@@ -173,14 +173,14 @@
     <script src="./opening-audio.js?v=gaia-heard-tracks-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-route-glint-replay-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-live-glass-20260907-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-number-stable-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
       <div class="gaia-character-preloader__field" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="gaia-character-preloader__shell">
         <p>CHARACTER ARCHIVE / LINK 03</p>
-        <strong>三人の観測記録をひらいています</strong>
+        <strong>観測者たちの記録をひらいています</strong>
         <div class="gaia-character-preloader__rail" aria-hidden="true"><i></i></div>
         <span data-character-preloader-status>PORTRAIT DATA / CONNECTING</span>
       </div>
@@ -725,7 +725,7 @@
           <section class="character-book-hero" id="character-book-hero">
             <div class="character-book-hero-copy">
               <h2 id="character-book-title"><span>CHARACTER</span><small>キャラクター設定</small></h2>
-              <p class="character-book-lead" id="character-book-description">三つの視点が、ひとつの地球を見つめている。</p>
+              <p class="character-book-lead" id="character-book-description">四つの視点が、ひとつの地球を見つめている。</p>
 
               <nav class="character-book-selector" aria-label="キャラクターを選ぶ">
                 <button type="button" data-character-select="amane" aria-current="true" aria-label="あめ｜雨宮 周を表示">
@@ -736,6 +736,9 @@
                 </button>
                 <button type="button" data-character-select="sakuya" aria-current="false" aria-label="saku｜木下 咲弥を表示">
                   <span><img src="/assets/characters/sakuya-calm-07-v1.png?v=gaia-character-profile-1" alt="" width="920" height="1840" /></span>
+                </button>
+                <button type="button" data-character-select="aoneko" aria-current="false" aria-label="青猫を表示">
+                  <span><img src="/assets/characters/aoneko-silhouette.svg?v=gaia-character-expression-hover-1" alt="" width="920" height="1840" /></span>
                 </button>
               </nav>
 
@@ -765,7 +768,7 @@
                 decoding="async"
                 fetchpriority="high"
               />
-              <figcaption><span id="character-book-current">01</span> / 03</figcaption>
+              <figcaption><span id="character-book-current">01</span> / 04</figcaption>
             </figure>
             <a class="character-book-scroll-cue" href="#character-book-cg"><span>STORY CG</span><i aria-hidden="true"></i></a>
             <div class="character-book-wave" aria-hidden="true"></div>
@@ -972,7 +975,7 @@
                   type="button"
                   data-character-gallery-open
                   data-intro-guide="character"
-                  aria-label="三人の観測者を開く"
+                  aria-label="キャラクター設定を開く"
                   aria-haspopup="dialog"
                   aria-controls="character-book-layer"
                 >
@@ -987,7 +990,7 @@
                     </svg>
                   </span>
                   <strong>登場人物の記録</strong>
-                  <p>3人の役割と設定スケッチ</p>
+                  <p>4人の役割と設定スケッチ</p>
                   <span class="intro-path-enter">CHARACTER FILE <b aria-hidden="true">→</b></span>
                 </button>
                 <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open data-intro-guide="sound" aria-haspopup="dialog" aria-controls="sound-layer">
@@ -1850,6 +1853,8 @@
         <aside
           class="japan-data-panel"
           id="japan-data-panel"
+          role="dialog"
+          aria-modal="true"
           aria-label="世界地図で使用しているオープンデータと表現方法"
           aria-hidden="true"
         >
@@ -1980,7 +1985,7 @@
 
                 <div class="gaia-statistics-view-tabs" role="tablist" aria-label="分析結果の表示">
                   <button id="stat-view-chart" type="button" role="tab" data-stat-view="chart" aria-selected="true" aria-controls="gaia-statistics-visual">グラフ</button>
-                  <button id="stat-view-findings" type="button" role="tab" data-stat-view="findings" aria-selected="false" aria-controls="stat-panel-findings" tabindex="-1">データからみるインサイト</button>
+                  <button id="stat-view-findings" type="button" role="tab" data-stat-view="findings" aria-selected="false" aria-controls="stat-panel-findings" tabindex="-1">分かること</button>
                   <button id="stat-view-values" type="button" role="tab" data-stat-view="values" aria-selected="false" aria-controls="stat-panel-values" tabindex="-1">数値の内訳</button>
                   <button id="stat-view-records" type="button" role="tab" data-stat-view="records" aria-selected="false" aria-controls="stat-panel-records" tabindex="-1">観測データ</button>
                   <button id="stat-view-insights" type="button" role="tab" data-stat-view="insights" aria-selected="false" aria-controls="stat-panel-insights" tabindex="-1">分析の補足</button>
@@ -1988,7 +1993,7 @@
 
                 <section class="gaia-statistics-takeaway" id="gaia-statistics-takeaway" aria-labelledby="gaia-statistics-takeaway-title" aria-live="polite">
                   <div class="gaia-statistics-takeaway-copy">
-                    <p>データからみるインサイト</p>
+                    <p>このデータから分かること</p>
                     <h4 id="gaia-statistics-takeaway-title">データを読み込んでいます</h4>
                     <p id="gaia-statistics-takeaway-body">分析が完了すると、ここに要点を短く表示します。</p>
                   </div>
@@ -2069,7 +2074,7 @@
                 </details>
 
                 <details class="gaia-statistics-findings-panel" id="stat-panel-findings" data-stat-panel="findings" role="tabpanel" aria-labelledby="stat-view-findings">
-                  <summary>インサイトの詳細</summary>
+                  <summary>比較した記録と読み方</summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="インサイトを閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-findings" id="gaia-statistics-findings" aria-live="polite" tabindex="-1"></div>
                 </details>
@@ -2132,7 +2137,7 @@
               <span id="gx-phase-index">01 / 08</span>
               <span class="gx-kind" id="gx-kind" data-kind="SOURCE">SOURCE</span>
             </p>
-            <h3 id="gx-phase-title">岩石より先に、水の記憶がある。</h3>
+            <h3 id="gx-phase-title">結晶に残る、水の記憶。</h3>
             <p class="gx-summary" id="gx-phase-summary">地球史の記録を読み込んでいます。</p>
             <button
               class="gx-mobile-info-toggle"

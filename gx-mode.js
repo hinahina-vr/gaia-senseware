@@ -95,14 +95,14 @@
     notice: "地質年代の幅と研究上の解釈を、鑑賞用の時間軸へ変換した展示です。",
     snapshotDate: "2026-08-03",
     phases: [
-      { id: "hadean", index: "01 / 08", kind: "SOURCE", time: "約46–40億年前 / 冥王代", title: "岩石より先に、水の記憶がある。", copy: "地球が冷え、海が生まれました。わずかに残るジルコンが、初期の地表環境を伝えます。", marker: "ジルコン結晶・最古級の岩石", guide: "地球へ触れ、結晶の記録を見つけてください。", action: "最初の生命へ進む" },
-      { id: "archean-life", index: "02 / 08", kind: "SOURCE", time: "約40–25億年前 / 太古代", title: "生命が、海に層をつくる。", copy: "微生物マットが泥を取り込み、ストロマトライトをつくりました。", marker: "ストロマトライト・微生物マット", guide: "海を生命で満たしてください。", action: "酸素の行方を見る" },
-      { id: "proterozoic-oxygen", index: "03 / 08", kind: "SOURCE", time: "約25億–5億3900万年前 / 原生代", title: "酸素が、海と大陸を赤くする。", copy: "酸素が鉄と結びつき、縞状鉄鉱層と赤色層を残しました。", marker: "縞状鉄鉱層・赤色層・氷砕岩", guide: "触れると酸化の層が広がります。", action: "石炭の森へ進む" },
+      { id: "hadean", index: "01 / 08", kind: "SOURCE", time: "約46–40億年前 / 冥王代", title: "結晶に残る、水の記憶。", copy: "地球が冷え、海が生まれました。わずかに残るジルコンが、初期の地表環境を伝えます。", marker: "ジルコン結晶・最古級の岩石", guide: "地球へ触れ、結晶の記録を見つけてください。", action: "最初の生命へ進む" },
+      { id: "archean-life", index: "02 / 08", kind: "SOURCE", time: "約40–25億年前 / 太古代", title: "生命が、海に層を刻む。", copy: "微生物マットが泥を取り込み、ストロマトライトをつくりました。", marker: "ストロマトライト・微生物マット", guide: "海を生命で満たしてください。", action: "酸素の行方を見る" },
+      { id: "proterozoic-oxygen", index: "03 / 08", kind: "SOURCE", time: "約25億–5億3900万年前 / 原生代", title: "酸素が、海と陸を赤く。", copy: "酸素が鉄と結びつき、縞状鉄鉱層と赤色層を残しました。", marker: "縞状鉄鉱層・赤色層・氷砕岩", guide: "触れると酸化の層が広がります。", action: "石炭の森へ進む" },
       { id: "paleozoic-coal", index: "04 / 08", kind: "SOURCE", time: "約5億3900万–2億5200万年前 / 古生代", title: "森が、空気を石へ渡す。", copy: "湿地の植物が埋没し、長い時間をかけて石炭層になりました。", marker: "殻化石・植物化石・石炭層", guide: "湿地をなぞり、植物の炭素を地層へ渡してください。", action: "衝突の境界へ進む" },
-      { id: "mesozoic-impact", index: "05 / 08", kind: "SOURCE", time: "約2億5200万–6600万年前 / 中生代", title: "一日の衝突が、時代の境界になる。", copy: "約6600万年前の衝突は、イリジウムを含む薄い境界層を残しました。", marker: "K–Pg境界・イリジウム濃集層", guide: "地球へ触れ、境界層を一周させてください。", action: "氷と花粉の時代へ進む" },
-      { id: "cenozoic-climate", index: "06 / 08", kind: "SOURCE", time: "6600万年前–現在 / 新生代", title: "気候の往復を、氷と花粉が覚えている。", copy: "氷河堆積物や花粉が、寒冷期と温暖期の往復を記録しています。", marker: "花粉・微化石・氷河堆積物", guide: "上下になぞり、氷と植生の記録を重ねてください。", action: "人間の層へ進む" },
-      { id: "anthropocene", index: "07 / 08", kind: "DERIVED", time: "20世紀半ば–現在 / 非公式概念", title: "都市が、未来の化石になる。", copy: "コンクリート、プラスチック、燃焼粒子、放射性核種が急な変化を残します。", marker: "コンクリート・プラスチック・フライアッシュ・放射性核種", guide: "都市へ触れると人工物の層と大気負荷が増えます。", action: "まだない地層へ進む" },
-      { id: "gaia-transformation", index: "08 / 08", kind: "SCENARIO", time: "現在–未来 / GX", title: "次の地層は、まだ決まっていない。", copy: "地球の信号を読み、人間の技術や暮らしも変える相互進化をGXと呼びます。", marker: "未定 — 私たちがこれから残す層", guide: "地球へ大きな円を描き、二つの時間を重ねてください。", action: "展示を終える" },
+      { id: "mesozoic-impact", index: "05 / 08", kind: "SOURCE", time: "約2億5200万–6600万年前 / 中生代", title: "衝突が、時代を分ける。", copy: "約6600万年前の衝突は、イリジウムを含む薄い境界層を残しました。", marker: "K–Pg境界・イリジウム濃集層", guide: "地球へ触れ、境界層を一周させてください。", action: "氷と花粉の時代へ進む" },
+      { id: "cenozoic-climate", index: "06 / 08", kind: "SOURCE", time: "6600万年前–現在 / 新生代", title: "氷と花粉が語る気候。", copy: "氷河堆積物や花粉が、寒冷期と温暖期の往復を記録しています。", marker: "花粉・微化石・氷河堆積物", guide: "上下になぞり、氷と植生の記録を重ねてください。", action: "人間の層へ進む" },
+      { id: "anthropocene", index: "07 / 08", kind: "DERIVED", time: "20世紀半ば–現在 / 非公式概念", title: "都市が、未来の化石に。", copy: "コンクリート、プラスチック、燃焼粒子、放射性核種が急な変化を残します。", marker: "コンクリート・プラスチック・フライアッシュ・放射性核種", guide: "都市へ触れると人工物の層と大気負荷が増えます。", action: "まだない地層へ進む" },
+      { id: "gaia-transformation", index: "08 / 08", kind: "SCENARIO", time: "現在–未来 / GX", title: "次の地層は、まだ白紙。", copy: "地球の信号を読み、人間の技術や暮らしも変える相互進化をGXと呼びます。", marker: "未定 — 私たちがこれから残す層", guide: "地球へ大きな円を描き、二つの時間を重ねてください。", action: "展示を終える" },
     ],
     sources: [],
   };
@@ -288,7 +288,7 @@
   const loadExhibit = async () => {
     if (loaded) return;
     try {
-      const response = await fetch("./data/gx-deep-time.json?v=gx-reading-1", { cache: "no-store" });
+      const response = await fetch("./data/gx-deep-time.json?v=gx-single-line-titles-1", { cache: "no-store" });
       if (!response.ok) throw new Error(`GX data ${response.status}`);
       const data = await response.json();
       if (Array.isArray(data.phases) && data.phases.length) exhibit = data;

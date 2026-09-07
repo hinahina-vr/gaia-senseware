@@ -45,7 +45,7 @@ const disableRealtimeAnalysis = button => {
 };
 
 // Reuse the canonical 01–09 dock icons, including their gradient fills.
-// Keep each exhibit's source URL and analysis handler on the original element.
+// All source actions open the in-page ledger; external links live inside it.
 export const decorateMapActions = (container, source, analysis) => {
   container.classList.add("gaia-map-actions");
   container.setAttribute("aria-label", "データの出典と統計分析");
@@ -74,7 +74,13 @@ export const decorateMapActions = (container, source, analysis) => {
     strong.textContent = label;
     copy.append(small, strong);
     button.replaceChildren(icon, copy);
-    if (kind === "analysis") {
+    if (kind === "source") {
+      button.setAttribute("aria-label", "データの出典をページ内に表示する");
+      button.setAttribute("aria-haspopup", "dialog");
+      button.setAttribute("aria-controls", "japan-data-panel");
+      button.setAttribute("aria-expanded", "false");
+      button.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
+    } else {
       button.setAttribute("aria-label", "現在の展示データを統計分析する");
       button.setAttribute("aria-haspopup", "dialog");
       button.setAttribute("aria-controls", "gaia-statistics-lab");

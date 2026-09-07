@@ -34,8 +34,8 @@
   #japan-layer .gaia-live-data-credit { font-size: 12px; }
 }
 
-/* One dock height and screen-space navigation slot for desktop MAP 01–30.
-   Content and loading state cannot expand the dock or move its click targets. */
+/* One lower control-row height and screen-space navigation slot for MAP 01–30.
+   The statistics explanation may grow above it without moving click targets. */
 @media (min-width: 901px) {
   :root {
     --map-chapter-inset: clamp(10px, .8vw, 20px);
@@ -152,7 +152,7 @@
   body.map-grid-desktop #japan-layer .gaia-firms-count > small { font-size: 10px; line-height: 1; }
   body.map-grid-desktop #japan-layer .gaia-firms-timeline header strong { white-space: nowrap; }
   body.map-grid-desktop #japan-layer .gaia-firms-timeline > button { padding-block: 2px; }
-  body.map-grid-desktop #japan-layer :is(.gaia-estat-copy, .gaia-firms-copy, .gaia-planet-copy) p {
+  body.map-grid-desktop #japan-layer :is(.gaia-firms-copy, .gaia-planet-copy) p {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -160,13 +160,47 @@
     font-size: 11px;
     line-height: 1.35;
   }
-  body.map-grid-desktop #japan-layer :is(.gaia-estat-copy, .gaia-firms-copy, .gaia-planet-copy) small {
+  body.map-grid-desktop #japan-layer :is(.gaia-firms-copy, .gaia-planet-copy) small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   body.map-grid-desktop #japan-layer.is-live-exhibit .japan-credits {
     bottom: calc(var(--map-command-dock-height) + 6px) !important;
+  }
+}
+
+/* Where the statistics explanation is shown, give it a full-width natural
+   height row. The lower control row keeps its original height and bottom edge,
+   so long captions and quality notes cannot move or cover navigation buttons. */
+@media (min-width: 1501px) {
+  body.map-grid-desktop #japan-layer .gaia-estat-readout {
+    height: auto;
+    grid-template-rows: auto var(--map-chapter-height);
+    row-gap: 8px;
+  }
+  body.map-grid-desktop #japan-layer .gaia-estat-readout > :not(.gaia-estat-copy) {
+    grid-row: 2;
+  }
+  body.map-grid-desktop #japan-layer .gaia-estat-readout > .gaia-estat-copy {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-content: start;
+    padding: 2px 16px 9px;
+    border-left: 0;
+    border-bottom: 1px solid rgba(137, 247, 226, .11);
+  }
+  body.map-grid-desktop #japan-layer .gaia-estat-copy :is(p, small):not([hidden]) {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    -webkit-line-clamp: none;
+  }
+  body.map-grid-desktop #japan-layer .gaia-estat-copy p {
+    font-size: 11px;
+    line-height: 1.35;
   }
 }
 

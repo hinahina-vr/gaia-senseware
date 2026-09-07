@@ -123,7 +123,7 @@ try {
     await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
     await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.renderPixelRatio) >= 1);
     await page.locator("#japan-mode-list .map-mode-button").nth(3).click({ force: true });
-    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "fixed-diameter-pie");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "country-choropleth");
 
     const observed = await page.evaluate(() => {
       const canvas = document.querySelector("#japan-overlay");

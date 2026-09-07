@@ -268997,8 +268997,8 @@
           "period": "2000–2022",
           "unit": "% municipal waste recycled",
           "resolution": "91 countries and territories / latest available source values",
-          "transformation": "国連SDG APIの全ページから自治体ごみ再資源化率の最新公表値を国・地域別に採用。世界・地域合計は除外。",
-          "caveat": "報告年・制度・廃棄物定義は国で異なります。公表値がない国は未収録で、近隣国からの推定値や0%では埋めません。SOURCEにも国連側の推計値が含まれ、Nature属性・注記を保存しています。最新値が0〜100%外の国は円グラフから除外し、元値と理由をcountryCoverage.excludedSourceValuesに保持します。",
+          "transformation": "国連SDG APIの全ページから自治体ごみ再資源化率の最新公表値を国・地域別に採用。世界・地域合計は除外。国土を0〜100%の青の共通尺度で塗り分け、選択国の報告年と割合を表示。",
+          "caveat": "報告年・制度・廃棄物定義は国で異なります。公表値がない国は無着色とし、近隣国からの推定値や0%では埋めません。SOURCEにも国連側の推計値が含まれ、Nature属性・注記を保存しています。最新値が0〜100%外の国は塗り分けから除外し、元値と理由をcountryCoverage.excludedSourceValuesに保持します。",
           "preview": [
             {
               "id": "aia",
@@ -269236,7 +269236,7 @@
           "period": "current session",
           "unit": "%",
           "resolution": "slider input / selected country",
-          "transformation": "観客がスライダーを動かした分だけ、選択国の外周リングを動かします。内側の現在値の円グラフは変えません。",
+          "transformation": "旧形式の仮想シナリオの参考資料で、現在の地図では使用しません。スライダーは国・地域の選択に使い、再資源化率の公表値を変更しません。",
           "caveat": "公式統計でも未来予測でもない、観客がつくる『もしも』です。焼却や埋立の割合も推測していません。",
           "preview": [
             {
@@ -271657,7 +271657,7 @@
               "footnotes": [
                 "Estimated data - calculations using recycling rate (2000-2011~5%, 2012~10.5%, 2013~12.25%, 2014~14%, 2015~15.75%, 2016~17.5%, 2017~21%).Data collection by concessionaire companies for 7 states, supervised by SWCorp only"
               ],
-              "reason": "Latest source percentage outside 0–100; cannot represent as a share pie. Not clamped or replaced with an older year."
+              "reason": "Latest source percentage outside 0–100; cannot represent on the percentage map. Not clamped or replaced with an older year."
             }
           ]
         }
